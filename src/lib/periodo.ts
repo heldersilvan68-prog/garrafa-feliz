@@ -27,7 +27,7 @@ export const isoLocal = (d: Date) =>
 export function faixaPeriodo(
   periodo: PeriodoId,
   custom: Faixa = { inicio: "", fim: "" },
-  hoje = new Date(),
+  hoje = new Date()
 ): Faixa {
   const fim = isoLocal(hoje);
   const menos = (dias: number) => {
@@ -35,9 +35,12 @@ export function faixaPeriodo(
     d.setDate(d.getDate() - dias);
     return isoLocal(d);
   };
+
   switch (periodo) {
-    case "hoje":
-      return { inicio: fim, fim };
+    case "hoje": {
+      const hojeStr = isoLocal(hoje);
+      return { inicio: hojeStr, fim: hojeStr };
+    }
     case "7d":
       return { inicio: menos(6), fim };
     case "30d":
@@ -66,7 +69,9 @@ export function faixaAnterior(f: Faixa): Faixa {
 
 /** Aceita data (yyyy-mm-dd) ou datetime ISO. */
 export const dentroFaixa = (iso: string, f: Faixa) => {
-  const dia = iso.slice(0, 10);
+  if (!iso) return false;
+  const d = new Date(iso);
+  const dia = isoLocal(d);
   return dia >= f.inicio && dia <= f.fim;
 };
 
