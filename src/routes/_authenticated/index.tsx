@@ -59,6 +59,8 @@ function Painel() {
 
       <BreakdownSection resumo={resumo} />
 
+      <CoberturaCards />
+
       <VendasChart resumo={resumo} />
     </div>
   );
