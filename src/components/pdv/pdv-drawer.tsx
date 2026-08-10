@@ -15,7 +15,7 @@ import {
   DrawerTrigger,
 } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Campo } from "@/components/ui/campo";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
@@ -237,20 +237,21 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
               {/* Cliente + produtos */}
               <div className="flex flex-col gap-4">
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="pdv-cliente">Cliente (nome, telefone ou bairro)</Label>
-                  <div className="relative">
-                    <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      id="pdv-cliente"
-                      className="pl-9"
+                  <Campo label="Cliente (nome, telefone ou bairro)" htmlFor="pdv-cliente">
+                    <div className="relative">
+                      <Search className="pointer-events-none absolute left-1 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        id="pdv-cliente"
+                        className="pl-7"
                       placeholder="Buscar cliente..."
-                      value={busca}
-                      onChange={(e) => {
-                        setBusca(e.target.value);
-                        setClienteId("");
-                      }}
-                    />
-                  </div>
+                        value={busca}
+                        onChange={(e) => {
+                          setBusca(e.target.value);
+                          setClienteId("");
+                        }}
+                      />
+                    </div>
+                  </Campo>
                   {!clienteId && (
                     <div className="overflow-hidden rounded-lg border border-border">
                       {filtrados.length === 0 && (
@@ -283,16 +284,13 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                           </Badge>
                         )}
                       </div>
-                      <div className="flex flex-col gap-1">
-                        <Label htmlFor="pdv-endereco" className="text-xs">
-                          Endereço de entrega
-                        </Label>
+                      <Campo label="Endereço de entrega" htmlFor="pdv-endereco">
                         <Input
                           id="pdv-endereco"
                           value={endereco}
                           onChange={(e) => setEndereco(e.target.value)}
                         />
-                      </div>
+                      </Campo>
                     </div>
                   )}
                 </div>
@@ -300,7 +298,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                 <Separator />
 
                 <div className="flex flex-col gap-2">
-                  <Label>Produtos</Label>
+                  <p className="text-sm font-medium">Produtos</p>
                   <div className="grid gap-2 sm:grid-cols-2">
                     {produtos.map((p) => {
                       const q = carrinho[p.id] ?? 0;
@@ -367,18 +365,13 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                           )}
                           {q > 0 && (
                             <div className="flex items-center gap-2">
-                              <Label
-                                htmlFor={`preco-${p.id}`}
-                                className="shrink-0 text-xs text-muted-foreground"
-                              >
-                                Preço unit. negociado
-                              </Label>
                               <Input
                                 id={`preco-${p.id}`}
                                 type="number"
                                 min="0"
                                 step="0.01"
-                                className="h-8 w-24"
+                                className="h-9 w-32 rounded-lg"
+                                placeholder="Preço unit. negociado"
                                 value={precos[p.id] ?? String(p.precoVenda)}
                                 onChange={(e) =>
                                   setPrecos((s) => ({ ...s, [p.id]: e.target.value }))
@@ -401,11 +394,12 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
               <div className="flex flex-col gap-4">
                 {qtdRetornavel > 0 && (
                   <div className="flex flex-col gap-2 rounded-lg border border-primary/30 bg-primary/5 p-3">
-                    <Label htmlFor="pdv-vazios">
-                      Galões vazios recolhidos ({qtdRetornavel} retornáveis na venda)
-                    </Label>
-                    <Input
-                      id="pdv-vazios"
+                    <Campo
+                      label={`Galões vazios recolhidos (${qtdRetornavel} retornáveis na venda)`}
+                      htmlFor="pdv-vazios"
+                    >
+                      <Input
+                        id="pdv-vazios"
                       type="number"
                       min={0}
                       value={vaziosValor}
@@ -413,7 +407,8 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                         setVaziosEditado(true);
                         setVazios(e.target.value);
                       }}
-                    />
+                      />
+                    </Campo>
                     <p className="text-xs text-muted-foreground">
                       Preenchido automaticamente com os retornáveis do carrinho — edite se
                       o cliente não devolveu todos.
@@ -423,7 +418,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
 
                 <div className="flex flex-col gap-2 rounded-lg border border-border p-3">
                   <div className="flex items-center justify-between gap-2">
-                    <Label>Formas de pagamento</Label>
+                    <p className="text-sm font-medium">Formas de pagamento</p>
                     <Button
                       type="button"
                       variant="outline"
@@ -514,16 +509,17 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
 
                 {valorDinheiro > 0 && (
                   <div className="flex flex-col gap-2">
-                    <Label htmlFor="pdv-troco">Troco para R$</Label>
-                    <Input
-                      id="pdv-troco"
-                      type="number"
-                      min={0}
-                      step="0.01"
-                      value={trocoPara}
-                      onChange={(e) => setTrocoPara(e.target.value)}
-                      placeholder="0,00"
-                    />
+                    <Campo label="Troco para R$" htmlFor="pdv-troco">
+                      <Input
+                        id="pdv-troco"
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        value={trocoPara}
+                        onChange={(e) => setTrocoPara(e.target.value)}
+                        placeholder="0,00"
+                      />
+                    </Campo>
                     <p className="text-xs text-muted-foreground">
                       Recebido em dinheiro: <strong>{brl(valorDinheiro)}</strong> · Troco a
                       devolver: <strong>{brl(troco)}</strong>
@@ -532,7 +528,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                 )}
 
                 <div className="flex flex-col gap-2">
-                  <Label>Entregador</Label>
+                  <p className="text-sm font-medium">Entregador</p>
                   <Select value={entregador} onValueChange={setEntregador}>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione" />
