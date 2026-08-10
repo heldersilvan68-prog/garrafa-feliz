@@ -15,6 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ConfirmarExclusao } from "@/components/confirmar-exclusao";
+import { ProdutoFoto } from "@/components/produto-foto";
 import { ProdutoDialog } from "@/components/produto-dialog";
 import { EntradaEstoqueDialog } from "@/components/estoque-dialogs";
 import { useEstoque } from "@/context/estoque";
