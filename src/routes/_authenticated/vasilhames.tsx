@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { AlertTriangle, ArrowDownLeft, Boxes, Plus, Recycle, Trash2, Undo2 } from "lucide-react";
+import { AlertTriangle, ArrowDownLeft, Boxes, Plus, Recycle, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -43,32 +43,10 @@ export const Route = createFileRoute("/_authenticated/vasilhames")({
 });
 
 function Vasilhames() {
-  const { produtos, movimentos} = useEstoque();
+  const { produtos, movimentos } = useEstoque();
   const { clientes } = useClientes();
   const retornaveis = produtos.filter((p) => p.retornavel);
   const naRua = clientes.reduce((s, c) => s + (c.vasilhamesRua ?? 0), 0);
-
-  // Função para limpar apenas as movimentações realizadas na data de hoje
-  const limparTestesDeHoje = () => {
-    const confirmacao = window.confirm(
-      "Deseja realmente remover todos os registros e testes de movimentação feitos hoje?"
-    );
-    if (!confirmacao) return;
-
-    const hoje = new Date().toISOString().slice(0, 10);
-
-    const filtrados = movimentos.filter((m: any) => {
-      if (!m.em) return true;
-      const dataMov = new Date(m.em).toISOString().slice(0, 10);
-      return dataMov !== hoje;
-    });
-
-    // Salva nas chaves de armazenamento local do sistema
-    localStorage.setItem("aquaerp_movimentos", JSON.stringify(filtrados));
-    localStorage.setItem("aquaerp_estoque", JSON.stringify(filtrados));
-    
-    window.location.reload();
-  };
 
   // Calcula garrafões que saíram para a fonte e ainda não retornaram
   const emTransitoFonte = movimentos.reduce((acc, m) => {
@@ -211,16 +189,8 @@ function Vasilhames() {
       </Card>
 
       <Card className="shadow-[var(--shadow-card)]">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+        <CardHeader>
           <CardTitle className="text-base">Histórico de movimentações de vasilhames</CardTitle>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={limparTestesDeHoje}
-            className="flex items-center gap-1.5"
-          >
-            <Trash2 className="size-3.5" /> Limpar Testes de Hoje
-          </Button>
         </CardHeader>
         <CardContent className="overflow-x-auto">
           <Table>
@@ -236,7 +206,7 @@ function Vasilhames() {
             <TableBody>
               {movimentos.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-sm text-muted-foreground py-6 text-center">
+                  <TableCell colSpan={5} className="text-sm text-muted-foreground">
                     Nenhuma movimentação registrada ainda.
                   </TableCell>
                 </TableRow>
