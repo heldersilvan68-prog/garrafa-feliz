@@ -145,9 +145,12 @@ export function EditarPedidoDialog({
                       className="flex flex-col gap-2 rounded-lg border border-border p-3"
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-medium">{p.nome}</p>
-                          <p className="text-xs text-muted-foreground">{brl(p.precoVenda)}</p>
+                        <div className="flex min-w-0 items-center gap-2">
+                          <ProdutoFoto url={p.imagemUrl} nome={p.nome} />
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium">{p.nome}</p>
+                            <p className="text-xs text-muted-foreground">{brl(p.precoVenda)}</p>
+                          </div>
                         </div>
                         <div className="flex shrink-0 items-center gap-1">
                           <Button

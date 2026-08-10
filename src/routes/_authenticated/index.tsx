@@ -30,7 +30,7 @@ export const Route = createFileRoute("/_authenticated/")({
 });
 
 function Painel() {
-  const periodo = usePeriodo("mes");
+  const periodo = usePeriodo("hoje");
   const { resumo } = useResumo(periodo.faixa);
 
   return (
