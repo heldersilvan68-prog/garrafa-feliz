@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { AlertTriangle, Boxes, Plus, Recycle, Undo2 } from "lucide-react";
+import { AlertTriangle, ArrowDownLeft, Boxes, Plus, Recycle, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -10,7 +10,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { AporteVasilhameDialog, MoverVaziosDialog } from "@/components/estoque-dialogs";
+import {
+  AporteVasilhameDialog,
+  MoverVaziosDialog,
+  RetornoEnvaseDialog,
+} from "@/components/estoque-dialogs";
 import { AvariaDialog, RetornoFonteDialog } from "@/components/estoque/avaria-dialog";
 import { useClientes } from "@/context/clientes";
 import { useEstoque } from "@/context/estoque";
@@ -66,6 +70,20 @@ function Vasilhames() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {/* Botão para registrar chegada de carga cheia */}
+          <RetornoEnvaseDialog>
+            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white">
+              <ArrowDownLeft className="size-4" /> Chegada da Carga
+            </Button>
+          </RetornoEnvaseDialog>
+
+          {/* Botão de Enviar vazios para envasar */}
+          <MoverVaziosDialog>
+            <Button variant="outline">
+              <Recycle className="size-4" /> Enviar Vazios
+            </Button>
+          </MoverVaziosDialog>
+
           {/* Botão de Comprar / Aportar Vasilhames */}
           <AporteVasilhameDialog>
             <Button variant="outline">
@@ -75,19 +93,15 @@ function Vasilhames() {
 
           <RetornoFonteDialog>
             <Button variant="outline">
-              <Undo2 /> Retorno sem envase
+              <Undo2 className="size-4" /> Retorno 
             </Button>
           </RetornoFonteDialog>
+
           <AvariaDialog>
             <Button variant="outline" className="text-destructive">
-              <AlertTriangle /> Registrar avaria
+              <AlertTriangle className="size-4" /> Registrar avaria
             </Button>
           </AvariaDialog>
-          <MoverVaziosDialog>
-            <Button>
-              <Recycle /> Envasar vazios
-            </Button>
-          </MoverVaziosDialog>
         </div>
       </header>
 
@@ -143,11 +157,18 @@ function Vasilhames() {
                     {brl(p.estoqueCheio * p.precoVenda)}
                   </TableCell>
                   <TableCell className="text-right">
-                    <MoverVaziosDialog produtoId={p.id}>
-                      <Button variant="outline" size="sm">
-                        <Recycle className="size-4" /> Envasar
-                      </Button>
-                    </MoverVaziosDialog>
+                    <div className="flex justify-end gap-2">
+                      <RetornoEnvaseDialog produtoId={p.id}>
+                        <Button variant="outline" size="sm" className="text-emerald-600 border-emerald-200 hover:bg-emerald-50">
+                          <ArrowDownLeft className="size-3.5 mr-1" /> Receber Carga
+                        </Button>
+                      </RetornoEnvaseDialog>
+                      <MoverVaziosDialog produtoId={p.id}>
+                        <Button variant="outline" size="sm">
+                          <Recycle className="size-3.5 mr-1" /> Enviar Vazios
+                        </Button>
+                      </MoverVaziosDialog>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

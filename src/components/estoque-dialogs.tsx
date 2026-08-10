@@ -47,7 +47,7 @@ function MovimentoDialog({
       toast.success(`Entrada de ${n} un. registrada no estoque cheio.`);
     } else {
       moverVazios(id, n);
-      toast.success(`${n} vasilhame(s) enviados para a envasadora.`);
+      toast.success(`${n} vasilhame(s) vazios enviados para a envasadora.`);
     }
     setAberto(false);
   };
@@ -63,7 +63,7 @@ function MovimentoDialog({
           <DialogDescription>
             {modo === "entrada"
               ? "Registre a chegada de mercadoria cheia no depósito."
-              : "Retira os vasilhames vazios do pátio para envio ao envase."}
+              : "Retira os vasilhames vazios do depósito para envio ao envase na fonte."}
           </DialogDescription>
         </DialogHeader>
 
@@ -130,7 +130,7 @@ export function AporteVasilhameDialog({ children }: { children: ReactNode }) {
     }
 
     await comprarVasilhames(id, n);
-    toast.success(`${n} novos vasilhames adicionados ao patrimônio!`);
+    toast.success(`${n} novos vasilhames comprados e adicionados ao estoque cheio!`);
     setAberto(false);
   };
 
@@ -139,9 +139,9 @@ export function AporteVasilhameDialog({ children }: { children: ReactNode }) {
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Comprar / Aportar Vasilhames</DialogTitle>
+          <DialogTitle>Comprar Vasilhames Novos (Cheios)</DialogTitle>
           <DialogDescription>
-            Adicione novos cascos para aumentar o Patrimônio Total da distribuidora.
+            Adicione novos cascos comprados diretamente cheios. Isso aumenta o estoque cheio e o Patrimônio Total.
           </DialogDescription>
         </DialogHeader>
 
@@ -177,7 +177,77 @@ export function AporteVasilhameDialog({ children }: { children: ReactNode }) {
           <Button variant="outline" onClick={() => setAberto(false)}>
             Cancelar
           </Button>
-          <Button onClick={confirmar}>Confirmar Aporte</Button>
+          <Button onClick={confirmar}>Confirmar Compra</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+export function RetornoEnvaseDialog({ children, produtoId }: { children: ReactNode; produtoId?: string }) {
+  const { produtos, entradaEstoque } = useEstoque();
+  const vasilhames = produtos.filter((p) => p.retornavel);
+  const [aberto, setAberto] = useState(false);
+  const [id, setId] = useState(produtoId ?? vasilhames[0]?.id ?? "");
+  const [qtd, setQtd] = useState("100");
+
+  const confirmar = () => {
+    const n = Number(qtd);
+    if (!id || !Number.isFinite(n) || n <= 0) {
+      toast.error("Informe um produto e uma quantidade válida.");
+      return;
+    }
+
+    // Registra a entrada dos vasilhames que voltaram recarregados/cheios da fonte
+    entradaEstoque(id, n);
+    toast.success(`Chegada de ${n} un. envasadas registrada no estoque cheio.`);
+    setAberto(false);
+  };
+
+  return (
+    <Dialog open={aberto} onOpenChange={setAberto}>
+      <DialogTrigger asChild>{children}</DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Registrar Chegada da Carga (Retorno de Envase)</DialogTitle>
+          <DialogDescription>
+            Registre a entrada dos vasilhames que retornaram envasados/cheios da envasadora.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="grid gap-4 py-2">
+          <div className="grid gap-2">
+            <Label>Produto</Label>
+            <Select value={id} onValueChange={setId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o produto" />
+              </SelectTrigger>
+              <SelectContent>
+                {vasilhames.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="qtdChegada">Quantidade Recebida (Cheios)</Label>
+            <Input
+              id="qtdChegada"
+              type="number"
+              min={1}
+              value={qtd}
+              onChange={(e) => setQtd(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setAberto(false)}>
+            Cancelar
+          </Button>
+          <Button onClick={confirmar}>Confirmar Chegada</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

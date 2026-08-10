@@ -135,7 +135,7 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
   };
 
-  // Entrada de mercadoria cheia vinda do fornecedor/envasadora (Chegada no Depósito)
+  // Chegada de mercadoria cheia/recarregada vinda da fonte (Chegada da Carga)
   const entradaMut = useMutacao<{ id: string; qtd: number }>(async ({ id, qtd }) => {
     const p = produtos.find((x) => x.id === id);
     if (!p) return;
@@ -144,11 +144,12 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
       produtoId: id,
       tipo: "entrada",
       qtd,
-      motivo: `Entrada de estoque cheio · ${p.nome}`,
+      motivo: `Chegada de carga envasada · ${p.nome}`,
       deltaCheio: qtd,
+      deltaVazio: 0,
       deltaPatrimonio: 0,
     });
-  }, "Não foi possível registrar a entrada");
+  }, "Não foi possível registrar a chegada da carga");
 
   // Envio de vasilhames vazios para a envasadora (Apenas baixa nos vazios do pátio)
   const vaziosMut = useMutacao<{ id: string; qtd: number }>(async ({ id, qtd }) => {
@@ -165,22 +166,24 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
       motivo: `Envio para envasadora (em trânsito) · ${p.nome}`,
       deltaCheio: 0,
       deltaVazio: -mov,
+      deltaPatrimonio: 0,
     });
   }, "Não foi possível registrar envio de vasilhames");
 
-  // Compra/Aporte de NOVOS vasilhames (Aumenta o patrimônio total)
+  // Compra/Aporte de NOVOS vasilhames (Chegam CHEIOS e aumentam o patrimônio total)
   const comprarMut = useMutacao<{ id: string; qtd: number }>(async ({ id, qtd }) => {
     const p = produtos.find((x) => x.id === id);
     if (!p) return;
     await patch(id, {
-      estoque_vazio: p.estoqueVazio + qtd,
+      estoque_cheio: p.estoqueCheio + qtd,
     });
     await logar({
       produtoId: id,
       tipo: "entrada",
       qtd,
-      motivo: `Compra / Aporte de novos vasilhames (Patrimônio) · ${p.nome}`,
-      deltaVazio: qtd,
+      motivo: `Compra / Aporte de novos vasilhames cheios · ${p.nome}`,
+      deltaCheio: qtd,
+      deltaVazio: 0,
       deltaPatrimonio: qtd,
     });
   }, "Não foi possível registrar a compra de vasilhames");
@@ -219,7 +222,8 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
       const perdidos = Math.min(qtd, cheio ? p.estoqueCheio : p.estoqueVazio);
       if (perdidos <= 0) throw new Error("Sem saldo suficiente para registrar a avaria");
 
-      await patch(produtoId,
+      await patch(
+        produtoId,
         cheio
           ? { estoque_cheio: p.estoqueCheio - perdidos }
           : { estoque_vazio: p.estoqueVazio - perdidos },
