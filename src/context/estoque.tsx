@@ -135,7 +135,7 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
   };
 
-  // Chegada de mercadoria cheia/recarregada vinda da fonte (Chegada da Carga)
+  // Chegada de mercadoria cheia/recarregada vinda da fonte (O patrimônio NÃO muda)
   const entradaMut = useMutacao<{ id: string; qtd: number }>(async ({ id, qtd }) => {
     const p = produtos.find((x) => x.id === id);
     if (!p) return;
@@ -147,11 +147,11 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
       motivo: `Chegada de carga envasada · ${p.nome}`,
       deltaCheio: qtd,
       deltaVazio: 0,
-      deltaPatrimonio: 0,
+      deltaPatrimonio: 0, // Patrimônio inalterado
     });
   }, "Não foi possível registrar a chegada da carga");
 
-  // Envio de vasilhames vazios para a envasadora (Apenas baixa nos vazios do pátio)
+  // Envio de vasilhames vazios para a envasadora (O patrimônio NÃO muda)
   const vaziosMut = useMutacao<{ id: string; qtd: number }>(async ({ id, qtd }) => {
     const p = produtos.find((x) => x.id === id);
     if (!p) return;
@@ -166,11 +166,11 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
       motivo: `Envio para envasadora (em trânsito) · ${p.nome}`,
       deltaCheio: 0,
       deltaVazio: -mov,
-      deltaPatrimonio: 0,
+      deltaPatrimonio: 0, // Patrimônio inalterado
     });
   }, "Não foi possível registrar envio de vasilhames");
 
-  // Compra/Aporte de NOVOS vasilhames (Chegam CHEIOS e aumentam o patrimônio total)
+  // Compra/Aporte de NOVOS vasilhames (AUMENTA o patrimônio total)
   const comprarMut = useMutacao<{ id: string; qtd: number }>(async ({ id, qtd }) => {
     const p = produtos.find((x) => x.id === id);
     if (!p) return;
@@ -184,11 +184,11 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
       motivo: `Compra / Aporte de novos vasilhames cheios · ${p.nome}`,
       deltaCheio: qtd,
       deltaVazio: 0,
-      deltaPatrimonio: qtd,
+      deltaPatrimonio: qtd, // Patrimônio AUMENTA
     });
   }, "Não foi possível registrar a compra de vasilhames");
 
-  // Retorno sem envase (Caso o casco tenha voltado da envasadora sem ser cheio)
+  // Retorno sem envase (O patrimônio NÃO muda)
   const retornoMut = useMutacao<{ id: string; qtd: number }>(async ({ id, qtd }) => {
     const p = produtos.find((x) => x.id === id);
     if (!p) return;
@@ -199,10 +199,11 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
       qtd,
       motivo: `Retorno da fonte sem envasar · ${p.nome}`,
       deltaVazio: qtd,
-      deltaPatrimonio: 0,
+      deltaPatrimonio: 0, // Patrimônio inalterado
     });
   }, "Não foi possível registrar o retorno da fonte");
 
+  // Avarias e perdas (REDUZ O PATRIMÔNIO)
   const avariaMut = useMutation({
     mutationFn: async ({
       produtoId,
@@ -252,7 +253,7 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
         motivo,
         deltaCheio: cheio ? -perdidos : 0,
         deltaVazio: cheio ? 0 : -perdidos,
-        deltaPatrimonio: -perdidos,
+        deltaPatrimonio: -perdidos, // Patrimônio REDUZ
       });
     },
     onSuccess: () => {
@@ -275,11 +276,13 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
         qtd,
         motivo: `Devolução de casco pelo cliente · ${p.nome}`,
         deltaVazio: qtd,
+        deltaPatrimonio: 0,
       });
     },
     "Não foi possível registrar a devolução",
   );
 
+  // Vendas (Se for água completa ou casco vendido, REDUZ o patrimônio)
   const aplicarVenda = async (itens: ItemBaixa[], vaziosRecolhidos: number, sinal: 1 | -1) => {
     const refis = itens.filter(
       (i) => (i.modo ?? "refil") === "refil" && produtos.find((p) => p.id === i.produtoId)?.retornavel,
@@ -298,15 +301,16 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
 
       if (modo === "casco") {
         deltaVazio = -item.qtd * sinal;
-        deltaPatrimonio = -item.qtd * sinal;
+        deltaPatrimonio = -item.qtd * sinal; // Venda de casco REDUZ patrimônio
       } else if (modo === "completa") {
         deltaCheio = -item.qtd * sinal;
-        deltaPatrimonio = -item.qtd * sinal;
+        deltaPatrimonio = -item.qtd * sinal; // Venda completa REDUZ patrimônio
       } else {
         deltaCheio = -item.qtd * sinal;
         if (p.retornavel && totalRefil > 0 && vaziosRecolhidos > 0) {
           deltaVazio = Math.round((item.qtd / totalRefil) * vaziosRecolhidos) * sinal;
         }
+        deltaPatrimonio = 0; // Venda de refil NÃO altera o patrimônio
       }
 
       cheio = Math.max(0, cheio + deltaCheio);
