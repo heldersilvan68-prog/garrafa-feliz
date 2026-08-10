@@ -109,6 +109,7 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
       categoria: p.categoria,
       marca: p.marca?.trim() || null,
       unidade: p.unidade?.trim() || null,
+      imagem_url: p.imagemUrl?.trim() || null,
       preco_custo: p.precoCusto,
       preco_venda: p.precoVenda,
       estoque_minimo: p.estoqueMinimo,

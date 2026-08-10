@@ -23,6 +23,7 @@ const vazio: Produto = {
   categoria: "",
   marca: "",
   unidade: "",
+  imagemUrl: "",
   precoCusto: 0,
   precoVenda: 0,
   estoqueMinimo: 0,
