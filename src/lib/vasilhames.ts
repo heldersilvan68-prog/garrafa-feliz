@@ -61,7 +61,7 @@ export const LABEL_MODO: Record<ModoVenda, string> = {
 export const retornaveis = (produtos: Produto[]) => produtos.filter((p) => p.retornavel);
 
 /** Métricas consolidadas dos vasilhames retornáveis. */
-export function resumoVasilhames(produtos: Produto[], vasilhamesNaRua: number) {
+export function resumoVasilhames(produtos: Produto[], vasilhamesNaRua: number, emTransito: number = 0) {
   const lista = retornaveis(produtos);
   const cheios = lista.reduce((s, p) => s + p.estoqueCheio, 0);
   const vazios = lista.reduce((s, p) => s + p.estoqueVazio, 0);
@@ -69,7 +69,6 @@ export function resumoVasilhames(produtos: Produto[], vasilhamesNaRua: number) {
   const valorVenda = lista.reduce((s, p) => s + p.estoqueCheio * p.precoVenda, 0);
   const valorCusto = lista.reduce((s, p) => s + p.estoqueCheio * p.precoCusto, 0);
 
-  // O patrimônio em valor considera o custo do casco de todos os vasilhames em posse
   const patrimonioValor = lista.reduce(
     (s, p) => s + (p.estoqueCheio + p.estoqueVazio) * p.custoCasco,
     0,
@@ -79,8 +78,9 @@ export function resumoVasilhames(produtos: Produto[], vasilhamesNaRua: number) {
     cheios,
     vazios,
     naRua: vasilhamesNaRua,
-    // Patrimônio em quantidade: Cheios + Vazios + Na Rua
-    patrimonio: cheios + vazios + vasilhamesNaRua,
+    emTransito,
+    // Patrimônio Total Fixo: Cheios + Vazios + Em Trânsito (Fonte) + Na Rua
+    patrimonio: cheios + vazios + emTransito + vasilhamesNaRua,
     patrimonioValor,
     custoEnvasePrevisto: custoEnvase,
     valorVenda,

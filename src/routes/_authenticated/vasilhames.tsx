@@ -47,12 +47,23 @@ function Vasilhames() {
   const { clientes } = useClientes();
   const retornaveis = produtos.filter((p) => p.retornavel);
   const naRua = clientes.reduce((s, c) => s + (c.vasilhamesRua ?? 0), 0);
-  const r = resumoVasilhames(produtos, naRua);
+
+  // Calcula garrafões que saíram para a fonte e ainda não retornaram
+  const emTransitoFonte = movimentos.reduce((acc, m) => {
+    if (m.tipo === "envasado") return acc + m.qtd;
+    if (m.tipo === "entrada") return acc - m.qtd;
+    if (m.tipo === "retorno_sem_envase") return acc - m.qtd;
+    return acc;
+  }, 0);
+
+  const emTransitoSeguro = Math.max(0, emTransitoFonte);
+
+  const r = resumoVasilhames(produtos, naRua, emTransitoSeguro);
 
   const cards = [
-    { titulo: "Patrimônio Total de Vasilhames", valor: `${r.patrimonio}`, nota: `${brl(r.patrimonioValor)} em cascos no depósito` },
+    { titulo: "Patrimônio Total de Vasilhames", valor: `${r.patrimonio}`, nota: `${brl(r.patrimonioValor)} em cascos no patrimônio` },
     { titulo: "Unidades Cheias no Depósito", valor: `${r.cheios}`, nota: "Prontas para venda" },
-    { titulo: "Vasilhames Vazios no Depósito", valor: `${r.vazios}`, nota: `${r.naRua} na rua com clientes` },
+    { titulo: "Vasilhames Vazios no Depósito", valor: `${r.vazios}`, nota: `${r.naRua} na rua · ${emTransitoSeguro} na fonte` },
     { titulo: "Previsão de Custo para Envasar", valor: brl(r.custoEnvasePrevisto), nota: "Vazios × custo de envase" },
     { titulo: "Valor Potencial de Venda (20L)", valor: brl(r.valorVenda), nota: "Cheios × preço de venda" },
     { titulo: "Lucro Bruto Projetado (20L)", valor: brl(r.lucroProjetado), nota: "Venda − custo dos cheios" },
