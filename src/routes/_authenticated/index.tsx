@@ -5,6 +5,7 @@ import { FiltroPeriodo } from "@/components/filtro-periodo";
 import { KpiCards } from "@/components/dashboard/kpi-cards";
 import { BreakdownSection } from "@/components/dashboard/breakdown-section";
 import { VendasChart } from "@/components/dashboard/charts";
+import { CoberturaCards } from "@/components/dashboard/cobertura-cards";
 import { PdvDrawer } from "@/components/pdv/pdv-drawer";
 import { usePeriodo } from "@/hooks/use-periodo";
 import { useResumo } from "@/hooks/use-resumo";
@@ -57,6 +58,8 @@ function Painel() {
       <KpiCards resumo={resumo} />
 
       <BreakdownSection resumo={resumo} />
+
+      <CoberturaCards />
 
       <VendasChart resumo={resumo} />
     </div>

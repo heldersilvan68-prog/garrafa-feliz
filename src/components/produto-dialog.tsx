@@ -1,5 +1,6 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
+import { Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,11 +12,12 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Campo } from "@/components/ui/campo";
 import { Switch } from "@/components/ui/switch";
 import { SelectComCadastro } from "@/components/select-com-cadastro";
 import { ProdutoFoto } from "@/components/produto-foto";
 import { useEstoque } from "@/context/estoque";
+import { arquivoParaMiniatura } from "@/lib/imagem";
 import { CATEGORIAS_SUGERIDAS, type Produto } from "@/lib/erp";
 
 const vazio: Produto = {
@@ -45,6 +47,7 @@ export function ProdutoDialog({
   const { salvar } = useEstoque();
   const [aberto, setAberto] = useState(false);
   const [form, setForm] = useState<Produto>(produto ?? vazio);
+  const arquivoRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (aberto) setForm(produto ?? vazio);
@@ -52,6 +55,17 @@ export function ProdutoDialog({
 
   const set = <K extends keyof Produto>(k: K, v: Produto[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
+
+  const escolherArquivo = async (file?: File | null) => {
+    if (!file) return;
+    try {
+      const url = await arquivoParaMiniatura(file);
+      set("imagemUrl", url);
+      toast.success("Foto carregada!");
+    } catch {
+      toast.error("Não foi possível carregar essa imagem.");
+    }
+  };
 
   const submit = () => {
     if (!form.nome.trim()) {
@@ -83,61 +97,81 @@ export function ProdutoDialog({
         </DialogHeader>
 
         <div className="grid gap-4 py-2">
-          <div className="grid gap-2">
-            <Label htmlFor="nome">Nome do produto</Label>
+          <Campo label="Nome do produto" htmlFor="nome">
             <Input
               id="nome"
               value={form.nome}
               onChange={(e) => set("nome", e.target.value)}
               placeholder="Ex.: Galão Água Mineral 20L"
             />
+          </Campo>
+
+          <div className="flex items-center gap-3">
+            <ProdutoFoto
+              url={form.imagemUrl?.trim() || undefined}
+              nome={form.nome || "produto"}
+              className="size-14"
+            />
+            <Campo label="Foto do produto" htmlFor="imagem" className="flex-1">
+              <div className="flex items-center gap-2">
+                <Input
+                  id="imagem"
+                  value={form.imagemUrl?.startsWith("data:") ? "" : (form.imagemUrl ?? "")}
+                  onChange={(e) => set("imagemUrl", e.target.value)}
+                  placeholder={
+                    form.imagemUrl?.startsWith("data:")
+                      ? "Foto carregada do dispositivo"
+                      : "Cole uma URL ou envie um arquivo"
+                  }
+                />
+                <input
+                  ref={arquivoRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => void escolherArquivo(e.target.files?.[0])}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0"
+                  onClick={() => arquivoRef.current?.click()}
+                >
+                  <Upload className="size-4" /> Enviar
+                </Button>
+              </div>
+            </Campo>
           </div>
 
-          <div className="grid gap-2">
-            <Label htmlFor="imagem">Foto do produto (URL)</Label>
-            <div className="flex items-center gap-3">
-              <ProdutoFoto url={form.imagemUrl?.trim() || undefined} nome={form.nome || "produto"} />
-              <Input
-                id="imagem"
-                value={form.imagemUrl ?? ""}
-                onChange={(e) => set("imagemUrl", e.target.value)}
-                placeholder="https://.../foto.jpg"
-              />
-            </div>
-          </div>
-
-          <div className="grid gap-2">
-            <Label>Categoria</Label>
+          <Campo label="Categoria">
             <SelectComCadastro
               tipo="categorias"
               valor={form.categoria}
               onChange={(v) => set("categoria", v)}
               opcoesExtras={CATEGORIAS_SUGERIDAS}
             />
-          </div>
+          </Campo>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="grid gap-2">
-              <Label>Marca</Label>
+            <Campo label="Marca">
               <SelectComCadastro
                 tipo="marcas"
                 valor={form.marca ?? ""}
                 onChange={(v) => set("marca", v)}
               />
-            </div>
-            <div className="grid gap-2">
-              <Label>Unidade de medida</Label>
+            </Campo>
+            <Campo label="Unidade de medida">
               <SelectComCadastro
                 tipo="unidades"
                 valor={form.unidade ?? ""}
                 onChange={(v) => set("unidade", v)}
               />
-            </div>
+            </Campo>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="grid gap-2">
-              <Label htmlFor="custo">Preço de Custo (R$)</Label>
+            <Campo label="Preço de Custo (R$)" htmlFor="custo">
               <Input
                 id="custo"
                 type="number"
@@ -145,9 +179,8 @@ export function ProdutoDialog({
                 value={form.precoCusto}
                 onChange={(e) => set("precoCusto", Number(e.target.value))}
               />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="venda">Preço de Venda (R$)</Label>
+            </Campo>
+            <Campo label="Preço de Venda (R$)" htmlFor="venda">
               <Input
                 id="venda"
                 type="number"
@@ -155,28 +188,26 @@ export function ProdutoDialog({
                 value={form.precoVenda}
                 onChange={(e) => set("precoVenda", Number(e.target.value))}
               />
-            </div>
+            </Campo>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="grid gap-2">
-              <Label htmlFor="min">Quantidade mínima</Label>
+            <Campo label="Quantidade mínima" htmlFor="min">
               <Input
                 id="min"
                 type="number"
                 value={form.estoqueMinimo}
                 onChange={(e) => set("estoqueMinimo", Number(e.target.value))}
               />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="cheio">Quantidade atual</Label>
+            </Campo>
+            <Campo label="Quantidade atual" htmlFor="cheio">
               <Input
                 id="cheio"
                 type="number"
                 value={form.estoqueCheio}
                 onChange={(e) => set("estoqueCheio", Number(e.target.value))}
               />
-            </div>
+            </Campo>
           </div>
 
           <div className="flex items-center justify-between rounded-xl border border-border bg-muted/40 p-4">
@@ -191,17 +222,15 @@ export function ProdutoDialog({
 
           {form.retornavel && (
             <div className="grid gap-4 sm:grid-cols-3">
-              <div className="grid gap-2">
-                <Label htmlFor="vazio">Vazios no depósito</Label>
+              <Campo label="Vazios no depósito" htmlFor="vazio">
                 <Input
                   id="vazio"
                   type="number"
                   value={form.estoqueVazio}
                   onChange={(e) => set("estoqueVazio", Number(e.target.value))}
                 />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="casco">Custo do casco (R$)</Label>
+              </Campo>
+              <Campo label="Custo do casco (R$)" htmlFor="casco">
                 <Input
                   id="casco"
                   type="number"
@@ -209,9 +238,8 @@ export function ProdutoDialog({
                   value={form.custoCasco}
                   onChange={(e) => set("custoCasco", Number(e.target.value))}
                 />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="envase">Custo do envase (R$)</Label>
+              </Campo>
+              <Campo label="Custo do envase (R$)" htmlFor="envase">
                 <Input
                   id="envase"
                   type="number"
@@ -219,7 +247,7 @@ export function ProdutoDialog({
                   value={form.custoEnvase}
                   onChange={(e) => set("custoEnvase", Number(e.target.value))}
                 />
-              </div>
+              </Campo>
             </div>
           )}
         </div>

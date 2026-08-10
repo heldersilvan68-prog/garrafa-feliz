@@ -27,7 +27,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Campo } from "@/components/ui/campo";
 import {
   Select,
   SelectContent,
@@ -133,8 +133,7 @@ function AbrirCaixaDialog() {
           <DialogTitle>Abrir caixa</DialogTitle>
           <DialogDescription>Informe o troco inicial da gaveta.</DialogDescription>
         </DialogHeader>
-        <div className="grid gap-2">
-          <Label htmlFor="troco-inicial">Troco inicial (R$)</Label>
+        <Campo label="Troco inicial (R$)" htmlFor="troco-inicial">
           <Input
             id="troco-inicial"
             type="number"
@@ -143,7 +142,7 @@ function AbrirCaixaDialog() {
             value={troco}
             onChange={(e) => setTroco(e.target.value)}
           />
-        </div>
+        </Campo>
         <DialogFooter>
           <Button
             onClick={() => {
@@ -185,8 +184,7 @@ function MovimentoDialog({ tipo }: { tipo: TipoMovimento }) {
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-3">
-          <div className="grid gap-2">
-            <Label htmlFor="mov-valor">Valor (R$)</Label>
+          <Campo label="Valor (R$)" htmlFor="mov-valor">
             <Input
               id="mov-valor"
               type="number"
@@ -195,16 +193,15 @@ function MovimentoDialog({ tipo }: { tipo: TipoMovimento }) {
               value={valor}
               onChange={(e) => setValor(e.target.value)}
             />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="mov-motivo">Motivo</Label>
+          </Campo>
+          <Campo label="Motivo" htmlFor="mov-motivo">
             <Input
               id="mov-motivo"
               value={motivo}
               onChange={(e) => setMotivo(e.target.value)}
               placeholder={sangria ? "Depósito bancário" : "Reforço de troco"}
             />
-          </div>
+          </Campo>
         </div>
         <DialogFooter>
           <Button
@@ -258,8 +255,7 @@ function FecharCaixaDialog({ esperado }: { esperado: number }) {
         </DialogHeader>
         <div className="grid gap-3">
           <ValorLinha label="Dinheiro esperado" valor={brl(esperado)} destaque="forte" />
-          <div className="grid gap-2">
-            <Label htmlFor="contado">Dinheiro contado (R$)</Label>
+          <Campo label="Dinheiro contado (R$)" htmlFor="contado">
             <Input
               id="contado"
               type="number"
@@ -268,7 +264,7 @@ function FecharCaixaDialog({ esperado }: { esperado: number }) {
               value={contado}
               onChange={(e) => setContado(e.target.value)}
             />
-          </div>
+          </Campo>
           {contado !== "" && (
             <ValorLinha
               label="Diferença de caixa"
@@ -280,8 +276,7 @@ function FecharCaixaDialog({ esperado }: { esperado: number }) {
           <div className="mt-2 grid gap-3 rounded-xl border border-border bg-muted/40 p-4">
             <p className="text-sm font-medium">Conferência de estoque físico (obrigatória)</p>
             <div className="grid gap-3 sm:grid-cols-2">
-              <div className="grid gap-2">
-                <Label htmlFor="conf-cheios">Cheios no depósito</Label>
+              <Campo label="Cheios no depósito" htmlFor="conf-cheios">
                 <Input
                   id="conf-cheios"
                   type="number"
@@ -289,9 +284,8 @@ function FecharCaixaDialog({ esperado }: { esperado: number }) {
                   value={cheios}
                   onChange={(e) => setCheios(e.target.value)}
                 />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="conf-vazios">Vazios no depósito</Label>
+              </Campo>
+              <Campo label="Vazios no depósito" htmlFor="conf-vazios">
                 <Input
                   id="conf-vazios"
                   type="number"
@@ -299,7 +293,7 @@ function FecharCaixaDialog({ esperado }: { esperado: number }) {
                   value={vazios}
                   onChange={(e) => setVazios(e.target.value)}
                 />
-              </div>
+              </Campo>
             </div>
             <ValorLinha label="Cheios no sistema" valor={String(cheiosSistema)} />
             <ValorLinha label="Vazios no sistema" valor={String(vaziosSistema)} />

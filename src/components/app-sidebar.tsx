@@ -17,7 +17,7 @@ import {
   ShoppingCart,
   Users,
   Wallet,
-  Warehouse,
+  
 } from "lucide-react";
 import {
   Sidebar,
@@ -41,7 +41,7 @@ const grupos = [
     label: "Operação",
     itens: [
       { titulo: "Vendas", url: "/pedidos", icon: ShoppingCart },
-      { titulo: "Estoque", url: "/estoque", icon: Warehouse },
+      
       { titulo: "Caixa", url: "/caixa", icon: Wallet },
       { titulo: "Produtos", url: "/produtos", icon: Package },
       { titulo: "Vasilhames", url: "/vasilhames", icon: RefreshCcw },
