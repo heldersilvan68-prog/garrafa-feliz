@@ -312,11 +312,12 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                             <div className="flex min-w-0 items-center gap-2">
                               <ProdutoFoto url={p.imagemUrl} nome={p.nome} />
                               <div className="min-w-0">
-                              <p className="truncate text-sm font-medium">{p.nome}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {brl(p.precoVenda)} · {p.estoqueCheio} em estoque
-                                {p.retornavel ? " · retornável" : ""}
-                              </p>
+                                <p className="truncate text-sm font-medium">{p.nome}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {brl(p.precoVenda)} · {p.estoqueCheio} em estoque
+                                  {p.retornavel ? " · retornável" : ""}
+                                </p>
+                              </div>
                             </div>
                             <div className="flex shrink-0 items-center gap-1">
                               <Button
