@@ -28,7 +28,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Campo } from "@/components/ui/campo";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
