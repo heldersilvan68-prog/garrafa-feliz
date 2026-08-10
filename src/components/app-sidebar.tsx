@@ -17,7 +17,7 @@ import {
   ShoppingCart,
   Users,
   Wallet,
-  Warehouse,
+  
 } from "lucide-react";
 import {
   Sidebar,
