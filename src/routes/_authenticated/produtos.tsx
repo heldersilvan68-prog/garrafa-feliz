@@ -81,6 +81,7 @@ function Produtos() {
             <Table>
               <TableHeader>
   <TableRow>
+    <TableHead className="w-[64px]">FOTO</TableHead>
     <TableHead>ITEM</TableHead>
     <TableHead className="text-center">QTD. DISPONÍVEL</TableHead>
     <TableHead className="text-center">ESTOQUE MÍN.</TableHead>
@@ -93,6 +94,9 @@ function Produtos() {
               <TableBody>
                 {lista.map((p) => (
                   <TableRow key={p.id}>
+                    <TableCell>
+                      <ProdutoFoto url={p.imagemUrl} nome={p.nome} />
+                    </TableCell>
                     <TableCell>
                       <div className="flex min-w-0 flex-col gap-1">
                         <span className="font-medium">{p.nome}</span>
