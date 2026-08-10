@@ -27,6 +27,7 @@ export const paraProduto = (r: ProdutoRow): Produto => ({
   categoria: r.categoria as Categoria,
   marca: r.marca ?? undefined,
   unidade: r.unidade ?? undefined,
+  imagemUrl: r.imagem_url ?? undefined,
   precoCusto: num(r.preco_custo),
   precoVenda: num(r.preco_venda),
   estoqueMinimo: r.estoque_minimo,

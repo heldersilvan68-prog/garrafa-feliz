@@ -51,7 +51,7 @@ const ICONES_PAGAMENTO: Record<string, typeof QrCode> = {
 
 function Financeiro() {
   const { caixas } = useCaixa();
-  const periodo = usePeriodo("mes");
+  const periodo = usePeriodo("hoje");
   const { resumo } = useResumo(periodo.faixa);
 
   const fechados = caixas.filter((c) => c.fechadoEm);

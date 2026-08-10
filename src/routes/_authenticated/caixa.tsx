@@ -227,9 +227,19 @@ function MovimentoDialog({ tipo }: { tipo: TipoMovimento }) {
 
 function FecharCaixaDialog({ esperado }: { esperado: number }) {
   const { fecharCaixa } = useCaixa();
+  const { produtos } = useEstoque();
   const [open, setOpen] = useState(false);
   const [contado, setContado] = useState("");
+  const [cheios, setCheios] = useState("");
+  const [vazios, setVazios] = useState("");
   const diferenca = (Number(contado) || 0) - esperado;
+
+  const retornaveis = produtos.filter((p) => p.retornavel);
+  const cheiosSistema = retornaveis.reduce((s, p) => s + (p.estoqueCheio || 0), 0);
+  const vaziosSistema = retornaveis.reduce((s, p) => s + (p.estoqueVazio || 0), 0);
+  const divCheios = (Number(cheios) || 0) - cheiosSistema;
+  const divVazios = (Number(vazios) || 0) - vaziosSistema;
+  const conferido = contado !== "" && cheios !== "" && vazios !== "";
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -239,10 +249,12 @@ function FecharCaixaDialog({ esperado }: { esperado: number }) {
           Fechar caixa
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Fechar caixa</DialogTitle>
-          <DialogDescription>Confira o dinheiro físico da gaveta.</DialogDescription>
+          <DialogDescription>
+            Confira o dinheiro físico da gaveta e o estoque de vasilhames no depósito.
+          </DialogDescription>
         </DialogHeader>
         <div className="grid gap-3">
           <ValorLinha label="Dinheiro esperado" valor={brl(esperado)} destaque="forte" />
@@ -264,13 +276,60 @@ function FecharCaixaDialog({ esperado }: { esperado: number }) {
               destaque={diferenca < 0 ? "negativo" : "positivo"}
             />
           )}
+
+          <div className="mt-2 grid gap-3 rounded-xl border border-border bg-muted/40 p-4">
+            <p className="text-sm font-medium">Conferência de estoque físico (obrigatória)</p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-2">
+                <Label htmlFor="conf-cheios">Cheios no depósito</Label>
+                <Input
+                  id="conf-cheios"
+                  type="number"
+                  min={0}
+                  value={cheios}
+                  onChange={(e) => setCheios(e.target.value)}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="conf-vazios">Vazios no depósito</Label>
+                <Input
+                  id="conf-vazios"
+                  type="number"
+                  min={0}
+                  value={vazios}
+                  onChange={(e) => setVazios(e.target.value)}
+                />
+              </div>
+            </div>
+            <ValorLinha label="Cheios no sistema" valor={String(cheiosSistema)} />
+            <ValorLinha label="Vazios no sistema" valor={String(vaziosSistema)} />
+            {cheios !== "" && (
+              <ValorLinha
+                label="Divergência de cheios"
+                valor={`${divCheios > 0 ? "+" : ""}${divCheios}`}
+                destaque={divCheios < 0 ? "negativo" : "positivo"}
+              />
+            )}
+            {vazios !== "" && (
+              <ValorLinha
+                label="Divergência de vazios"
+                valor={`${divVazios > 0 ? "+" : ""}${divVazios}`}
+                destaque={divVazios < 0 ? "negativo" : "positivo"}
+              />
+            )}
+          </div>
         </div>
         <DialogFooter>
           <Button
-            disabled={contado === ""}
+            disabled={!conferido}
             onClick={() => {
               fecharCaixa(Number(contado), esperado);
               setOpen(false);
+              if (divCheios !== 0 || divVazios !== 0) {
+                toast.warning(
+                  `Estoque com divergência: cheios ${divCheios > 0 ? "+" : ""}${divCheios}, vazios ${divVazios > 0 ? "+" : ""}${divVazios}.`,
+                );
+              }
               toast.success(
                 diferenca === 0
                   ? "Caixa fechado sem diferença."

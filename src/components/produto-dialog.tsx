@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { SelectComCadastro } from "@/components/select-com-cadastro";
+import { ProdutoFoto } from "@/components/produto-foto";
 import { useEstoque } from "@/context/estoque";
 import { CATEGORIAS_SUGERIDAS, type Produto } from "@/lib/erp";
 
@@ -23,6 +24,7 @@ const vazio: Produto = {
   categoria: "",
   marca: "",
   unidade: "",
+  imagemUrl: "",
   precoCusto: 0,
   precoVenda: 0,
   estoqueMinimo: 0,
@@ -89,6 +91,19 @@ export function ProdutoDialog({
               onChange={(e) => set("nome", e.target.value)}
               placeholder="Ex.: Galão Água Mineral 20L"
             />
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="imagem">Foto do produto (URL)</Label>
+            <div className="flex items-center gap-3">
+              <ProdutoFoto url={form.imagemUrl?.trim() || undefined} nome={form.nome || "produto"} />
+              <Input
+                id="imagem"
+                value={form.imagemUrl ?? ""}
+                onChange={(e) => set("imagemUrl", e.target.value)}
+                placeholder="https://.../foto.jpg"
+              />
+            </div>
           </div>
 
           <div className="grid gap-2">

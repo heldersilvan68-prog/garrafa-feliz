@@ -74,7 +74,7 @@ function RelatoriosPage() {
   const { produtos } = useEstoque();
   const { caixaAberto } = useCaixa();
 
-  const periodoEstado = usePeriodo("mes");
+  const periodoEstado = usePeriodo("hoje");
   const faixa = periodoEstado.faixa;
   const [status, setStatus] = useState<"todos" | StatusPedido>("todos");
   const [forma, setForma] = useState<string>("todas");

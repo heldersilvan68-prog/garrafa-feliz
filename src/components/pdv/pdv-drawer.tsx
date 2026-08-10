@@ -1,4 +1,5 @@
 import { useMemo, useState, type ReactNode } from "react";
+import { ProdutoFoto } from "@/components/produto-foto";
 import { Minus, Plus, Search, ShoppingCart, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -309,12 +310,15 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                           className="flex flex-col gap-2 rounded-lg border border-border p-3"
                         >
                           <div className="flex items-center justify-between gap-2">
-                            <div className="min-w-0">
-                              <p className="truncate text-sm font-medium">{p.nome}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {brl(p.precoVenda)} · {p.estoqueCheio} em estoque
-                                {p.retornavel ? " · retornável" : ""}
-                              </p>
+                            <div className="flex min-w-0 items-center gap-2">
+                              <ProdutoFoto url={p.imagemUrl} nome={p.nome} />
+                              <div className="min-w-0">
+                                <p className="truncate text-sm font-medium">{p.nome}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {brl(p.precoVenda)} · {p.estoqueCheio} em estoque
+                                  {p.retornavel ? " · retornável" : ""}
+                                </p>
+                              </div>
                             </div>
                             <div className="flex shrink-0 items-center gap-1">
                               <Button

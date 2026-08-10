@@ -18,6 +18,8 @@ export type Produto = {
   categoria: Categoria;
   marca?: string;
   unidade?: string;
+  /** URL da foto do produto (opcional). */
+  imagemUrl?: string;
   precoCusto: number;
   precoVenda: number;
   estoqueMinimo: number;

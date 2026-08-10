@@ -672,6 +672,7 @@ export type Database = {
           estoque_minimo: number
           estoque_vazio: number
           id: string
+          imagem_url: string | null
           legacy_id: string | null
           marca: string | null
           nome: string
@@ -691,6 +692,7 @@ export type Database = {
           estoque_minimo?: number
           estoque_vazio?: number
           id?: string
+          imagem_url?: string | null
           legacy_id?: string | null
           marca?: string | null
           nome: string
@@ -710,6 +712,7 @@ export type Database = {
           estoque_minimo?: number
           estoque_vazio?: number
           id?: string
+          imagem_url?: string | null
           legacy_id?: string | null
           marca?: string | null
           nome?: string
