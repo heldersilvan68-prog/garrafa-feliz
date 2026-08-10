@@ -47,7 +47,7 @@ const grupos = [
       { titulo: "Vasilhames", url: "/vasilhames", icon: RefreshCcw },
       { titulo: "Clientes", url: "/clientes", icon: Users },
       { titulo: "Entregadores", url: "/entregadores", icon: Truck },
-      { titulo: "Categorias", url: "/categorias", icon: Tag },
+      { titulo: "Entregadores", url: "/entregadores", icon: Truck },
     ],
   },
   {
