@@ -16,8 +16,8 @@ export type TipoMovVasilhame =
 export const LABEL_MOV: Record<TipoMovVasilhame, string> = {
   recolhido: "Vazios recolhidos na entrega",
   envasado: "Envase na fonte",
-  entrada: "Entrada de estoque cheio",
-  compra: "Compra de vasilhames",
+  entrada: "Chegada de carga cheia",
+  compra: "Compra de novos vasilhames",
   avaria_cheio: "Avaria/Quebra (garrafão cheio)",
   avaria_vazio: "Avaria/Quebra (garrafão vazio)",
   retorno_sem_envase: "Retorno da fonte sem envasar",
@@ -68,14 +68,18 @@ export function resumoVasilhames(produtos: Produto[], vasilhamesNaRua: number) {
   const custoEnvase = lista.reduce((s, p) => s + p.estoqueVazio * (p.custoEnvase || p.precoCusto || 0), 0);
   const valorVenda = lista.reduce((s, p) => s + p.estoqueCheio * p.precoVenda, 0);
   const valorCusto = lista.reduce((s, p) => s + p.estoqueCheio * p.precoCusto, 0);
+
+  // O patrimônio em valor considera o custo do casco de todos os vasilhames em posse
   const patrimonioValor = lista.reduce(
     (s, p) => s + (p.estoqueCheio + p.estoqueVazio) * p.custoCasco,
     0,
   );
+
   return {
     cheios,
     vazios,
     naRua: vasilhamesNaRua,
+    // Patrimônio em quantidade: Cheios + Vazios + Na Rua
     patrimonio: cheios + vazios + vasilhamesNaRua,
     patrimonioValor,
     custoEnvasePrevisto: custoEnvase,
