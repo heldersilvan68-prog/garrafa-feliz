@@ -17,6 +17,7 @@ type Ctx = {
   remover: (id: string) => void;
   entradaEstoque: (id: string, qtd: number) => void;
   moverVazios: (id: string, qtd: number) => void;
+  comprarVasilhames: (id: string, qtd: number) => Promise<void>;
   retornoSemEnvase: (id: string, qtd: number) => Promise<void>;
   registrarAvaria: (dados: {
     produtoId: string;
@@ -134,6 +135,7 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
   };
 
+  // Entrada de mercadoria cheia vinda do fornecedor/envasadora (Chegada no Depósito)
   const entradaMut = useMutacao<{ id: string; qtd: number }>(async ({ id, qtd }) => {
     const p = produtos.find((x) => x.id === id);
     if (!p) return;
@@ -144,28 +146,46 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
       qtd,
       motivo: `Entrada de estoque cheio · ${p.nome}`,
       deltaCheio: qtd,
-      deltaPatrimonio: p.retornavel ? qtd : 0,
+      deltaPatrimonio: 0,
     });
   }, "Não foi possível registrar a entrada");
 
+  // Envio de vasilhames vazios para a envasadora (Apenas baixa nos vazios do pátio)
   const vaziosMut = useMutacao<{ id: string; qtd: number }>(async ({ id, qtd }) => {
     const p = produtos.find((x) => x.id === id);
     if (!p) return;
     const mov = Math.min(qtd, p.estoqueVazio);
     await patch(id, {
       estoque_vazio: p.estoqueVazio - mov,
-      estoque_cheio: p.estoqueCheio + mov,
     });
     await logar({
       produtoId: id,
       tipo: "envasado",
       qtd: mov,
-      motivo: `Envase na fonte · ${p.nome}`,
-      deltaCheio: mov,
+      motivo: `Envio para envasadora (em trânsito) · ${p.nome}`,
+      deltaCheio: 0,
       deltaVazio: -mov,
     });
-  }, "Não foi possível envasar os vasilhames");
+  }, "Não foi possível registrar envio de vasilhames");
 
+  // Compra/Aporte de NOVOS vasilhames (Aumenta o patrimônio total)
+  const comprarMut = useMutacao<{ id: string; qtd: number }>(async ({ id, qtd }) => {
+    const p = produtos.find((x) => x.id === id);
+    if (!p) return;
+    await patch(id, {
+      estoque_vazio: p.estoqueVazio + qtd,
+    });
+    await logar({
+      produtoId: id,
+      tipo: "entrada",
+      qtd,
+      motivo: `Compra / Aporte de novos vasilhames (Patrimônio) · ${p.nome}`,
+      deltaVazio: qtd,
+      deltaPatrimonio: qtd,
+    });
+  }, "Não foi possível registrar a compra de vasilhames");
+
+  // Retorno sem envase (Caso o casco tenha voltado da envasadora sem ser cheio)
   const retornoMut = useMutacao<{ id: string; qtd: number }>(async ({ id, qtd }) => {
     const p = produtos.find((x) => x.id === id);
     if (!p) return;
@@ -176,6 +196,7 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
       qtd,
       motivo: `Retorno da fonte sem envasar · ${p.nome}`,
       deltaVazio: qtd,
+      deltaPatrimonio: 0,
     });
   }, "Não foi possível registrar o retorno da fonte");
 
@@ -255,7 +276,6 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
     "Não foi possível registrar a devolução",
   );
 
-  /** Aplica (ou estorna, com sinal = -1) as regras de estoque de uma venda. */
   const aplicarVenda = async (itens: ItemBaixa[], vaziosRecolhidos: number, sinal: 1 | -1) => {
     const refis = itens.filter(
       (i) => (i.modo ?? "refil") === "refil" && produtos.find((p) => p.id === i.produtoId)?.retornavel,
@@ -333,6 +353,7 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
         remover: (id) => removerMut.mutate(id),
         entradaEstoque: (id, qtd) => entradaMut.mutate({ id, qtd }),
         moverVazios: (id, qtd) => vaziosMut.mutate({ id, qtd }),
+        comprarVasilhames: (id, qtd) => comprarMut.mutateAsync({ id, qtd }).then(() => undefined),
         retornoSemEnvase: (id, qtd) => retornoMut.mutateAsync({ id, qtd }).then(() => undefined),
         registrarAvaria: (dados) => avariaMut.mutateAsync(dados).then(() => undefined),
         devolucaoCliente: (produtoId, qtd, clienteId) =>

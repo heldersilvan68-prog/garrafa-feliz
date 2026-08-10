@@ -47,7 +47,7 @@ function MovimentoDialog({
       toast.success(`Entrada de ${n} un. registrada no estoque cheio.`);
     } else {
       moverVazios(id, n);
-      toast.success(`${n} vasilhame(s) enviados para envase.`);
+      toast.success(`${n} vasilhame(s) enviados para a envasadora.`);
     }
     setAberto(false);
   };
@@ -58,12 +58,12 @@ function MovimentoDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {modo === "entrada" ? "Entrada de Estoque" : "Movimentar Vasilhames Vazios"}
+            {modo === "entrada" ? "Entrada de Estoque Cheio" : "Enviar Vazios para Envasadora"}
           </DialogTitle>
           <DialogDescription>
             {modo === "entrada"
-              ? "Registre a chegada de mercadoria no estoque cheio."
-              : "Converta vasilhames vazios em estoque cheio após o envase."}
+              ? "Registre a chegada de mercadoria cheia no depósito."
+              : "Retira os vasilhames vazios do pátio para envio ao envase."}
           </DialogDescription>
         </DialogHeader>
 
@@ -113,4 +113,73 @@ export function EntradaEstoqueDialog(props: { children: ReactNode; produtoId?: s
 
 export function MoverVaziosDialog(props: { children: ReactNode; produtoId?: string }) {
   return <MovimentoDialog modo="vazios" {...props} />;
+}
+
+export function AporteVasilhameDialog({ children }: { children: ReactNode }) {
+  const { produtos, comprarVasilhames } = useEstoque();
+  const vasilhames = produtos.filter((p) => p.retornavel);
+  const [aberto, setAberto] = useState(false);
+  const [id, setId] = useState(vasilhames[0]?.id ?? "");
+  const [qtd, setQtd] = useState("100");
+
+  const confirmar = async () => {
+    const n = Number(qtd);
+    if (!id || !Number.isFinite(n) || n <= 0) {
+      toast.error("Informe um produto e uma quantidade válida.");
+      return;
+    }
+
+    await comprarVasilhames(id, n);
+    toast.success(`${n} novos vasilhames adicionados ao patrimônio!`);
+    setAberto(false);
+  };
+
+  return (
+    <Dialog open={aberto} onOpenChange={setAberto}>
+      <DialogTrigger asChild>{children}</DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Comprar / Aportar Vasilhames</DialogTitle>
+          <DialogDescription>
+            Adicione novos cascos para aumentar o Patrimônio Total da distribuidora.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="grid gap-4 py-2">
+          <div className="grid gap-2">
+            <Label>Produto / Casco</Label>
+            <Select value={id} onValueChange={setId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o casco" />
+              </SelectTrigger>
+              <SelectContent>
+                {vasilhames.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="qtdAporte">Quantidade Comprada</Label>
+            <Input
+              id="qtdAporte"
+              type="number"
+              min={1}
+              value={qtd}
+              onChange={(e) => setQtd(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setAberto(false)}>
+            Cancelar
+          </Button>
+          <Button onClick={confirmar}>Confirmar Aporte</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 }

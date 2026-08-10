@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { AlertTriangle, Boxes, Recycle, Undo2 } from "lucide-react";
+import { AlertTriangle, Boxes, Plus, Recycle, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -10,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { MoverVaziosDialog } from "@/components/estoque-dialogs";
+import { AporteVasilhameDialog, MoverVaziosDialog } from "@/components/estoque-dialogs";
 import { AvariaDialog, RetornoFonteDialog } from "@/components/estoque/avaria-dialog";
 import { useClientes } from "@/context/clientes";
 import { useEstoque } from "@/context/estoque";
@@ -59,13 +59,20 @@ function Vasilhames() {
       <header className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
         <div className="min-w-0">
           <h1 className="truncate text-2xl font-semibold tracking-tight sm:text-3xl">
-          Controle de Vasilhames
+            Controle de Vasilhames
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Patrimônio de cascos, envase, avarias e extrato de movimentações.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {/* Botão de Comprar / Aportar Vasilhames */}
+          <AporteVasilhameDialog>
+            <Button variant="outline">
+              <Plus className="size-4" /> Comprar Vasilhames
+            </Button>
+          </AporteVasilhameDialog>
+
           <RetornoFonteDialog>
             <Button variant="outline">
               <Undo2 /> Retorno sem envase
