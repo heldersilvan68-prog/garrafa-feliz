@@ -18,7 +18,6 @@ import {
   Users,
   Wallet,
   Warehouse,
-Tag
 } from "lucide-react";
 import {
   Sidebar,
