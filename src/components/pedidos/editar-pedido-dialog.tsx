@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { ProdutoFoto } from "@/components/produto-foto";
 import { Minus, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
