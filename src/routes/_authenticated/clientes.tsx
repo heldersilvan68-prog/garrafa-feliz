@@ -97,9 +97,33 @@ function WhatsAppButton({ cliente }: { cliente: Cliente }) {
 
 function ClientesPage() {
   const { clientes, remover, registrarCompra } = useClientes();
+  const { pedidos } = usePedidos();
   const [busca, setBusca] = useState("");
   const [aba, setAba] = useState<(typeof TABS)[number]["id"]>("todos");
   const [detalhe, setDetalhe] = useState<string | null>(null);
+
+  // Ativos = pelo menos 1 pedido válido nos últimos 30 dias corridos.
+  const base = useMemo(() => {
+    const limite = Date.now() - 30 * 86_400_000;
+    const comPedido = new Set(
+      pedidos
+        .filter((p) => p.status !== "cancelado" && new Date(p.criadoEm).getTime() >= limite)
+        .map((p) => p.clienteId),
+    );
+    const ativos = clientes.filter(
+      (c) =>
+        comPedido.has(c.id) ||
+        c.historico.some((h) => new Date(`${h.data}T00:00:00`).getTime() >= limite),
+    ).length;
+    const total = clientes.length;
+    const pct = (n: number) => (total > 0 ? Math.round((n / total) * 100) : 0);
+    return { total, ativos, inativos: total - ativos, pct };
+  }, [clientes, pedidos]);
+
+  const dadosPizza = [
+    { nome: "Ativos", valor: base.ativos, cor: "var(--color-success)" },
+    { nome: "Inativos", valor: base.inativos, cor: "var(--color-destructive)" },
+  ];
 
   const lista = useMemo(() => {
     const q = busca.trim().toLowerCase();
@@ -123,6 +147,7 @@ function ClientesPage() {
   });
 
   const selecionado = clientes.find((c) => c.id === detalhe) ?? null;
+
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
