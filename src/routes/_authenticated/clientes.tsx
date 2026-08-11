@@ -21,6 +21,9 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClienteDetalhes } from "@/components/cliente-detalhes";
 import { ClienteDialog } from "@/components/cliente-dialog";
 import { useClientes } from "@/context/clientes";
+import { usePedidos } from "@/context/pedidos";
+import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
+
 import {
   diasRestantes,
   formatarData,
