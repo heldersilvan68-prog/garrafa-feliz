@@ -229,11 +229,11 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-2">
                 <Campo label="Cliente (nome, telefone ou bairro)" htmlFor="pdv-cliente">
-                  <div className="relative">
-                    <Search className="pointer-events-none absolute left-1 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <div className="relative flex items-center">
+                    <Search className="pointer-events-none absolute left-3 size-4 text-muted-foreground" />
                     <Input
                       id="pdv-cliente"
-                      className="pl-7"
+                      className="pl-9"
                       placeholder="Buscar cliente..."
                       value={busca}
                       onChange={(e) => {
@@ -242,6 +242,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                       }}
                     />
                   </div>
+
                 </Campo>
                 {!clienteId && (
                   <div className="overflow-hidden rounded-lg border border-border">
