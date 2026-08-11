@@ -76,6 +76,8 @@ function RelatoriosPage() {
   const { despesas } = useDespesas();
   const { produtos } = useEstoque();
   const { caixaAberto } = useCaixa();
+  const { clientes } = useClientes();
+
 
   const periodoEstado = usePeriodo("hoje");
   const faixa = periodoEstado.faixa;
