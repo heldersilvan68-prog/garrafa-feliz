@@ -26,6 +26,9 @@ import { useEstoque } from "@/context/estoque";
 import { usePedidos } from "@/context/pedidos";
 import { useDespesas } from "@/context/despesas";
 import { useCaixa } from "@/context/caixa";
+import { useClientes } from "@/context/clientes";
+import { LABEL_MODO, type ModoVenda } from "@/lib/vasilhames";
+
 import { brl } from "@/lib/erp";
 import { dataBR } from "@/lib/despesas";
 import { FORMAS_PAGAMENTO, STATUS_PEDIDO_LABEL, type StatusPedido } from "@/lib/pedidos";
