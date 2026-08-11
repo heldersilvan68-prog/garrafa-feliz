@@ -205,7 +205,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
   return (
     <Dialog open={aberto} onOpenChange={setAberto}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="max-w-3xl rounded-3xl p-0 shadow-2xl max-h-[90vh] overflow-hidden flex flex-col gap-0">
+      <DialogContent className="max-w-4xl rounded-3xl p-0 shadow-2xl max-h-[90vh] overflow-hidden flex flex-col gap-0">
         <DialogHeader className="p-6 pb-2 text-left">
           <DialogTitle className="flex items-center gap-2">
             <ShoppingCart className="size-5 text-primary" />
@@ -229,11 +229,11 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-2">
                 <Campo label="Cliente (nome, telefone ou bairro)" htmlFor="pdv-cliente">
-                  <div className="relative">
-                    <Search className="pointer-events-none absolute left-1 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <div className="relative flex items-center">
+                    <Search className="pointer-events-none absolute left-3 size-4 text-muted-foreground" />
                     <Input
                       id="pdv-cliente"
-                      className="pl-7"
+                      className="pl-9"
                       placeholder="Buscar cliente..."
                       value={busca}
                       onChange={(e) => {
@@ -242,6 +242,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                       }}
                     />
                   </div>
+
                 </Campo>
                 {!clienteId && (
                   <div className="overflow-hidden rounded-lg border border-border">
@@ -290,39 +291,37 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
 
               <div className="flex flex-col gap-2">
                 <p className="text-sm font-medium">Produtos</p>
-                <div className="grid gap-2 sm:grid-cols-2">
+                <div className="grid gap-3 sm:grid-cols-2">
                   {produtos.map((p) => {
                     const q = carrinho[p.id] ?? 0;
                     return (
                       <div
                         key={p.id}
-                        className="flex flex-col gap-2 rounded-lg border border-border p-3"
+                        className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4"
                       >
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex min-w-0 items-center gap-2">
-                            <ProdutoFoto url={p.imagemUrl} nome={p.nome} />
-                            <div className="min-w-0">
-                              <p className="truncate text-sm font-medium">{p.nome}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {brl(p.precoVenda)} · {p.estoqueCheio} em estoque
-                                {p.retornavel ? " · retornável" : ""}
-                              </p>
+                        <div className="flex items-start gap-3">
+                          <ProdutoFoto
+                            url={p.imagemUrl}
+                            nome={p.nome}
+                            className="size-[50px] rounded-lg"
+                          />
+                          <div className="min-w-0 flex-1 space-y-1">
+                            <p className="truncate text-sm font-semibold leading-tight">{p.nome}</p>
+                            <p className="text-sm font-medium tabular-nums text-primary">
+                              {brl(p.precoVenda)}
+                            </p>
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <span className="text-xs text-muted-foreground">
+                                {p.estoqueCheio} em estoque
+                              </span>
+                              {p.retornavel && (
+                                <Badge variant="secondary" className="px-1.5 py-0 text-[10px]">
+                                  retornável
+                                </Badge>
+                              )}
                             </div>
                           </div>
-                          <div className="flex shrink-0 items-center gap-1">
-                            <Button
-                              type="button"
-                              size="icon"
-                              variant="outline"
-                              className="size-8"
-                              onClick={() => mudar(p.id, -1)}
-                              aria-label={`Remover ${p.nome}`}
-                            >
-                              <Minus className="size-4" />
-                            </Button>
-                            <span className="w-7 text-center text-sm font-semibold tabular-nums">
-                              {q}
-                            </span>
+                          <div className="flex shrink-0 flex-col items-center gap-1">
                             <Button
                               type="button"
                               size="icon"
@@ -333,8 +332,20 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                             >
                               <Plus className="size-4" />
                             </Button>
+                            <span className="text-sm font-semibold tabular-nums">{q}</span>
+                            <Button
+                              type="button"
+                              size="icon"
+                              variant="outline"
+                              className="size-8"
+                              onClick={() => mudar(p.id, -1)}
+                              aria-label={`Remover ${p.nome}`}
+                            >
+                              <Minus className="size-4" />
+                            </Button>
                           </div>
                         </div>
+
                         {q > 0 && p.retornavel && (
                           <Select
                             value={modos[p.id] ?? "refil"}

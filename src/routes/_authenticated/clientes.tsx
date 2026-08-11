@@ -21,6 +21,9 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClienteDetalhes } from "@/components/cliente-detalhes";
 import { ClienteDialog } from "@/components/cliente-dialog";
 import { useClientes } from "@/context/clientes";
+import { usePedidos } from "@/context/pedidos";
+import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
+
 import {
   diasRestantes,
   formatarData,
@@ -97,9 +100,33 @@ function WhatsAppButton({ cliente }: { cliente: Cliente }) {
 
 function ClientesPage() {
   const { clientes, remover, registrarCompra } = useClientes();
+  const { pedidos } = usePedidos();
   const [busca, setBusca] = useState("");
   const [aba, setAba] = useState<(typeof TABS)[number]["id"]>("todos");
   const [detalhe, setDetalhe] = useState<string | null>(null);
+
+  // Ativos = pelo menos 1 pedido válido nos últimos 30 dias corridos.
+  const base = useMemo(() => {
+    const limite = Date.now() - 30 * 86_400_000;
+    const comPedido = new Set(
+      pedidos
+        .filter((p) => p.status !== "cancelado" && new Date(p.criadoEm).getTime() >= limite)
+        .map((p) => p.clienteId),
+    );
+    const ativos = clientes.filter(
+      (c) =>
+        comPedido.has(c.id) ||
+        c.historico.some((h) => new Date(`${h.data}T00:00:00`).getTime() >= limite),
+    ).length;
+    const total = clientes.length;
+    const pct = (n: number) => (total > 0 ? Math.round((n / total) * 100) : 0);
+    return { total, ativos, inativos: total - ativos, pct };
+  }, [clientes, pedidos]);
+
+  const dadosPizza = [
+    { nome: "Ativos", valor: base.ativos, cor: "var(--color-success)" },
+    { nome: "Inativos", valor: base.inativos, cor: "var(--color-destructive)" },
+  ];
 
   const lista = useMemo(() => {
     const q = busca.trim().toLowerCase();
@@ -124,6 +151,7 @@ function ClientesPage() {
 
   const selecionado = clientes.find((c) => c.id === detalhe) ?? null;
 
+
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
       <header className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
@@ -139,6 +167,79 @@ function ClientesPage() {
           </Button>
         </ClienteDialog>
       </header>
+
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Card className="shadow-[var(--shadow-card)]">
+            <CardContent className="p-4">
+              <p className="text-xs text-muted-foreground">Total de clientes</p>
+              <p className="mt-1 text-2xl font-semibold tabular-nums">{base.total}</p>
+              <p className="mt-1 text-xs text-muted-foreground">Cadastros na base</p>
+            </CardContent>
+          </Card>
+          <Card className="border-success/40 bg-success/5 shadow-[var(--shadow-card)]">
+            <CardContent className="p-4">
+              <p className="text-xs text-muted-foreground">Clientes ativos</p>
+              <p className="mt-1 text-2xl font-semibold tabular-nums text-success">{base.ativos}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {base.pct(base.ativos)}% · pedido nos últimos 30 dias
+              </p>
+            </CardContent>
+          </Card>
+          <Card className="border-destructive/40 bg-destructive/5 shadow-[var(--shadow-card)]">
+            <CardContent className="p-4">
+              <p className="text-xs text-muted-foreground">Clientes inativos</p>
+              <p className="mt-1 text-2xl font-semibold tabular-nums text-destructive">
+                {base.inativos}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {base.pct(base.inativos)}% · sem compras há mais de 30 dias
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card className="shadow-[var(--shadow-card)]">
+          <CardHeader className="pb-0">
+            <CardTitle className="text-base">Composição da base</CardTitle>
+          </CardHeader>
+          <CardContent className="h-[180px] p-2">
+            {base.total === 0 ? (
+              <p className="grid h-full place-items-center text-sm text-muted-foreground">
+                Nenhum cliente cadastrado.
+              </p>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Tooltip
+                    formatter={(v: number, n: string) => [`${v} (${base.pct(v)}%)`, n]}
+                    contentStyle={{
+                      background: "var(--color-card)",
+                      border: "1px solid var(--color-border)",
+                      borderRadius: 8,
+                      fontSize: 12,
+                    }}
+                  />
+                  <Pie
+                    data={dadosPizza}
+                    dataKey="valor"
+                    nameKey="nome"
+                    innerRadius={45}
+                    outerRadius={70}
+                    paddingAngle={2}
+                  >
+                    {dadosPizza.map((d) => (
+                      <Cell key={d.nome} fill={d.cor} />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+
 
       <Card className="border-warning/40 bg-warning/10 shadow-[var(--shadow-card)]">
         <CardHeader className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 space-y-0">

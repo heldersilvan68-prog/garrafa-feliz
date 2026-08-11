@@ -26,6 +26,9 @@ import { useEstoque } from "@/context/estoque";
 import { usePedidos } from "@/context/pedidos";
 import { useDespesas } from "@/context/despesas";
 import { useCaixa } from "@/context/caixa";
+import { useClientes } from "@/context/clientes";
+import { LABEL_MODO, type ModoVenda } from "@/lib/vasilhames";
+
 import { brl } from "@/lib/erp";
 import { dataBR } from "@/lib/despesas";
 import { FORMAS_PAGAMENTO, STATUS_PEDIDO_LABEL, type StatusPedido } from "@/lib/pedidos";
@@ -73,6 +76,8 @@ function RelatoriosPage() {
   const { despesas } = useDespesas();
   const { produtos } = useEstoque();
   const { caixaAberto } = useCaixa();
+  const { clientes } = useClientes();
+
 
   const periodoEstado = usePeriodo("hoje");
   const faixa = periodoEstado.faixa;
@@ -127,6 +132,46 @@ function RelatoriosPage() {
   const vazios = produtos.reduce((s, p) => s + p.estoqueVazio, 0);
   const abaixoMinimo = produtos.filter((p) => p.estoqueCheio <= p.estoqueMinimo);
   const vaziosRecolhidos = validos.reduce((s, p) => s + p.vaziosRecolhidos, 0);
+
+  // Novos clientes cadastrados dentro do período filtrado.
+  const novosClientes = clientes.filter((c) => c.cadastradoEm && dentroFaixa(c.cadastradoEm, faixa));
+
+  // Faturamento e lucro por modalidade de vasilhame retornável.
+  const porModalidade = useMemo(() => {
+    const modos: { id: ModoVenda; label: string }[] = [
+      { id: "refil", label: LABEL_MODO.refil },
+      { id: "completa", label: LABEL_MODO.completa },
+      { id: "casco", label: LABEL_MODO.casco },
+    ];
+    return modos.map(({ id, label }) => {
+      let qtd = 0;
+      let faturamento = 0;
+      let custo = 0;
+      for (const p of validos) {
+        for (const i of p.itens) {
+          if (!i.retornavel || (i.modo ?? "refil") !== id) continue;
+          const prod = produtos.find((x) => x.id === i.produtoId);
+          const envase = prod?.custoEnvase || prod?.precoCusto || 0;
+          const casco = prod?.custoCasco ?? 0;
+          const unitario = id === "refil" ? envase : id === "casco" ? casco : envase + casco;
+          qtd += i.qtd;
+          faturamento += i.qtd * i.precoUnit;
+          custo += i.qtd * unitario;
+        }
+      }
+      const lucro = faturamento - custo;
+      return {
+        id,
+        label,
+        qtd,
+        faturamento,
+        custo,
+        lucro,
+        margem: faturamento > 0 ? (lucro / faturamento) * 100 : 0,
+      };
+    });
+  }, [validos, produtos]);
+
 
   return (
     <div className="flex flex-col gap-6 print:gap-4">
@@ -212,7 +257,73 @@ function RelatoriosPage() {
                   .reduce((s, p) => s + p.total, 0),
               )}
             />
+            <Kpi
+              label="Novos clientes cadastrados"
+              valor={String(novosClientes.length)}
+              hint={`No período: ${rotuloFaixa(faixa)}`}
+            />
           </div>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
+              <div>
+                <CardTitle className="text-base">Vasilhames por modalidade</CardTitle>
+                <CardDescription>
+                  Refil (custo de envase), venda completa (envase + casco) e casco avulso.
+                </CardDescription>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="print:hidden"
+                onClick={() =>
+                  baixarCSV(
+                    "vasilhames-modalidade",
+                    ["Modalidade", "Qtd", "Faturamento", "CMV", "Lucro", "Margem %"],
+                    porModalidade.map((m) => [
+                      m.label,
+                      m.qtd,
+                      m.faturamento.toFixed(2),
+                      m.custo.toFixed(2),
+                      m.lucro.toFixed(2),
+                      m.margem.toFixed(1),
+                    ]),
+                  )
+                }
+              >
+                <FileSpreadsheet className="size-4" /> CSV
+              </Button>
+            </CardHeader>
+            <CardContent className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Modalidade</TableHead>
+                    <TableHead>Qtd</TableHead>
+                    <TableHead className="text-right">Faturamento</TableHead>
+                    <TableHead className="text-right">CMV</TableHead>
+                    <TableHead className="text-right">Lucro bruto</TableHead>
+                    <TableHead className="text-right">Margem</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {porModalidade.map((m) => (
+                    <TableRow key={m.id}>
+                      <TableCell className="font-medium">{m.label}</TableCell>
+                      <TableCell>{m.qtd}</TableCell>
+                      <TableCell className="text-right">{brl(m.faturamento)}</TableCell>
+                      <TableCell className="text-right">{brl(m.custo)}</TableCell>
+                      <TableCell className="text-right">{brl(m.lucro)}</TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {m.margem.toFixed(1)}%
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-3">

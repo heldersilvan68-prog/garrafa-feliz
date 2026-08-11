@@ -45,24 +45,51 @@ export const paraCompra = (r: CompraRow): Compra => ({
   valor: num(r.valor),
 });
 
-export const paraCliente = (r: ClienteRow, compras: CompraRow[]): Cliente => ({
-  id: r.id,
-  codigo: r.code ?? undefined,
-  nome: r.nome,
-  telefone: r.telefone,
-  endereco: r.endereco,
-  bairro: r.bairro ?? undefined,
-  documento: r.documento ?? undefined,
-  cadastradoEm: r.cadastrado_em ?? undefined,
-  divida: num(r.divida),
-  vasilhamesRua: r.vasilhames_rua ?? 0,
-  consumoMedioDias: r.consumo_medio_dias,
-  ultimaCompra: r.ultima_compra ?? r.cadastrado_em ?? new Date().toISOString().slice(0, 10),
-  historico: compras
+/** Média de dias entre compras reais do cliente (mínimo 1 dia). */
+const consumoMedio = (datas: string[], padrao: number) => {
+  const unicas = [...new Set(datas)].sort();
+  if (unicas.length < 2) return Math.max(1, padrao || 7);
+  const intervalos: number[] = [];
+  for (let i = 1; i < unicas.length; i++) {
+    const dias = Math.round(
+      (new Date(`${unicas[i]}T00:00:00`).getTime() -
+        new Date(`${unicas[i - 1]}T00:00:00`).getTime()) /
+        86_400_000,
+    );
+    if (dias > 0) intervalos.push(dias);
+  }
+  if (intervalos.length === 0) return Math.max(1, padrao || 7);
+  return Math.max(1, Math.round(intervalos.reduce((s, d) => s + d, 0) / intervalos.length));
+};
+
+export const paraCliente = (r: ClienteRow, compras: CompraRow[]): Cliente => {
+  const historico = compras
     .filter((c) => c.client_id === r.id)
     .sort((a, b) => (a.data < b.data ? 1 : -1))
-    .map(paraCompra),
-});
+    .map(paraCompra);
+  const datas = historico.map((h) => h.data);
+  return {
+    id: r.id,
+    codigo: r.code ?? undefined,
+    nome: r.nome,
+    telefone: r.telefone,
+    endereco: r.endereco,
+    bairro: r.bairro ?? undefined,
+    documento: r.documento ?? undefined,
+    cadastradoEm: r.cadastrado_em ?? undefined,
+    divida: num(r.divida),
+    vasilhamesRua: r.vasilhames_rua ?? 0,
+    // Consumo médio e última compra são 100% calculados pelo sistema.
+    consumoMedioDias: consumoMedio(datas, r.consumo_medio_dias),
+    ultimaCompra:
+      datas[0] ??
+      r.ultima_compra ??
+      r.cadastrado_em ??
+      new Date().toISOString().slice(0, 10),
+    historico,
+  };
+};
+
 
 export const paraItemPedido = (r: ItemPedidoRow): ItemPedido => ({
   produtoId: r.product_id ?? "",
