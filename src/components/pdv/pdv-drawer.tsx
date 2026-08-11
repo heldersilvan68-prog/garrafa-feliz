@@ -5,15 +5,15 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerDescription,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from "@/components/ui/drawer";
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Campo } from "@/components/ui/campo";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -51,8 +51,6 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
   const { caixaAberto } = useCaixa();
   const { opcoes } = useEntregadores();
 
-
-
   const [aberto, setAberto] = useState(false);
   const [busca, setBusca] = useState("");
   const [clienteId, setClienteId] = useState("");
@@ -65,7 +63,6 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
   const [parcelas, setParcelas] = useState<Parcela[]>([{ forma: "PIX", valor: "" }]);
   const [trocoPara, setTrocoPara] = useState("");
   const [entregador, setEntregador] = useState<string>(BALCAO);
-
 
   const cliente = clientes.find((c) => c.id === clienteId);
 
@@ -93,7 +90,6 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
       modo: p.retornavel ? (modos[p.id] ?? "refil") : "refil",
     }));
 
-
   const total = itens.reduce((s, i) => s + i.qtd * i.precoUnit, 0);
   // Só as trocas de refil geram devolução de vasilhame vazio.
   const qtdRetornavel = itens
@@ -117,7 +113,6 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
   const vaziosValor = vaziosEditado ? vazios : String(qtdRetornavel);
   const troco = Math.max(0, (Number(trocoPara) || 0) - valorDinheiro);
 
-
   const mudar = (id: string, delta: number) =>
     setCarrinho((c) => {
       const n = Math.max(0, (c[id] ?? 0) + delta);
@@ -131,7 +126,6 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
     setCarrinho({});
     setPrecos({});
     setModos({});
-
     setVazios("0");
     setVaziosEditado(false);
     setTrocoPara("");
@@ -209,197 +203,193 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
   };
 
   return (
-    <Drawer open={aberto} onOpenChange={setAberto}>
-      <DrawerTrigger asChild>{children}</DrawerTrigger>
-      <DrawerContent className="max-h-[92vh]">
-        <div className="mx-auto flex w-full max-w-5xl flex-col overflow-hidden">
-          <DrawerHeader className="text-left">
-            <DrawerTitle className="flex items-center gap-2">
-              <ShoppingCart className="size-5 text-primary" />
-              Nova venda / pedido express
-            </DrawerTitle>
-            <DrawerDescription>
-              Selecione o cliente, monte o carrinho e defina pagamento e entrega.
-            </DrawerDescription>
-          </DrawerHeader>
+    <Dialog open={aberto} onOpenChange={setAberto}>
+      <DialogTrigger asChild>{children}</DialogTrigger>
+      <DialogContent className="max-w-3xl rounded-3xl p-0 shadow-2xl max-h-[90vh] overflow-hidden flex flex-col gap-0">
+        <DialogHeader className="p-6 pb-2 text-left">
+          <DialogTitle className="flex items-center gap-2">
+            <ShoppingCart className="size-5 text-primary" />
+            Nova venda / pedido express
+          </DialogTitle>
+          <DialogDescription>
+            Selecione o cliente, monte o carrinho e defina pagamento e entrega.
+          </DialogDescription>
+        </DialogHeader>
 
-          {!caixaAberto && (
-            <div className="mx-4 mb-2 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm font-medium text-destructive">
-              Abra o caixa para realizar vendas — vá em “Caixa &amp; Acerto” e abra a sessão
-              do dia.
-            </div>
-          )}
+        {!caixaAberto && (
+          <div className="mx-6 mb-2 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm font-medium text-destructive">
+            Abra o caixa para realizar vendas — vá em “Caixa & Acerto” e abra a sessão
+            do dia.
+          </div>
+        )}
 
-
-
-          <ScrollArea className="max-h-[62vh] px-4">
-            <div className="grid gap-6 pb-4 lg:grid-cols-[1.15fr_1fr]">
-              {/* Cliente + produtos */}
-              <div className="flex flex-col gap-4">
-                <div className="flex flex-col gap-2">
-                  <Campo label="Cliente (nome, telefone ou bairro)" htmlFor="pdv-cliente">
-                    <div className="relative">
-                      <Search className="pointer-events-none absolute left-1 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                      <Input
-                        id="pdv-cliente"
-                        className="pl-7"
+        <ScrollArea className="flex-1 overflow-y-auto px-6 py-2">
+          <div className="grid gap-6 pb-4 lg:grid-cols-[1.15fr_1fr]">
+            {/* Cliente + produtos */}
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-2">
+                <Campo label="Cliente (nome, telefone ou bairro)" htmlFor="pdv-cliente">
+                  <div className="relative">
+                    <Search className="pointer-events-none absolute left-1 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      id="pdv-cliente"
+                      className="pl-7"
                       placeholder="Buscar cliente..."
-                        value={busca}
-                        onChange={(e) => {
-                          setBusca(e.target.value);
-                          setClienteId("");
-                        }}
-                      />
-                    </div>
-                  </Campo>
-                  {!clienteId && (
-                    <div className="overflow-hidden rounded-lg border border-border">
-                      {filtrados.length === 0 && (
-                        <p className="px-3 py-2 text-sm text-muted-foreground">
-                          Nenhum cliente encontrado.
-                        </p>
-                      )}
-                      {filtrados.map((c) => (
-                        <button
-                          key={c.id}
-                          type="button"
-                          onClick={() => selecionar(c.id)}
-                          className="flex w-full flex-col items-start gap-0.5 border-b border-border px-3 py-2 text-left last:border-0 hover:bg-muted/60"
-                        >
-                          <span className="text-sm font-medium">{rotuloCliente(c)}</span>
-                          <span className="text-xs text-muted-foreground">
-                            {bairroDe(c) || c.endereco} · {c.telefone}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  {cliente && (
-                    <div className="flex flex-col gap-2 rounded-lg border border-border bg-muted/40 p-3">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-sm font-medium">{rotuloCliente(cliente)}</span>
-                        {(cliente.divida ?? 0) > 0 && (
-                          <Badge variant="destructive">
-                            Fiado: {brl(cliente.divida ?? 0)}
-                          </Badge>
-                        )}
-                      </div>
-                      <Campo label="Endereço de entrega" htmlFor="pdv-endereco">
-                        <Input
-                          id="pdv-endereco"
-                          value={endereco}
-                          onChange={(e) => setEndereco(e.target.value)}
-                        />
-                      </Campo>
-                    </div>
-                  )}
-                </div>
-
-                <Separator />
-
-                <div className="flex flex-col gap-2">
-                  <p className="text-sm font-medium">Produtos</p>
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    {produtos.map((p) => {
-                      const q = carrinho[p.id] ?? 0;
-                      return (
-                        <div
-                          key={p.id}
-                          className="flex flex-col gap-2 rounded-lg border border-border p-3"
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex min-w-0 items-center gap-2">
-                              <ProdutoFoto url={p.imagemUrl} nome={p.nome} />
-                              <div className="min-w-0">
-                                <p className="truncate text-sm font-medium">{p.nome}</p>
-                                <p className="text-xs text-muted-foreground">
-                                  {brl(p.precoVenda)} · {p.estoqueCheio} em estoque
-                                  {p.retornavel ? " · retornável" : ""}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="flex shrink-0 items-center gap-1">
-                              <Button
-                                type="button"
-                                size="icon"
-                                variant="outline"
-                                className="size-8"
-                                onClick={() => mudar(p.id, -1)}
-                                aria-label={`Remover ${p.nome}`}
-                              >
-                                <Minus className="size-4" />
-                              </Button>
-                              <span className="w-7 text-center text-sm font-semibold tabular-nums">
-                                {q}
-                              </span>
-                              <Button
-                                type="button"
-                                size="icon"
-                                variant="outline"
-                                className="size-8"
-                                onClick={() => mudar(p.id, 1)}
-                                aria-label={`Adicionar ${p.nome}`}
-                              >
-                                <Plus className="size-4" />
-                              </Button>
-                            </div>
-                          </div>
-                          {q > 0 && p.retornavel && (
-                            <Select
-                              value={modos[p.id] ?? "refil"}
-                              onValueChange={(v) =>
-                                setModos((m) => ({ ...m, [p.id]: v as ModoVenda }))
-                              }
-                            >
-                              <SelectTrigger className="h-8 text-xs">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {(Object.keys(LABEL_MODO) as ModoVenda[]).map((m) => (
-                                  <SelectItem key={m} value={m}>
-                                    {LABEL_MODO[m]}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          )}
-                          {q > 0 && (
-                            <div className="flex items-center gap-2">
-                              <Input
-                                id={`preco-${p.id}`}
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                className="h-9 w-32 rounded-lg"
-                                placeholder="Preço unit. negociado"
-                                value={precos[p.id] ?? String(p.precoVenda)}
-                                onChange={(e) =>
-                                  setPrecos((s) => ({ ...s, [p.id]: e.target.value }))
-                                }
-                              />
-                              <span className="ml-auto text-xs tabular-nums text-muted-foreground">
-                                = {brl(q * (Number(precos[p.id] ?? p.precoVenda) || 0))}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      );
-
-                    })}
+                      value={busca}
+                      onChange={(e) => {
+                        setBusca(e.target.value);
+                        setClienteId("");
+                      }}
+                    />
                   </div>
-                </div>
+                </Campo>
+                {!clienteId && (
+                  <div className="overflow-hidden rounded-lg border border-border">
+                    {filtrados.length === 0 && (
+                      <p className="px-3 py-2 text-sm text-muted-foreground">
+                        Nenhum cliente encontrado.
+                      </p>
+                    )}
+                    {filtrados.map((c) => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => selecionar(c.id)}
+                        className="flex w-full flex-col items-start gap-0.5 border-b border-border px-3 py-2 text-left last:border-0 hover:bg-muted/60"
+                      >
+                        <span className="text-sm font-medium">{rotuloCliente(c)}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {bairroDe(c) || c.endereco} · {c.telefone}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {cliente && (
+                  <div className="flex flex-col gap-2 rounded-lg border border-border bg-muted/40 p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm font-medium">{rotuloCliente(cliente)}</span>
+                      {(cliente.divida ?? 0) > 0 && (
+                        <Badge variant="destructive">
+                          Fiado: {brl(cliente.divida ?? 0)}
+                        </Badge>
+                      )}
+                    </div>
+                    <Campo label="Endereço de entrega" htmlFor="pdv-endereco">
+                      <Input
+                        id="pdv-endereco"
+                        value={endereco}
+                        onChange={(e) => setEndereco(e.target.value)}
+                      />
+                    </Campo>
+                  </div>
+                )}
               </div>
 
-              {/* Resumo / pagamento */}
-              <div className="flex flex-col gap-4">
-                {qtdRetornavel > 0 && (
-                  <div className="flex flex-col gap-2 rounded-lg border border-primary/30 bg-primary/5 p-3">
-                    <Campo
-                      label={`Galões vazios recolhidos (${qtdRetornavel} retornáveis na venda)`}
-                      htmlFor="pdv-vazios"
-                    >
-                      <Input
-                        id="pdv-vazios"
+              <Separator />
+
+              <div className="flex flex-col gap-2">
+                <p className="text-sm font-medium">Produtos</p>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {produtos.map((p) => {
+                    const q = carrinho[p.id] ?? 0;
+                    return (
+                      <div
+                        key={p.id}
+                        className="flex flex-col gap-2 rounded-lg border border-border p-3"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex min-w-0 items-center gap-2">
+                            <ProdutoFoto url={p.imagemUrl} nome={p.nome} />
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-medium">{p.nome}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {brl(p.precoVenda)} · {p.estoqueCheio} em estoque
+                                {p.retornavel ? " · retornável" : ""}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex shrink-0 items-center gap-1">
+                            <Button
+                              type="button"
+                              size="icon"
+                              variant="outline"
+                              className="size-8"
+                              onClick={() => mudar(p.id, -1)}
+                              aria-label={`Remover ${p.nome}`}
+                            >
+                              <Minus className="size-4" />
+                            </Button>
+                            <span className="w-7 text-center text-sm font-semibold tabular-nums">
+                              {q}
+                            </span>
+                            <Button
+                              type="button"
+                              size="icon"
+                              variant="outline"
+                              className="size-8"
+                              onClick={() => mudar(p.id, 1)}
+                              aria-label={`Adicionar ${p.nome}`}
+                            >
+                              <Plus className="size-4" />
+                            </Button>
+                          </div>
+                        </div>
+                        {q > 0 && p.retornavel && (
+                          <Select
+                            value={modos[p.id] ?? "refil"}
+                            onValueChange={(v) =>
+                              setModos((m) => ({ ...m, [p.id]: v as ModoVenda }))
+                            }
+                          >
+                            <SelectTrigger className="h-8 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {(Object.keys(LABEL_MODO) as ModoVenda[]).map((m) => (
+                                <SelectItem key={m} value={m}>
+                                  {LABEL_MODO[m]}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                        {q > 0 && (
+                          <div className="flex items-center gap-2">
+                            <Input
+                              id={`preco-${p.id}`}
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              className="h-9 w-32 rounded-lg"
+                              placeholder="Preço unit. negociado"
+                              value={precos[p.id] ?? String(p.precoVenda)}
+                              onChange={(e) =>
+                                setPrecos((s) => ({ ...s, [p.id]: e.target.value }))
+                              }
+                            />
+                            <span className="ml-auto text-xs tabular-nums text-muted-foreground">
+                              = {brl(q * (Number(precos[p.id] ?? p.precoVenda) || 0))}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Resumo / pagamento */}
+            <div className="flex flex-col gap-4">
+              {qtdRetornavel > 0 && (
+                <div className="flex flex-col gap-2 rounded-lg border border-primary/30 bg-primary/5 p-3">
+                  <Campo
+                    label={`Galões vazios recolhidos (${qtdRetornavel} retornáveis na venda)`}
+                    htmlFor="pdv-vazios"
+                  >
+                    <Input
+                      id="pdv-vazios"
                       type="number"
                       min={0}
                       value={vaziosValor}
@@ -407,181 +397,179 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                         setVaziosEditado(true);
                         setVazios(e.target.value);
                       }}
-                      />
-                    </Campo>
-                    <p className="text-xs text-muted-foreground">
-                      Preenchido automaticamente com os retornáveis do carrinho — edite se
-                      o cliente não devolveu todos.
-                    </p>
-                  </div>
-                )}
+                    />
+                  </Campo>
+                  <p className="text-xs text-muted-foreground">
+                    Preenchido automaticamente com os retornáveis do carrinho — edite se
+                    o cliente não devolveu todos.
+                  </p>
+                </div>
+              )}
 
-                <div className="flex flex-col gap-2 rounded-lg border border-border p-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-sm font-medium">Formas de pagamento</p>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        setParcelas((ps) => [
-                          ...ps,
-                          { forma: "Dinheiro", valor: restante > 0 ? String(restante) : "" },
-                        ])
-                      }
-                    >
-                      <Plus className="size-4" /> Adicionar
-                    </Button>
-                  </div>
-                  {parcelas.map((x, idx) => (
-                    <div key={idx} className="flex items-center gap-2">
-                      <Select
-                        value={x.forma}
-                        onValueChange={(v) =>
-                          setParcelas((ps) =>
-                            ps.map((y, i) => (i === idx ? { ...y, forma: v as FormaPagamento } : y)),
-                          )
-                        }
-                      >
-                        <SelectTrigger className="flex-1">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {FORMAS_PAGAMENTO.map((f) => (
-                            <SelectItem key={f} value={f}>
-                              {f === "Fiado" ? "Fiado / Caderneta" : f}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Input
-                        type="number"
-                        min={0}
-                        step="0.01"
-                        className="w-28"
-                        placeholder="0,00"
-                        value={x.valor}
-                        onChange={(e) =>
-                          setParcelas((ps) =>
-                            ps.map((y, i) => (i === idx ? { ...y, valor: e.target.value } : y)),
-                          )
-                        }
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="size-9 shrink-0"
-                        aria-label="Remover forma de pagamento"
-                        disabled={parcelas.length === 1}
-                        onClick={() => setParcelas((ps) => ps.filter((_, i) => i !== idx))}
-                      >
-                        <Trash2 className="size-4" />
-                      </Button>
-                    </div>
-                  ))}
-                  <div className="grid grid-cols-3 gap-2 text-xs">
-                    <span className="text-muted-foreground">
-                      Total: <strong className="tabular-nums">{brl(total)}</strong>
-                    </span>
-                    <span className="text-muted-foreground">
-                      Informado: <strong className="tabular-nums">{brl(informado)}</strong>
-                    </span>
-                    <span className={restante > 0.009 ? "text-destructive" : "text-success"}>
-                      Restante:{" "}
-                      <strong className="tabular-nums">{brl(Math.max(0, restante))}</strong>
-                    </span>
-                  </div>
+              <div className="flex flex-col gap-2 rounded-lg border border-border p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-medium">Formas de pagamento</p>
                   <Button
                     type="button"
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
-                    className="self-start"
                     onClick={() =>
-                      setParcelas((ps) =>
-                        ps.map((y, i) => (i === 0 ? { ...y, valor: String(total) } : y)),
-                      )
+                      setParcelas((ps) => [
+                        ...ps,
+                        { forma: "Dinheiro", valor: restante > 0 ? String(restante) : "" },
+                      ])
                     }
                   >
-                    Lançar total na 1ª forma
+                    <Plus className="size-4" /> Adicionar
                   </Button>
                 </div>
-
-                {valorDinheiro > 0 && (
-                  <div className="flex flex-col gap-2">
-                    <Campo label="Troco para R$" htmlFor="pdv-troco">
-                      <Input
-                        id="pdv-troco"
-                        type="number"
-                        min={0}
-                        step="0.01"
-                        value={trocoPara}
-                        onChange={(e) => setTrocoPara(e.target.value)}
-                        placeholder="0,00"
-                      />
-                    </Campo>
-                    <p className="text-xs text-muted-foreground">
-                      Recebido em dinheiro: <strong>{brl(valorDinheiro)}</strong> · Troco a
-                      devolver: <strong>{brl(troco)}</strong>
-                    </p>
+                {parcelas.map((x, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <Select
+                      value={x.forma}
+                      onValueChange={(v) =>
+                        setParcelas((ps) =>
+                          ps.map((y, i) => (i === idx ? { ...y, forma: v as FormaPagamento } : y)),
+                        )
+                      }
+                    >
+                      <SelectTrigger className="flex-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {FORMAS_PAGAMENTO.map((f) => (
+                          <SelectItem key={f} value={f}>
+                            {f === "Fiado" ? "Fiado / Caderneta" : f}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      className="w-28"
+                      placeholder="0,00"
+                      value={x.valor}
+                      onChange={(e) =>
+                        setParcelas((ps) =>
+                          ps.map((y, i) => (i === idx ? { ...y, valor: e.target.value } : y)),
+                        )
+                      }
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="size-9 shrink-0"
+                      aria-label="Remover forma de pagamento"
+                      disabled={parcelas.length === 1}
+                      onClick={() => setParcelas((ps) => ps.filter((_, i) => i !== idx))}
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
                   </div>
-                )}
-
-                <div className="flex flex-col gap-2">
-                  <p className="text-sm font-medium">Entregador</p>
-                  <Select value={entregador} onValueChange={setEntregador}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {opcoes.map((e) => (
-                        <SelectItem key={e} value={e}>
-                          {e}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                ))}
+                <div className="grid grid-cols-3 gap-2 text-xs">
+                  <span className="text-muted-foreground">
+                    Total: <strong className="tabular-nums">{brl(total)}</strong>
+                  </span>
+                  <span className="text-muted-foreground">
+                    Informado: <strong className="tabular-nums">{brl(informado)}</strong>
+                  </span>
+                  <span className={restante > 0.009 ? "text-destructive" : "text-success"}>
+                    Restante:{" "}
+                    <strong className="tabular-nums">{brl(Math.max(0, restante))}</strong>
+                  </span>
                 </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="self-start"
+                  onClick={() =>
+                    setParcelas((ps) =>
+                      ps.map((y, i) => (i === 0 ? { ...y, valor: String(total) } : y)),
+                    )
+                  }
+                >
+                  Lançar total na 1ª forma
+                </Button>
+              </div>
 
-                <div className="rounded-lg border border-border bg-muted/40 p-3">
-                  {itens.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">Carrinho vazio.</p>
-                  ) : (
-                    <ul className="flex flex-col gap-1">
-                      {itens.map((i) => (
-                        <li
-                          key={i.produtoId}
-                          className="flex items-center justify-between text-sm"
-                        >
-                          <span className="truncate pr-2">
-                            {i.qtd}x {i.nome}
-                          </span>
-                          <span className="tabular-nums">{brl(i.qtd * i.precoUnit)}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  <Separator className="my-2" />
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Total</span>
-                    <span className="text-xl font-semibold tabular-nums">{brl(total)}</span>
-                  </div>
+              {valorDinheiro > 0 && (
+                <div className="flex flex-col gap-2">
+                  <Campo label="Troco para R$" htmlFor="pdv-troco">
+                    <Input
+                      id="pdv-troco"
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={trocoPara}
+                      onChange={(e) => setTrocoPara(e.target.value)}
+                      placeholder="0,00"
+                    />
+                  </Campo>
+                  <p className="text-xs text-muted-foreground">
+                    Recebido em dinheiro: <strong>{brl(valorDinheiro)}</strong> · Troco a
+                    devolver: <strong>{brl(troco)}</strong>
+                  </p>
+                </div>
+              )}
+
+              <div className="flex flex-col gap-2">
+                <p className="text-sm font-medium">Entregador</p>
+                <Select value={entregador} onValueChange={setEntregador}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {opcoes.map((e) => (
+                      <SelectItem key={e} value={e}>
+                        {e}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="rounded-lg border border-border bg-muted/40 p-3">
+                {itens.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Carrinho vazio.</p>
+                ) : (
+                  <ul className="flex flex-col gap-1">
+                    {itens.map((i) => (
+                      <li
+                        key={i.produtoId}
+                        className="flex items-center justify-between text-sm"
+                      >
+                        <span className="truncate pr-2">
+                          {i.qtd}x {i.nome}
+                        </span>
+                        <span className="tabular-nums">{brl(i.qtd * i.precoUnit)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <Separator className="my-2" />
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Total</span>
+                  <span className="text-xl font-semibold tabular-nums">{brl(total)}</span>
                 </div>
               </div>
             </div>
-          </ScrollArea>
+          </div>
+        </ScrollArea>
 
-          <DrawerFooter className="flex-row justify-end gap-2">
-            <DrawerClose asChild>
-              <Button variant="outline">Cancelar</Button>
-            </DrawerClose>
-            <Button onClick={finalizar} disabled={!caixaAberto || restante > 0.009}>
-              {caixaAberto ? `Criar pedido · ${brl(total)}` : "Caixa fechado"}
-            </Button>
-
-          </DrawerFooter>
-        </div>
-      </DrawerContent>
-    </Drawer>
+        <DialogFooter className="flex-row justify-end gap-2 border-t p-6 pt-2">
+          <DialogClose asChild>
+            <Button variant="outline">Cancelar</Button>
+          </DialogClose>
+          <Button onClick={finalizar} disabled={!caixaAberto || restante > 0.009}>
+            {caixaAberto ? `Criar pedido · ${brl(total)}` : "Caixa fechado"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
