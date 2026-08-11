@@ -205,7 +205,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
   return (
     <Dialog open={aberto} onOpenChange={setAberto}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="max-w-3xl rounded-3xl p-0 shadow-2xl max-h-[90vh] overflow-hidden flex flex-col gap-0">
+      <DialogContent className="max-w-4xl rounded-3xl p-0 shadow-2xl max-h-[90vh] overflow-hidden flex flex-col gap-0">
         <DialogHeader className="p-6 pb-2 text-left">
           <DialogTitle className="flex items-center gap-2">
             <ShoppingCart className="size-5 text-primary" />
