@@ -147,37 +147,18 @@ export function ClienteDialog({
             />
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="grid gap-2">
-              <Label htmlFor="cconsumo">Consumo médio (dias por galão/fardo)</Label>
-              <Input
-                id="cconsumo"
-                type="number"
-                min={1}
-                value={form.consumoMedioDias}
-                onChange={(e) => set("consumoMedioDias", Number(e.target.value))}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="cultima">Última compra</Label>
-              <Input
-                id="cultima"
-                type="date"
-                value={form.ultimaCompra}
-                onChange={(e) => set("ultimaCompra", e.target.value || hojeISO())}
-              />
-            </div>
-          </div>
-
           <div className="rounded-xl border border-border bg-muted/40 p-4">
-            <p className="text-xs text-muted-foreground">
-              Data prevista da próxima compra
-            </p>
-            <p className="text-lg font-semibold">
-              {formatarData(proximaCompra({ ...form, id: form.id || "tmp" }))}
+            <p className="text-xs text-muted-foreground">Consumo médio e próxima compra</p>
+            <p className="text-sm">
+              {form.historico.length > 1
+                ? `Média atual de ${form.consumoMedioDias} dia(s) · previsão ${formatarData(
+                    proximaCompra({ ...form, id: form.id || "tmp" }),
+                  )}`
+                : "Calculados automaticamente a partir dos pedidos reais do cliente."}
             </p>
           </div>
         </div>
+
 
         <DialogFooter>
           <Button variant="outline" onClick={() => setAberto(false)}>
