@@ -168,6 +168,79 @@ function ClientesPage() {
         </ClienteDialog>
       </header>
 
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Card className="shadow-[var(--shadow-card)]">
+            <CardContent className="p-4">
+              <p className="text-xs text-muted-foreground">Total de clientes</p>
+              <p className="mt-1 text-2xl font-semibold tabular-nums">{base.total}</p>
+              <p className="mt-1 text-xs text-muted-foreground">Cadastros na base</p>
+            </CardContent>
+          </Card>
+          <Card className="border-success/40 bg-success/5 shadow-[var(--shadow-card)]">
+            <CardContent className="p-4">
+              <p className="text-xs text-muted-foreground">Clientes ativos</p>
+              <p className="mt-1 text-2xl font-semibold tabular-nums text-success">{base.ativos}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {base.pct(base.ativos)}% · pedido nos últimos 30 dias
+              </p>
+            </CardContent>
+          </Card>
+          <Card className="border-destructive/40 bg-destructive/5 shadow-[var(--shadow-card)]">
+            <CardContent className="p-4">
+              <p className="text-xs text-muted-foreground">Clientes inativos</p>
+              <p className="mt-1 text-2xl font-semibold tabular-nums text-destructive">
+                {base.inativos}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {base.pct(base.inativos)}% · sem compras há mais de 30 dias
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card className="shadow-[var(--shadow-card)]">
+          <CardHeader className="pb-0">
+            <CardTitle className="text-base">Composição da base</CardTitle>
+          </CardHeader>
+          <CardContent className="h-[180px] p-2">
+            {base.total === 0 ? (
+              <p className="grid h-full place-items-center text-sm text-muted-foreground">
+                Nenhum cliente cadastrado.
+              </p>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Tooltip
+                    formatter={(v: number, n: string) => [`${v} (${base.pct(v)}%)`, n]}
+                    contentStyle={{
+                      background: "var(--color-card)",
+                      border: "1px solid var(--color-border)",
+                      borderRadius: 8,
+                      fontSize: 12,
+                    }}
+                  />
+                  <Pie
+                    data={dadosPizza}
+                    dataKey="valor"
+                    nameKey="nome"
+                    innerRadius={45}
+                    outerRadius={70}
+                    paddingAngle={2}
+                  >
+                    {dadosPizza.map((d) => (
+                      <Cell key={d.nome} fill={d.cor} />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+
+
       <Card className="border-warning/40 bg-warning/10 shadow-[var(--shadow-card)]">
         <CardHeader className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 space-y-0">
           <CardTitle className="flex min-w-0 items-center gap-2 text-base">
