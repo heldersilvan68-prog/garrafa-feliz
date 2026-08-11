@@ -128,6 +128,46 @@ function RelatoriosPage() {
   const abaixoMinimo = produtos.filter((p) => p.estoqueCheio <= p.estoqueMinimo);
   const vaziosRecolhidos = validos.reduce((s, p) => s + p.vaziosRecolhidos, 0);
 
+  // Novos clientes cadastrados dentro do período filtrado.
+  const novosClientes = clientes.filter((c) => c.cadastradoEm && dentroFaixa(c.cadastradoEm, faixa));
+
+  // Faturamento e lucro por modalidade de vasilhame retornável.
+  const porModalidade = useMemo(() => {
+    const modos: { id: ModoVenda; label: string }[] = [
+      { id: "refil", label: LABEL_MODO.refil },
+      { id: "completa", label: LABEL_MODO.completa },
+      { id: "casco", label: LABEL_MODO.casco },
+    ];
+    return modos.map(({ id, label }) => {
+      let qtd = 0;
+      let faturamento = 0;
+      let custo = 0;
+      for (const p of validos) {
+        for (const i of p.itens) {
+          if (!i.retornavel || (i.modo ?? "refil") !== id) continue;
+          const prod = produtos.find((x) => x.id === i.produtoId);
+          const envase = prod?.custoEnvase || prod?.precoCusto || 0;
+          const casco = prod?.custoCasco ?? 0;
+          const unitario = id === "refil" ? envase : id === "casco" ? casco : envase + casco;
+          qtd += i.qtd;
+          faturamento += i.qtd * i.precoUnit;
+          custo += i.qtd * unitario;
+        }
+      }
+      const lucro = faturamento - custo;
+      return {
+        id,
+        label,
+        qtd,
+        faturamento,
+        custo,
+        lucro,
+        margem: faturamento > 0 ? (lucro / faturamento) * 100 : 0,
+      };
+    });
+  }, [validos, produtos]);
+
+
   return (
     <div className="flex flex-col gap-6 print:gap-4">
       <header className="flex flex-wrap items-end justify-between gap-3">
