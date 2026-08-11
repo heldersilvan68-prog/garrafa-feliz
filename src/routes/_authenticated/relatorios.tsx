@@ -257,7 +257,73 @@ function RelatoriosPage() {
                   .reduce((s, p) => s + p.total, 0),
               )}
             />
+            <Kpi
+              label="Novos clientes cadastrados"
+              valor={String(novosClientes.length)}
+              hint={`No período: ${rotuloFaixa(faixa)}`}
+            />
           </div>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
+              <div>
+                <CardTitle className="text-base">Vasilhames por modalidade</CardTitle>
+                <CardDescription>
+                  Refil (custo de envase), venda completa (envase + casco) e casco avulso.
+                </CardDescription>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="print:hidden"
+                onClick={() =>
+                  baixarCSV(
+                    "vasilhames-modalidade",
+                    ["Modalidade", "Qtd", "Faturamento", "CMV", "Lucro", "Margem %"],
+                    porModalidade.map((m) => [
+                      m.label,
+                      m.qtd,
+                      m.faturamento.toFixed(2),
+                      m.custo.toFixed(2),
+                      m.lucro.toFixed(2),
+                      m.margem.toFixed(1),
+                    ]),
+                  )
+                }
+              >
+                <FileSpreadsheet className="size-4" /> CSV
+              </Button>
+            </CardHeader>
+            <CardContent className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Modalidade</TableHead>
+                    <TableHead>Qtd</TableHead>
+                    <TableHead className="text-right">Faturamento</TableHead>
+                    <TableHead className="text-right">CMV</TableHead>
+                    <TableHead className="text-right">Lucro bruto</TableHead>
+                    <TableHead className="text-right">Margem</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {porModalidade.map((m) => (
+                    <TableRow key={m.id}>
+                      <TableCell className="font-medium">{m.label}</TableCell>
+                      <TableCell>{m.qtd}</TableCell>
+                      <TableCell className="text-right">{brl(m.faturamento)}</TableCell>
+                      <TableCell className="text-right">{brl(m.custo)}</TableCell>
+                      <TableCell className="text-right">{brl(m.lucro)}</TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {m.margem.toFixed(1)}%
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-3">
