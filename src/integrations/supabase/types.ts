@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_settings: {
+        Row: {
+          cnpj: string
+          created_at: string
+          endereco: string
+          meta_vendas_mensal: number
+          nome_fantasia: string
+          razao_social: string
+          updated_at: string
+          user_id: string
+          whatsapp: string
+        }
+        Insert: {
+          cnpj?: string
+          created_at?: string
+          endereco?: string
+          meta_vendas_mensal?: number
+          nome_fantasia?: string
+          razao_social?: string
+          updated_at?: string
+          user_id: string
+          whatsapp?: string
+        }
+        Update: {
+          cnpj?: string
+          created_at?: string
+          endereco?: string
+          meta_vendas_mensal?: number
+          nome_fantasia?: string
+          razao_social?: string
+          updated_at?: string
+          user_id?: string
+          whatsapp?: string
+        }
+        Relationships: []
+      }
       cash_movements: {
         Row: {
           cash_register_id: string
@@ -56,9 +92,13 @@ export type Database = {
         Row: {
           aberto_em: string
           contado: number | null
+          contado_cartao: number | null
+          contado_pix: number | null
           created_at: string
           dia: string
           diferenca: number | null
+          diferenca_cartao: number | null
+          diferenca_pix: number | null
           fechado_em: string | null
           id: string
           legacy_id: string | null
@@ -69,9 +109,13 @@ export type Database = {
         Insert: {
           aberto_em?: string
           contado?: number | null
+          contado_cartao?: number | null
+          contado_pix?: number | null
           created_at?: string
           dia?: string
           diferenca?: number | null
+          diferenca_cartao?: number | null
+          diferenca_pix?: number | null
           fechado_em?: string | null
           id?: string
           legacy_id?: string | null
@@ -82,13 +126,41 @@ export type Database = {
         Update: {
           aberto_em?: string
           contado?: number | null
+          contado_cartao?: number | null
+          contado_pix?: number | null
           created_at?: string
           dia?: string
           diferenca?: number | null
+          diferenca_cartao?: number | null
+          diferenca_pix?: number | null
           fechado_em?: string | null
           id?: string
           legacy_id?: string | null
           troco_inicial?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      client_categories: {
+        Row: {
+          created_at: string
+          id: string
+          nome: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome?: string
           updated_at?: string
           user_id?: string
         }
@@ -589,6 +661,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      payment_methods: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          nome: string
+          taxa: number
+          tipo: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome: string
+          taxa?: number
+          tipo?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome?: string
+          taxa?: number
+          tipo?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       product_brands: {
         Row: {
