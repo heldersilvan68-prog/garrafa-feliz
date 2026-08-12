@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { isoLocal } from "@/lib/periodo";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -36,7 +37,7 @@ type Props = {
   despesa?: Despesa;
 };
 
-const hoje = () => new Date().toISOString().slice(0, 10);
+const hoje = () => isoLocal(new Date());
 
 export function DespesaDialog({ open, onOpenChange, despesa }: Props) {
   const { adicionarDespesa, atualizarDespesa, categorias, criarCategoria } = useDespesas();

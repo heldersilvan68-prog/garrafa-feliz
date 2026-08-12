@@ -1,3 +1,5 @@
+import { isoLocal } from "@/lib/periodo";
+
 export type Compra = {
   id: string;
   data: string; // ISO yyyy-mm-dd
@@ -49,11 +51,11 @@ export const telefoneInternacional = (valor: string) => {
   return d.startsWith("55") ? d : `55${d}`;
 };
 
-export type StatusRecompra = "atrasado" | "hoje" | "em-breve" | "ok";
+export type StatusRecompra = "atrasado" | "hoje" | "amanha" | "em-breve" | "ok";
 
 export const DIA_MS = 86_400_000;
 
-export const hojeISO = () => new Date().toISOString().slice(0, 10);
+export const hojeISO = () => isoLocal(new Date());
 
 export const isoParaData = (iso: string) => new Date(`${iso}T00:00:00`);
 
@@ -63,7 +65,7 @@ export const formatarData = (iso: string) =>
 export const proximaCompra = (c: Cliente) => {
   const d = isoParaData(c.ultimaCompra);
   d.setDate(d.getDate() + Math.max(1, Math.round(c.consumoMedioDias)));
-  return d.toISOString().slice(0, 10);
+  return isoLocal(d);
 };
 
 /** Dias restantes até a próxima compra prevista (negativo = atrasado). */
@@ -76,6 +78,7 @@ export const statusRecompra = (c: Cliente): StatusRecompra => {
   const d = diasRestantes(c);
   if (d < 0) return "atrasado";
   if (d === 0) return "hoje";
+  if (d === 1) return "amanha";
   if (d <= 3) return "em-breve";
   return "ok";
 };
@@ -83,6 +86,7 @@ export const statusRecompra = (c: Cliente): StatusRecompra => {
 export const STATUS_LABEL: Record<StatusRecompra, string> = {
   atrasado: "Atrasado",
   hoje: "Lembrar hoje",
+  amanha: "Lembrar amanhã",
   "em-breve": "Em breve",
   ok: "Em dia",
 };
@@ -93,11 +97,6 @@ export const mensagemWhatsApp = (nome: string) =>
 export const linkWhatsApp = (c: Cliente) =>
   `https://wa.me/${c.telefone}?text=${encodeURIComponent(mensagemWhatsApp(c.nome))}`;
 
-const diasAtras = (n: number) => {
-  const d = new Date();
-  d.setDate(d.getDate() - n);
-  return d.toISOString().slice(0, 10);
-};
 
 
 /** Bairro informado ou extraído do endereço ("Rua X, 10 — Centro"). */
