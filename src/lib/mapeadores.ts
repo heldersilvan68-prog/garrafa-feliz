@@ -1,3 +1,4 @@
+import { isoLocal } from "@/lib/periodo";
 import type { Categoria, Produto } from "@/lib/erp";
 import type { Cliente, Compra } from "@/lib/clientes";
 import type { FormaPagamento, ItemPedido, Pedido, StatusPedido } from "@/lib/pedidos";
@@ -85,7 +86,7 @@ export const paraCliente = (r: ClienteRow, compras: CompraRow[]): Cliente => {
       datas[0] ??
       r.ultima_compra ??
       r.cadastrado_em ??
-      new Date().toISOString().slice(0, 10),
+      isoLocal(new Date()),
     historico,
   };
 };

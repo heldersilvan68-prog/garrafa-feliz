@@ -1,3 +1,4 @@
+import { isoLocal } from "@/lib/periodo";
 import { parcelasDe, type FormaPagamento, type Pedido } from "@/lib/pedidos";
 
 export type TipoMovimento = "sangria" | "suprimento" | "recebimento";
@@ -44,7 +45,7 @@ export type PagamentoComissao = {
   em: string;
 };
 
-export const hojeISO = () => new Date().toISOString().slice(0, 10);
+export const hojeISO = () => isoLocal(new Date());
 
 export const mesmoDia = (iso: string, dia: string) => iso.slice(0, 10) === dia;
 
