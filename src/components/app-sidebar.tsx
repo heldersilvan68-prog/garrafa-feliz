@@ -14,6 +14,7 @@ import {
   PieChart,
   Receipt,
   RefreshCcw,
+  Settings,
   ShoppingCart,
   Users,
   Wallet,
@@ -57,6 +58,10 @@ const grupos = [
       { titulo: "Comissões", url: "/comissoes", icon: HandCoins },
       { titulo: "Relatórios", url: "/relatorios", icon: FileBarChart },
     ],
+  },
+  {
+    label: "Sistema",
+    itens: [{ titulo: "Configurações", url: "/configuracoes", icon: Settings }],
   },
 
 ];
