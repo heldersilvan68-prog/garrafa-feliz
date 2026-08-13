@@ -16,6 +16,8 @@ type Ctx = {
   atualizarDespesa: (id: string, d: NovaDespesa) => void;
   removerDespesa: (id: string) => void;
   criarCategoria: (nome: string) => Promise<string>;
+  renomearCategoria: (id: string, nome: string) => Promise<void>;
+  removerCategoria: (id: string) => Promise<void>;
 };
 
 const DespesasContext = createContext<Ctx | null>(null);
@@ -100,6 +102,44 @@ export function DespesasProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
   }, "Não foi possível remover a despesa");
 
+  const renomearCategoriaMut = useMutation({
+    mutationFn: async ({ id, nome }: { id: string; nome: string }) => {
+      const limpo = nome.trim();
+      if (!limpo) throw new Error("Informe o nome da categoria");
+      const anterior = data?.categorias.find((c) => c.id === id)?.nome;
+      const { error } = await supabase
+        .from("expense_categories")
+        .update({ nome: limpo })
+        .eq("id", id);
+      if (error) throw error;
+      // Mantém as despesas coerentes com o novo nome.
+      if (anterior) {
+        await supabase.from("expenses").update({ categoria: limpo }).eq("category_id", id);
+      }
+    },
+    onSuccess: () => {
+      invalidar();
+      toast.success("Categoria atualizada!");
+    },
+    onError: (e: Error) => toast.error(`Não foi possível renomear: ${e.message}`),
+  });
+
+  const removerCategoriaMut = useMutation({
+    mutationFn: async (id: string) => {
+      const emUso = (data?.despesas ?? []).some(
+        (d) => d.categoria === data?.categorias.find((c) => c.id === id)?.nome,
+      );
+      if (emUso) throw new Error("Existem despesas usando esta categoria.");
+      const { error } = await supabase.from("expense_categories").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      invalidar();
+      toast.success("Categoria excluída!");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   return (
     <DespesasContext.Provider
       value={{
@@ -110,6 +150,9 @@ export function DespesasProvider({ children }: { children: ReactNode }) {
         atualizarDespesa: (id, d) => atualizarMut.mutate({ id, d }),
         removerDespesa: (id) => removerMut.mutate(id),
         criarCategoria: (nome) => categoriaMut.mutateAsync(nome),
+        renomearCategoria: (id, nome) =>
+          renomearCategoriaMut.mutateAsync({ id, nome }).then(() => undefined),
+        removerCategoria: (id) => removerCategoriaMut.mutateAsync(id).then(() => undefined),
       }}
     >
       {children}

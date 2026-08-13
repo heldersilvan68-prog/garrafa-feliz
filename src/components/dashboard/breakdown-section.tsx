@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { Banknote, CreditCard, Landmark, PiggyBank, QrCode, Recycle, Truck } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { brl } from "@/lib/erp";
@@ -144,7 +145,9 @@ export function BreakdownSection({ resumo }: { resumo: ResumoPeriodo }) {
         </CardHeader>
         <CardContent>
           <p className="text-3xl font-semibold tracking-tight">{brl(resumo.compras)}</p>
-          <p className="mt-1 text-xs text-muted-foreground">Reposição de mercadoria no período</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Notas de compra e reposições de estoque no período
+          </p>
         </CardContent>
       </Card>
 
@@ -153,9 +156,13 @@ export function BreakdownSection({ resumo }: { resumo: ResumoPeriodo }) {
           <CardTitle className="min-w-0 truncate text-sm font-medium text-muted-foreground">
             Meta de Vendas
           </CardTitle>
-          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-success/15 text-success">
+          <Link
+            to="/configuracoes"
+            aria-label="Definir meta de vendas nas Configurações"
+            className="grid size-9 shrink-0 place-items-center rounded-xl bg-success/15 text-success transition-colors hover:bg-success/25"
+          >
             <PiggyBank className="size-4" />
-          </span>
+          </Link>
         </CardHeader>
         <CardContent className="flex flex-col items-center">
           <Gauge pct={pctMeta} />
@@ -164,6 +171,12 @@ export function BreakdownSection({ resumo }: { resumo: ResumoPeriodo }) {
               ? `${brl(resumo.vendas)} de ${brl(resumo.metaVendas)}`
               : `${brl(resumo.vendas)} vendidos · defina uma meta`}
           </p>
+          <Link
+            to="/configuracoes"
+            className="mt-2 text-xs font-medium text-primary underline-offset-4 hover:underline"
+          >
+            {resumo.metaVendas > 0 ? "Ajustar meta nas Configurações" : "Definir meta de vendas"}
+          </Link>
         </CardContent>
       </Card>
     </div>

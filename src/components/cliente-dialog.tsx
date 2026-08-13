@@ -14,10 +14,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useClientes } from "@/context/clientes";
 import {
-  formatarData,
   hojeISO,
   mascaraTelefone,
-  proximaCompra,
   proximoCodigo,
   telefoneInternacional,
   type Cliente,
@@ -88,7 +86,8 @@ export function ClienteDialog({
         <DialogHeader>
           <DialogTitle>{cliente ? "Editar Cliente" : "Novo Cliente"}</DialogTitle>
           <DialogDescription>
-            Dados de contato e consumo para prever a próxima compra.
+            Dados essenciais de contato. Consumo médio e previsão de recompra são calculados
+            automaticamente a partir dos pedidos.
           </DialogDescription>
         </DialogHeader>
 
@@ -147,16 +146,6 @@ export function ClienteDialog({
             />
           </div>
 
-          <div className="rounded-xl border border-border bg-muted/40 p-4">
-            <p className="text-xs text-muted-foreground">Consumo médio e próxima compra</p>
-            <p className="text-sm">
-              {form.historico.length > 1
-                ? `Média atual de ${form.consumoMedioDias} dia(s) · previsão ${formatarData(
-                    proximaCompra({ ...form, id: form.id || "tmp" }),
-                  )}`
-                : "Calculados automaticamente a partir dos pedidos reais do cliente."}
-            </p>
-          </div>
         </div>
 
 

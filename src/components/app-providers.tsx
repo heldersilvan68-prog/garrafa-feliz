@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import { AuthProvider } from "@/hooks/use-auth";
+import { ConfiguracoesProvider } from "@/context/configuracoes";
 import { CatalogoProvider } from "@/context/catalogo";
 import { EstoqueProvider } from "@/context/estoque";
 import { ClientesProvider } from "@/context/clientes";
@@ -17,6 +18,7 @@ import { EntregadoresProvider } from "@/context/entregadores";
 export function AppProviders({ children }: { children: ReactNode }) {
   return (
     <AuthProvider>
+      <ConfiguracoesProvider>
       <CatalogoProvider>
       <EstoqueProvider>
         <ClientesProvider>
@@ -30,6 +32,7 @@ export function AppProviders({ children }: { children: ReactNode }) {
         </ClientesProvider>
       </EstoqueProvider>
       </CatalogoProvider>
+      </ConfiguracoesProvider>
     </AuthProvider>
   );
 }

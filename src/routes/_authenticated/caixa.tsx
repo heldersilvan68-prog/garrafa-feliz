@@ -222,21 +222,34 @@ function MovimentoDialog({ tipo }: { tipo: TipoMovimento }) {
   );
 }
 
-function FecharCaixaDialog({ esperado }: { esperado: number }) {
+function FecharCaixaDialog({
+  esperado,
+  esperadoPix,
+  esperadoCartao,
+}: {
+  esperado: number;
+  esperadoPix: number;
+  esperadoCartao: number;
+}) {
   const { fecharCaixa } = useCaixa();
   const { produtos } = useEstoque();
   const [open, setOpen] = useState(false);
   const [contado, setContado] = useState("");
+  const [pix, setPix] = useState("");
+  const [cartao, setCartao] = useState("");
   const [cheios, setCheios] = useState("");
   const [vazios, setVazios] = useState("");
   const diferenca = (Number(contado) || 0) - esperado;
+  const difPix = (Number(pix) || 0) - esperadoPix;
+  const difCartao = (Number(cartao) || 0) - esperadoCartao;
 
   const retornaveis = produtos.filter((p) => p.retornavel);
   const cheiosSistema = retornaveis.reduce((s, p) => s + (p.estoqueCheio || 0), 0);
   const vaziosSistema = retornaveis.reduce((s, p) => s + (p.estoqueVazio || 0), 0);
   const divCheios = (Number(cheios) || 0) - cheiosSistema;
   const divVazios = (Number(vazios) || 0) - vaziosSistema;
-  const conferido = contado !== "" && cheios !== "" && vazios !== "";
+  const conferido =
+    contado !== "" && pix !== "" && cartao !== "" && cheios !== "" && vazios !== "";
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -250,28 +263,74 @@ function FecharCaixaDialog({ esperado }: { esperado: number }) {
         <DialogHeader>
           <DialogTitle>Fechar caixa</DialogTitle>
           <DialogDescription>
-            Confira o dinheiro físico da gaveta e o estoque de vasilhames no depósito.
+            Confira o declarado x sistema em cada forma de pagamento e o estoque de vasilhames.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-3">
-          <ValorLinha label="Dinheiro esperado" valor={brl(esperado)} destaque="forte" />
-          <Campo label="Dinheiro contado (R$)" htmlFor="contado">
-            <Input
-              id="contado"
-              type="number"
-              min={0}
-              step="0.01"
-              value={contado}
-              onChange={(e) => setContado(e.target.value)}
-            />
-          </Campo>
-          {contado !== "" && (
+          <div className="grid gap-3 rounded-xl border border-border bg-muted/40 p-4">
+            <p className="text-sm font-medium">Conferência financeira por forma de pagamento</p>
+
+            <ValorLinha label="Dinheiro no sistema" valor={brl(esperado)} destaque="forte" />
+            <Campo label="Valor contado em Dinheiro (R$)" htmlFor="contado">
+              <Input
+                id="contado"
+                type="number"
+                min={0}
+                step="0.01"
+                value={contado}
+                onChange={(e) => setContado(e.target.value)}
+              />
+            </Campo>
+            {contado !== "" && (
+              <ValorLinha
+                label={`Diferença em Dinheiro (${diferenca < 0 ? "falta" : "sobra"})`}
+                valor={brl(diferenca)}
+                destaque={diferenca < 0 ? "negativo" : "positivo"}
+              />
+            )}
+
+            <ValorLinha label="PIX no sistema" valor={brl(esperadoPix)} destaque="forte" />
+            <Campo label="Valor conferido em PIX (R$)" htmlFor="conf-pix">
+              <Input
+                id="conf-pix"
+                type="number"
+                min={0}
+                step="0.01"
+                value={pix}
+                onChange={(e) => setPix(e.target.value)}
+              />
+            </Campo>
+            {pix !== "" && (
+              <ValorLinha
+                label={`Diferença em PIX (${difPix < 0 ? "falta" : "sobra"})`}
+                valor={brl(difPix)}
+                destaque={difPix < 0 ? "negativo" : "positivo"}
+              />
+            )}
+
             <ValorLinha
-              label="Diferença de caixa"
-              valor={brl(diferenca)}
-              destaque={diferenca < 0 ? "negativo" : "positivo"}
+              label="Cartão (débito + crédito) no sistema"
+              valor={brl(esperadoCartao)}
+              destaque="forte"
             />
-          )}
+            <Campo label="Valor conferido em Cartão (R$)" htmlFor="conf-cartao">
+              <Input
+                id="conf-cartao"
+                type="number"
+                min={0}
+                step="0.01"
+                value={cartao}
+                onChange={(e) => setCartao(e.target.value)}
+              />
+            </Campo>
+            {cartao !== "" && (
+              <ValorLinha
+                label={`Diferença em Cartão (${difCartao < 0 ? "falta" : "sobra"})`}
+                valor={brl(difCartao)}
+                destaque={difCartao < 0 ? "negativo" : "positivo"}
+              />
+            )}
+          </div>
 
           <div className="mt-2 grid gap-3 rounded-xl border border-border bg-muted/40 p-4">
             <p className="text-sm font-medium">Conferência de estoque físico (obrigatória)</p>
@@ -317,17 +376,25 @@ function FecharCaixaDialog({ esperado }: { esperado: number }) {
           <Button
             disabled={!conferido}
             onClick={() => {
-              fecharCaixa(Number(contado), esperado);
+              fecharCaixa({
+                contado: Number(contado),
+                esperado,
+                contadoPix: Number(pix),
+                esperadoPix,
+                contadoCartao: Number(cartao),
+                esperadoCartao,
+              });
               setOpen(false);
               if (divCheios !== 0 || divVazios !== 0) {
                 toast.warning(
                   `Estoque com divergência: cheios ${divCheios > 0 ? "+" : ""}${divCheios}, vazios ${divVazios > 0 ? "+" : ""}${divVazios}.`,
                 );
               }
+              const zerado = diferenca === 0 && difPix === 0 && difCartao === 0;
               toast.success(
-                diferenca === 0
+                zerado
                   ? "Caixa fechado sem diferença."
-                  : `Caixa fechado com diferença de ${brl(diferenca)}.`,
+                  : `Caixa fechado · Dinheiro ${brl(diferenca)} · PIX ${brl(difPix)} · Cartão ${brl(difCartao)}.`,
               );
             }}
           >
@@ -338,6 +405,7 @@ function FecharCaixaDialog({ esperado }: { esperado: number }) {
     </Dialog>
   );
 }
+
 
 function AcertoEntregador() {
   const { pedidos } = usePedidos();
@@ -512,7 +580,12 @@ function CaixaPage() {
           <div className="flex flex-wrap gap-2">
             <MovimentoDialog tipo="suprimento" />
             <MovimentoDialog tipo="sangria" />
-            <FecharCaixaDialog esperado={esperado} />
+            <FecharCaixaDialog
+              esperado={esperado}
+              esperadoPix={totais.PIX}
+              esperadoCartao={totais.Débito + totais.Crédito}
+            />
+
           </div>
         ) : (
           <AbrirCaixaDialog />
