@@ -73,6 +73,8 @@ function StatusBadge({ status }: { status: StatusRecompra }) {
       className={
         status === "hoje"
           ? "bg-warning/25 text-warning-foreground"
+          : status === "amanha"
+            ? "bg-primary/10 text-primary"
           : status === "em-breve"
             ? "bg-primary/10 text-primary"
             : undefined
@@ -137,17 +139,15 @@ function ClientesPage() {
       .filter((c) => {
         const s = statusRecompra(c);
         if (aba === "todos") return true;
-        if (aba === "lembrar") return s === "hoje" || s === "em-breve" || s === "atrasado";
+        if (aba === "lembrar") return s === "hoje" || s === "atrasado";
         if (aba === "atrasado") return s === "atrasado";
-        return s === "ok";
+        return s === "ok" || s === "amanha" || s === "em-breve";
       })
       .sort((a, b) => diasRestantes(a) - diasRestantes(b));
   }, [clientes, busca, aba]);
 
-  const lembrarHoje = clientes.filter((c) => {
-    const s = statusRecompra(c);
-    return s === "hoje" || s === "atrasado";
-  });
+  // Estritamente: previsão igual à data de hoje (fuso local) ou em atraso.
+  const lembrarHoje = clientes.filter((c) => proximaCompra(c) <= hojeISO());
 
   const selecionado = clientes.find((c) => c.id === detalhe) ?? null;
 
