@@ -580,7 +580,12 @@ function CaixaPage() {
           <div className="flex flex-wrap gap-2">
             <MovimentoDialog tipo="suprimento" />
             <MovimentoDialog tipo="sangria" />
-            <FecharCaixaDialog esperado={esperado} />
+            <FecharCaixaDialog
+              esperado={esperado}
+              esperadoPix={totais.PIX}
+              esperadoCartao={totais.Débito + totais.Crédito}
+            />
+
           </div>
         ) : (
           <AbrirCaixaDialog />
