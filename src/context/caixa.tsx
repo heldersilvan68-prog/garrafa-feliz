@@ -21,11 +21,20 @@ type Ctx = {
   carregando: boolean;
   caixaAberto?: Caixa;
   abrirCaixa: (trocoInicial: number) => void;
-  fecharCaixa: (contado: number, esperado: number) => void;
+  fecharCaixa: (dados: FechamentoCaixa) => void;
   registrarMovimento: (tipo: TipoMovimento, valor: number, motivo: string) => void;
   salvarRegra: (regra: RegraComissao) => void;
   registrarVale: (entregador: string, valor: number, motivo: string) => void;
   pagarComissao: (entregador: string, valor: number) => void;
+};
+
+export type FechamentoCaixa = {
+  contado: number;
+  esperado: number;
+  contadoPix: number;
+  esperadoPix: number;
+  contadoCartao: number;
+  esperadoCartao: number;
 };
 
 const CaixaContext = createContext<Ctx | null>(null);
@@ -95,14 +104,18 @@ export function CaixaProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
   }, "Não foi possível abrir o caixa");
 
-  const fecharMut = useMutacao<{ contado: number; esperado: number }>(
-    async ({ contado, esperado }) => {
+  const fecharMut = useMutacao<FechamentoCaixa>(
+    async ({ contado, esperado, contadoPix, esperadoPix, contadoCartao, esperadoCartao }) => {
       if (!caixaAberto) throw new Error("Nenhum caixa aberto");
       const { error } = await supabase
         .from("cash_registers")
         .update({
           contado,
           diferenca: contado - esperado,
+          contado_pix: contadoPix,
+          diferenca_pix: contadoPix - esperadoPix,
+          contado_cartao: contadoCartao,
+          diferenca_cartao: contadoCartao - esperadoCartao,
           fechado_em: new Date().toISOString(),
         })
         .eq("id", caixaAberto.id);
@@ -171,7 +184,7 @@ export function CaixaProvider({ children }: { children: ReactNode }) {
         carregando: isLoading,
         caixaAberto,
         abrirCaixa: (trocoInicial) => abrirMut.mutate(trocoInicial),
-        fecharCaixa: (contado, esperado) => fecharMut.mutate({ contado, esperado }),
+        fecharCaixa: (dados) => fecharMut.mutate(dados),
         registrarMovimento: (tipo, valor, motivo) => movimentoMut.mutate({ tipo, valor, motivo }),
         salvarRegra: (regra) => regraMut.mutate(regra),
         registrarVale: (entregador, valor, motivo) =>

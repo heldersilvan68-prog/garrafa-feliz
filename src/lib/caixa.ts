@@ -19,6 +19,10 @@ export type Caixa = {
   fechadoEm?: string;
   contado?: number;
   diferenca?: number;
+  contadoPix?: number;
+  contadoCartao?: number;
+  diferencaPix?: number;
+  diferencaCartao?: number;
   movimentos: MovimentoCaixa[];
 };
 
@@ -70,6 +74,15 @@ export const totaisPorPagamento = (pedidos: Pedido[]) => {
 
 export const somaMovimentos = (movs: MovimentoCaixa[], tipo: TipoMovimento) =>
   movs.filter((m) => m.tipo === tipo).reduce((s, m) => s + m.valor, 0);
+
+/** Total esperado em PIX no dia. */
+export const pixEsperado = (pedidos: Pedido[]) => totaisPorPagamento(pedidos).PIX;
+
+/** Total esperado em cartão (débito + crédito) no dia. */
+export const cartaoEsperado = (pedidos: Pedido[]) => {
+  const t = totaisPorPagamento(pedidos);
+  return t.Débito + t.Crédito;
+};
 
 /** Dinheiro físico esperado na gaveta. */
 export const dinheiroEsperado = (caixa: Caixa, pedidos: Pedido[]) =>

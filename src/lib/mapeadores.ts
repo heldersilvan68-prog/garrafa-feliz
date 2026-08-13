@@ -163,6 +163,10 @@ export const paraCaixa = (r: CaixaRow, movimentos: MovimentoRow[]): Caixa => ({
   fechadoEm: r.fechado_em ?? undefined,
   contado: r.contado === null ? undefined : num(r.contado),
   diferenca: r.diferenca === null ? undefined : num(r.diferenca),
+  contadoPix: r.contado_pix === null ? undefined : num(r.contado_pix),
+  contadoCartao: r.contado_cartao === null ? undefined : num(r.contado_cartao),
+  diferencaPix: r.diferenca_pix === null ? undefined : num(r.diferenca_pix),
+  diferencaCartao: r.diferenca_cartao === null ? undefined : num(r.diferenca_cartao),
   movimentos: movimentos
     .filter((m) => m.cash_register_id === r.id)
     .sort((a, b) => (a.created_at < b.created_at ? 1 : -1))
