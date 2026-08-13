@@ -142,7 +142,7 @@ export function calcularResumo(
   }));
 
   // Compras = notas/despesas de mercadoria pagas + entradas de estoque valorizadas.
-  const comprasDespesas = despesas
+  const comprasDespesas = pagas
     .filter((d) => naFaixa(d.data, faixa) && ehCompra(d.categoria))
     .reduce((s, d) => s + d.valor, 0);
   const compras = comprasDespesas + comprasDeEstoque(opcoes.movimentos ?? [], produtos, faixa);
