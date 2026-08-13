@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useEstoque } from "@/context/estoque";
 import { usePedidos } from "@/context/pedidos";
 import { useDespesas } from "@/context/despesas";
+import { useConfiguracoes } from "@/context/configuracoes";
 import { calcularResumo } from "@/lib/dashboard";
 import type { Faixa } from "@/lib/periodo";
 
@@ -12,11 +13,16 @@ import type { Faixa } from "@/lib/periodo";
 export function useResumo(faixa: Faixa) {
   const { pedidos, carregando: carregandoPedidos } = usePedidos();
   const { despesas, carregando: carregandoDespesas } = useDespesas();
-  const { produtos, carregando: carregandoProdutos } = useEstoque();
+  const { produtos, movimentos, carregando: carregandoProdutos } = useEstoque();
+  const { config } = useConfiguracoes();
 
   const resumo = useMemo(
-    () => calcularResumo(faixa, pedidos, despesas, produtos),
-    [faixa, pedidos, despesas, produtos],
+    () =>
+      calcularResumo(faixa, pedidos, despesas, produtos, {
+        metaVendas: config.metaVendasMensal,
+        movimentos,
+      }),
+    [faixa, pedidos, despesas, produtos, movimentos, config.metaVendasMensal],
   );
 
   return {

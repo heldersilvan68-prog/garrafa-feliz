@@ -3,6 +3,7 @@ import type { Cliente } from "@/lib/clientes";
 import type { Despesa } from "@/lib/despesas";
 import { CORES_CATEGORIA } from "@/lib/despesas";
 import { fiadoEmAberto, valorPorForma, type Pedido } from "@/lib/pedidos";
+import type { MovimentoVasilhame } from "@/lib/vasilhames";
 import {
   INICIO_TUDO,
   dentroFaixa,
@@ -61,13 +62,44 @@ const rotuloDia = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 const MESES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
 /** Calcula todos os indicadores do intervalo a partir dos dados reais do banco. */
+export type OpcoesResumo = {
+  /** Meta de vendas cadastrada em Configurações. */
+  metaVendas?: number;
+  /** Movimentos de estoque, usados para valorizar as entradas de mercadoria. */
+  movimentos?: MovimentoVasilhame[];
+  hoje?: Date;
+};
+
+/** Categorias de despesa que representam compra de mercadoria/estoque. */
+const ehCompra = (categoria: string) =>
+  /compra|mercadoria|estoque|fornecedor|reposi|insumo|nota/i.test(categoria);
+
+/** Entradas de estoque (chegada de carga e compra de vasilhames) valorizadas ao custo. */
+const comprasDeEstoque = (
+  movimentos: MovimentoVasilhame[],
+  produtos: Produto[],
+  faixa: Faixa,
+) =>
+  movimentos
+    .filter((m) => (m.tipo === "entrada" || m.tipo === "compra") && naFaixa(m.em, faixa))
+    .reduce((s, m) => {
+      const p = produtos.find((x) => x.id === m.produtoId);
+      if (!p) return s;
+      const unitario =
+        m.deltaPatrimonio > 0
+          ? (p.custoCasco || 0) + (p.custoEnvase || 0) || p.precoCusto
+          : p.custoEnvase || p.precoCusto;
+      return s + Math.abs(m.qtd) * (unitario || 0);
+    }, 0);
+
 export function calcularResumo(
   faixa: Faixa,
   pedidos: Pedido[],
   despesas: Despesa[],
   produtos: Produto[],
-  hoje = new Date(),
+  opcoes: OpcoesResumo = {},
 ): ResumoPeriodo {
+  const hoje = opcoes.hoje ?? new Date();
   const anterior = faixaAnterior(faixa);
   const hojeIso = isoLocal(hoje);
 
@@ -109,9 +141,11 @@ export function calcularResumo(
     }, 0),
   }));
 
-  const compras = pagas
-    .filter((d) => naFaixa(d.data, faixa) && d.categoria === "Compra de Vasilhames")
+  // Compras = notas/despesas de mercadoria pagas + entradas de estoque valorizadas.
+  const comprasDespesas = despesas
+    .filter((d) => naFaixa(d.data, faixa) && ehCompra(d.categoria))
     .reduce((s, d) => s + d.valor, 0);
+  const compras = comprasDespesas + comprasDeEstoque(opcoes.movimentos ?? [], produtos, faixa);
 
   const vendidosRetornaveis = ativos.reduce(
     (s, p) => s + p.itens.filter((i) => i.retornavel).reduce((t, i) => t + i.qtd, 0),
@@ -185,7 +219,7 @@ export function calcularResumo(
     fiado,
     compras,
     vasilhamesNaRua,
-    metaVendas: 0,
+    metaVendas: opcoes.metaVendas ?? 0,
     pagamentos,
     tendencia: vendasDia.map((d, x) => ({ x, v: d.valor })),
     vendasDia,
