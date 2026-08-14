@@ -118,19 +118,34 @@ export function BreakdownSection({ resumo }: { resumo: ResumoPeriodo }) {
       <Card className="shadow-[var(--shadow-card)]">
         <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0">
           <CardTitle className="min-w-0 truncate text-sm font-medium text-muted-foreground">
-            Vasilhames na Rua
+            Volume Vendido Hoje
           </CardTitle>
           <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-warning/20 text-warning-foreground">
-            <Recycle className="size-4" />
+            <Boxes className="size-4" />
           </span>
         </CardHeader>
         <CardContent>
           <p className="text-3xl font-semibold tracking-tight">
-            {resumo.vasilhamesNaRua.toLocaleString("pt-BR")}
+            {resumo.volumeHojeTotal.toLocaleString("pt-BR")}{" "}
+            <span className="text-sm font-normal text-muted-foreground">un</span>
           </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Galões 20L retornáveis em poder dos clientes
-          </p>
+          {resumo.volumeHoje.length === 0 ? (
+            <p className="mt-1 text-xs text-muted-foreground">
+              Nenhuma unidade vendida hoje ainda
+            </p>
+          ) : (
+            <ul className="mt-2 flex flex-col gap-1">
+              {resumo.volumeHoje.slice(0, 5).map((v) => (
+                <li
+                  key={v.nome}
+                  className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 text-xs"
+                >
+                  <span className="truncate text-muted-foreground">{v.nome}</span>
+                  <span className="shrink-0 font-medium tabular-nums">{v.qtd} un</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </CardContent>
       </Card>
 

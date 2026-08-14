@@ -3,7 +3,6 @@ import type { Cliente } from "@/lib/clientes";
 import type { Despesa } from "@/lib/despesas";
 import { CORES_CATEGORIA } from "@/lib/despesas";
 import { fiadoEmAberto, valorPorForma, type Pedido } from "@/lib/pedidos";
-import type { MovimentoVasilhame } from "@/lib/vasilhames";
 import {
   INICIO_TUDO,
   dentroFaixa,
