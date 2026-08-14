@@ -215,6 +215,8 @@ export function calcularResumo(
     compras,
     vasilhamesNaRua,
     metaVendas: opcoes.metaVendas ?? 0,
+    volumeHoje,
+    volumeHojeTotal,
     pagamentos,
     tendencia: vendasDia.map((d, x) => ({ x, v: d.valor })),
     vendasDia,
