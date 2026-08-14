@@ -73,9 +73,7 @@ export function AcertoEntregador() {
     () =>
       pedidos.filter(
         (p) =>
-          p.entregador === selecionado &&
-          p.status === "em-rota" &&
-          p.criadoEm.slice(0, 10) === dia,
+          p.entregador === selecionado && p.status === "em-rota" && p.criadoEm.slice(0, 10) === dia,
       ),
     [pedidos, selecionado, dia],
   );
@@ -153,7 +151,11 @@ export function AcertoEntregador() {
               <ValorLinha label="Fiado deixado na caderneta" valor={brl(fiado)} />
               <Separator />
               <ValorLinha label="Dinheiro recebido em rota" valor={brl(dinheiro)} />
-              <ValorLinha label="Valor a entregar no caixa" valor={brl(dinheiro)} destaque="forte" />
+              <ValorLinha
+                label="Valor a entregar no caixa"
+                valor={brl(dinheiro)}
+                destaque="forte"
+              />
             </div>
           </div>
         </div>

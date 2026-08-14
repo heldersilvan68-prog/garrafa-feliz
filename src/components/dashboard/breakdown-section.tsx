@@ -32,12 +32,7 @@ function Gauge({ pct }: { pct: number }) {
         strokeLinecap="round"
         strokeDasharray={`${(clamped / 100) * circ} ${circ}`}
       />
-      <text
-        x="90"
-        y="80"
-        textAnchor="middle"
-        className="fill-foreground text-[26px] font-semibold"
-      >
+      <text x="90" y="80" textAnchor="middle" className="fill-foreground text-[26px] font-semibold">
         {clamped.toFixed(0)}%
       </text>
     </svg>
@@ -130,9 +125,7 @@ export function BreakdownSection({ resumo }: { resumo: ResumoPeriodo }) {
             <span className="text-sm font-normal text-muted-foreground">un</span>
           </p>
           {resumo.volumeHoje.length === 0 ? (
-            <p className="mt-1 text-xs text-muted-foreground">
-              Nenhuma unidade vendida hoje ainda
-            </p>
+            <p className="mt-1 text-xs text-muted-foreground">Nenhuma unidade vendida hoje ainda</p>
           ) : (
             <ul className="mt-2 flex flex-col gap-1">
               {resumo.volumeHoje.slice(0, 5).map((v) => (

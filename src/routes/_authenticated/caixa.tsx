@@ -8,13 +8,8 @@ import {
   CreditCard,
   Lock,
   LockOpen,
-  Package,
-  Recycle,
-  Truck,
-  Wallet,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -48,19 +43,13 @@ import { useCaixa } from "@/context/caixa";
 import { usePedidos } from "@/context/pedidos";
 import { useEstoque } from "@/context/estoque";
 import { brl } from "@/lib/erp";
-import { STATUS_PEDIDO_LABEL, resumoItens } from "@/lib/pedidos";
-import { useEntregadores } from "@/context/entregadores";
 import {
   dinheiroEsperado,
-  dinheiroRecebido,
-  entregasDoEntregador,
   hojeISO,
   horaCurta,
   pedidosDoDia,
   somaMovimentos,
   totaisPorPagamento,
-  unidadesRetornaveis,
-  vaziosRecolhidos,
   type TipoMovimento,
 } from "@/lib/caixa";
 
@@ -248,8 +237,7 @@ function FecharCaixaDialog({
   const vaziosSistema = retornaveis.reduce((s, p) => s + (p.estoqueVazio || 0), 0);
   const divCheios = (Number(cheios) || 0) - cheiosSistema;
   const divVazios = (Number(vazios) || 0) - vaziosSistema;
-  const conferido =
-    contado !== "" && pix !== "" && cartao !== "" && cheios !== "" && vazios !== "";
+  const conferido = contado !== "" && pix !== "" && cartao !== "" && cheios !== "" && vazios !== "";
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -406,7 +394,6 @@ function FecharCaixaDialog({
   );
 }
 
-
 function CaixaPage() {
   const { caixaAberto, caixas } = useCaixa();
   const { pedidos } = usePedidos();
@@ -436,7 +423,6 @@ function CaixaPage() {
               esperadoPix={totais.PIX}
               esperadoCartao={totais.Débito + totais.Crédito}
             />
-
           </div>
         ) : (
           <AbrirCaixaDialog />
