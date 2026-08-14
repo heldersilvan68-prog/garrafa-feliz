@@ -124,11 +124,11 @@ export function calcularResumo(
     }, 0),
   }));
 
-  // Compras = notas/despesas de mercadoria pagas + entradas de estoque valorizadas.
-  const comprasDespesas = pagas
+  // Compras = exclusivamente as despesas de mercadoria/reposição pagas no período.
+  // Ajustes de quantidade física no estoque NÃO entram aqui.
+  const compras = pagas
     .filter((d) => naFaixa(d.data, faixa) && ehCompra(d.categoria))
     .reduce((s, d) => s + d.valor, 0);
-  const compras = comprasDespesas + comprasDeEstoque(opcoes.movimentos ?? [], produtos, faixa);
 
   const vendidosRetornaveis = ativos.reduce(
     (s, p) => s + p.itens.filter((i) => i.retornavel).reduce((t, i) => t + i.qtd, 0),
@@ -136,6 +136,18 @@ export function calcularResumo(
   );
   const recolhidos = ativos.reduce((s, p) => s + p.vaziosRecolhidos, 0);
   const vasilhamesNaRua = Math.max(0, vendidosRetornaveis - recolhidos);
+
+  // Volume vendido hoje: unidades por produto nos pedidos do dia atual.
+  const mapaVolume = new Map<string, number>();
+  for (const p of ativos.filter((x) => diaDoPedido(x) === hojeIso)) {
+    for (const i of p.itens) {
+      mapaVolume.set(i.nome, (mapaVolume.get(i.nome) ?? 0) + i.qtd);
+    }
+  }
+  const volumeHoje = [...mapaVolume.entries()]
+    .map(([nome, qtd]) => ({ nome, qtd }))
+    .sort((a, b) => b.qtd - a.qtd);
+  const volumeHojeTotal = volumeHoje.reduce((s, v) => s + v.qtd, 0);
 
   // Séries reais
   let vendasDia: { rotulo: string; valor: number }[] = [];
