@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Banknote, CreditCard, Landmark, PiggyBank, QrCode, Recycle, Truck } from "lucide-react";
+import { Banknote, Boxes, CreditCard, Landmark, PiggyBank, QrCode, Truck } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { brl } from "@/lib/erp";
 import type { ResumoPeriodo } from "@/lib/dashboard";

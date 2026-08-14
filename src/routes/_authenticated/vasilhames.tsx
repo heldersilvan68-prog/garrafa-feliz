@@ -61,6 +61,11 @@ function Vasilhames() {
   const r = resumoVasilhames(produtos, naRua, emTransitoSeguro);
 
   const cards = [
+    {
+      titulo: "Vasilhames na Rua",
+      valor: `${r.naRua}`,
+      nota: "Galões 20L retornáveis em poder dos clientes",
+    },
     { titulo: "Patrimônio Total de Vasilhames", valor: `${r.patrimonio}`, nota: `${brl(r.patrimonioValor)} em cascos no patrimônio` },
     { titulo: "Unidades Cheias no Depósito", valor: `${r.cheios}`, nota: "Prontas para venda" },
     { titulo: "Vasilhames Vazios no Depósito", valor: `${r.vazios}`, nota: `${r.naRua} na rua · ${emTransitoSeguro} na fonte` },
