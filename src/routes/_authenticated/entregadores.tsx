@@ -317,6 +317,8 @@ function EntregadoresPage() {
           )}
         </CardContent>
       </Card>
+
+      <AcertoEntregador />
     </div>
   );
 }
