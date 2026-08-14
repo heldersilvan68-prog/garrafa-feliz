@@ -34,6 +34,9 @@ export type ResumoPeriodo = {
   compras: number;
   vasilhamesNaRua: number;
   metaVendas: number;
+  /** Unidades vendidas hoje agrupadas por produto. */
+  volumeHoje: { nome: string; qtd: number }[];
+  volumeHojeTotal: number;
   pagamentos: { metodo: string; valor: number }[];
   tendencia: { x: number; v: number }[];
   vendasDia: { rotulo: string; valor: number }[];
@@ -65,32 +68,12 @@ const MESES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "O
 export type OpcoesResumo = {
   /** Meta de vendas cadastrada em Configurações. */
   metaVendas?: number;
-  /** Movimentos de estoque, usados para valorizar as entradas de mercadoria. */
-  movimentos?: MovimentoVasilhame[];
   hoje?: Date;
 };
 
 /** Categorias de despesa que representam compra de mercadoria/estoque. */
 const ehCompra = (categoria: string) =>
   /compra|mercadoria|estoque|fornecedor|reposi|insumo|nota/i.test(categoria);
-
-/** Entradas de estoque (chegada de carga e compra de vasilhames) valorizadas ao custo. */
-const comprasDeEstoque = (
-  movimentos: MovimentoVasilhame[],
-  produtos: Produto[],
-  faixa: Faixa,
-) =>
-  movimentos
-    .filter((m) => (m.tipo === "entrada" || m.tipo === "compra") && naFaixa(m.em, faixa))
-    .reduce((s, m) => {
-      const p = produtos.find((x) => x.id === m.produtoId);
-      if (!p) return s;
-      const unitario =
-        m.deltaPatrimonio > 0
-          ? (p.custoCasco || 0) + (p.custoEnvase || 0) || p.precoCusto
-          : p.custoEnvase || p.precoCusto;
-      return s + Math.abs(m.qtd) * (unitario || 0);
-    }, 0);
 
 export function calcularResumo(
   faixa: Faixa,
