@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { ListaCarregando } from "@/components/lista-carregando";
+import { AcertoEntregador } from "@/components/entregadores/acerto-entregador";
 import { useEntregadores } from "@/context/entregadores";
 import { mascaraTelefone } from "@/lib/clientes";
 import {
@@ -316,6 +317,8 @@ function EntregadoresPage() {
           )}
         </CardContent>
       </Card>
+
+      <AcertoEntregador />
     </div>
   );
 }

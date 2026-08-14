@@ -42,9 +42,16 @@ const FORMAS_PADRAO: { nome: string; tipo: string; taxa: number }[] = [
   { nome: "Fiado/Faturado", tipo: "Fiado", taxa: 0 },
 ];
 
+/** Formas aceitas pelo banco (enum payment_method). */
+const METODOS_BASE = ["PIX", "Dinheiro", "Débito", "Crédito", "Fiado"] as const;
+
 type Ctx = {
   config: Configuracoes;
   formas: FormaPagamentoConfig[];
+  /** Métodos habilitados nas Configurações, para os seletores de Vendas/Caixa. */
+  metodosAtivos: string[];
+  /** Taxa (%) cadastrada em Configurações para o método informado. */
+  taxaDe: (metodo: string) => number;
   categoriasCliente: { id: string; nome: string }[];
   carregando: boolean;
   salvarConfig: (c: Partial<Configuracoes>) => Promise<void>;
