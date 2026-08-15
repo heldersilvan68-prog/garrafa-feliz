@@ -50,6 +50,10 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
   const { criar } = usePedidos();
   const { caixaAberto } = useCaixa();
   const { opcoes } = useEntregadores();
+  const { metodosAtivos } = useConfiguracoes();
+  // Formas de pagamento vêm das Configurações (globais) e atualizam na hora.
+  const formasDisponiveis = metodosAtivos as FormaPagamento[];
+
 
   const [aberto, setAberto] = useState(false);
   const [busca, setBusca] = useState("");
