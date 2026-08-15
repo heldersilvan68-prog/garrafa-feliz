@@ -31,7 +31,12 @@ import { LABEL_MODO, type ModoVenda } from "@/lib/vasilhames";
 
 import { brl } from "@/lib/erp";
 import { dataBR } from "@/lib/despesas";
-import { FORMAS_PAGAMENTO, STATUS_PEDIDO_LABEL, type StatusPedido } from "@/lib/pedidos";
+import {
+  STATUS_PEDIDO_LABEL,
+  type FormaPagamento,
+  type StatusPedido,
+} from "@/lib/pedidos";
+import { useConfiguracoes } from "@/context/configuracoes";
 import { baixarCSV, imprimir, maisVendidos } from "@/lib/relatorios";
 import { dentroFaixa, rotuloFaixa } from "@/lib/periodo";
 import { FiltroPeriodo } from "@/components/filtro-periodo";
