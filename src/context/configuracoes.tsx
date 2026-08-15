@@ -168,12 +168,10 @@ export function ConfiguracoesProvider({ children }: { children: ReactNode }) {
   const semearMut = acao<void>(
     async () => {
       if (!userId) throw new Error("Sessão expirada");
-      const { error } = await supabase
-        .from("payment_methods")
-        .upsert(
-          FORMAS_PADRAO.map((f) => ({ user_id: userId, ...f, ativo: true })),
-          { onConflict: "user_id,nome" },
-        );
+      const { error } = await supabase.from("payment_methods").upsert(
+        FORMAS_PADRAO.map((f) => ({ user_id: userId, ...f, ativo: true })),
+        { onConflict: "user_id,nome" },
+      );
       if (error) throw error;
     },
     "Não foi possível criar as formas padrão",

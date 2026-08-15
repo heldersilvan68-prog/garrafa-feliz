@@ -31,11 +31,7 @@ import { LABEL_MODO, type ModoVenda } from "@/lib/vasilhames";
 
 import { brl } from "@/lib/erp";
 import { dataBR } from "@/lib/despesas";
-import {
-  STATUS_PEDIDO_LABEL,
-  type FormaPagamento,
-  type StatusPedido,
-} from "@/lib/pedidos";
+import { STATUS_PEDIDO_LABEL, type FormaPagamento, type StatusPedido } from "@/lib/pedidos";
 import { useConfiguracoes } from "@/context/configuracoes";
 import { baixarCSV, imprimir, maisVendidos } from "@/lib/relatorios";
 import { dentroFaixa, rotuloFaixa } from "@/lib/periodo";
@@ -84,9 +80,6 @@ function RelatoriosPage() {
   const { clientes } = useClientes();
   const { metodosAtivos, taxaDe } = useConfiguracoes();
   const formasFiltro = metodosAtivos as FormaPagamento[];
-
-
-
 
   const periodoEstado = usePeriodo("hoje");
   const faixa = periodoEstado.faixa;
@@ -152,7 +145,9 @@ function RelatoriosPage() {
   const vaziosRecolhidos = validos.reduce((s, p) => s + p.vaziosRecolhidos, 0);
 
   // Novos clientes cadastrados dentro do período filtrado.
-  const novosClientes = clientes.filter((c) => c.cadastradoEm && dentroFaixa(c.cadastradoEm, faixa));
+  const novosClientes = clientes.filter(
+    (c) => c.cadastradoEm && dentroFaixa(c.cadastradoEm, faixa),
+  );
 
   // Faturamento e lucro por modalidade de vasilhame retornável.
   const porModalidade = useMemo(() => {
@@ -189,7 +184,6 @@ function RelatoriosPage() {
       };
     });
   }, [validos, produtos]);
-
 
   return (
     <div className="flex flex-col gap-6 print:gap-4">
@@ -342,14 +336,13 @@ function RelatoriosPage() {
             </CardContent>
           </Card>
 
-
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-3">
               <div>
                 <CardTitle className="text-base">Por forma de pagamento</CardTitle>
                 <CardDescription>
-                  Somente pedidos não cancelados · taxas conforme Configurações (
-                  {brl(totalTaxas)} em taxas)
+                  Somente pedidos não cancelados · taxas conforme Configurações ({brl(totalTaxas)}{" "}
+                  em taxas)
                 </CardDescription>
               </div>
               <Button
