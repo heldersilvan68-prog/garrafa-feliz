@@ -77,6 +77,10 @@ function RelatoriosPage() {
   const { produtos } = useEstoque();
   const { caixaAberto } = useCaixa();
   const { clientes } = useClientes();
+  const { metodosAtivos, taxaDe } = useConfiguracoes();
+  const formasFiltro = metodosAtivos as FormaPagamento[];
+
+
 
 
   const periodoEstado = usePeriodo("hoje");
