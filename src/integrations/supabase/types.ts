@@ -780,11 +780,15 @@ export type Database = {
           imagem_url: string | null
           legacy_id: string | null
           marca: string | null
+          margem_desejada: number
           nome: string
           preco_custo: number
+          preco_custo_fardo: number
+          preco_fardo: number
           preco_venda: number
           retornavel: boolean
           unidade: string | null
+          unidades_por_fardo: number
           updated_at: string
           user_id: string
         }
@@ -800,11 +804,15 @@ export type Database = {
           imagem_url?: string | null
           legacy_id?: string | null
           marca?: string | null
+          margem_desejada?: number
           nome: string
           preco_custo?: number
+          preco_custo_fardo?: number
+          preco_fardo?: number
           preco_venda?: number
           retornavel?: boolean
           unidade?: string | null
+          unidades_por_fardo?: number
           updated_at?: string
           user_id: string
         }
@@ -820,11 +828,15 @@ export type Database = {
           imagem_url?: string | null
           legacy_id?: string | null
           marca?: string | null
+          margem_desejada?: number
           nome?: string
           preco_custo?: number
+          preco_custo_fardo?: number
+          preco_fardo?: number
           preco_venda?: number
           retornavel?: boolean
           unidade?: string | null
+          unidades_por_fardo?: number
           updated_at?: string
           user_id?: string
         }
