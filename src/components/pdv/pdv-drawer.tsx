@@ -30,16 +30,12 @@ import { useClientes } from "@/context/clientes";
 import { useEstoque } from "@/context/estoque";
 import { usePedidos } from "@/context/pedidos";
 import { useEntregadores } from "@/context/entregadores";
+import { useConfiguracoes } from "@/context/configuracoes";
 
 import { bairroDe, hojeISO, rotuloCliente } from "@/lib/clientes";
 import { brl } from "@/lib/erp";
 import { BALCAO } from "@/lib/entregadores";
-import {
-  FORMAS_PAGAMENTO,
-  resumoItens,
-  type FormaPagamento,
-  type ItemPedido,
-} from "@/lib/pedidos";
+import { resumoItens, type FormaPagamento, type ItemPedido } from "@/lib/pedidos";
 import { LABEL_MODO, type ModoVenda } from "@/lib/vasilhames";
 
 type Parcela = { forma: FormaPagamento; valor: string };
@@ -50,6 +46,9 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
   const { criar } = usePedidos();
   const { caixaAberto } = useCaixa();
   const { opcoes } = useEntregadores();
+  const { metodosAtivos } = useConfiguracoes();
+  // Formas de pagamento vêm das Configurações (globais) e atualizam na hora.
+  const formasDisponiveis = metodosAtivos as FormaPagamento[];
 
   const [aberto, setAberto] = useState(false);
   const [busca, setBusca] = useState("");
@@ -218,8 +217,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
 
         {!caixaAberto && (
           <div className="mx-6 mb-2 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm font-medium text-destructive">
-            Abra o caixa para realizar vendas — vá em “Caixa & Acerto” e abra a sessão
-            do dia.
+            Abra o caixa para realizar vendas — vá em “Caixa & Acerto” e abra a sessão do dia.
           </div>
         )}
 
@@ -242,7 +240,6 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                       }}
                     />
                   </div>
-
                 </Campo>
                 {!clienteId && (
                   <div className="overflow-hidden rounded-lg border border-border">
@@ -271,9 +268,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-sm font-medium">{rotuloCliente(cliente)}</span>
                       {(cliente.divida ?? 0) > 0 && (
-                        <Badge variant="destructive">
-                          Fiado: {brl(cliente.divida ?? 0)}
-                        </Badge>
+                        <Badge variant="destructive">Fiado: {brl(cliente.divida ?? 0)}</Badge>
                       )}
                     </div>
                     <Campo label="Endereço de entrega" htmlFor="pdv-endereco">
@@ -375,9 +370,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                               className="h-9 w-32 rounded-lg"
                               placeholder="Preço unit. negociado"
                               value={precos[p.id] ?? String(p.precoVenda)}
-                              onChange={(e) =>
-                                setPrecos((s) => ({ ...s, [p.id]: e.target.value }))
-                              }
+                              onChange={(e) => setPrecos((s) => ({ ...s, [p.id]: e.target.value }))}
                             />
                             <span className="ml-auto text-xs tabular-nums text-muted-foreground">
                               = {brl(q * (Number(precos[p.id] ?? p.precoVenda) || 0))}
@@ -411,8 +404,8 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                     />
                   </Campo>
                   <p className="text-xs text-muted-foreground">
-                    Preenchido automaticamente com os retornáveis do carrinho — edite se
-                    o cliente não devolveu todos.
+                    Preenchido automaticamente com os retornáveis do carrinho — edite se o cliente
+                    não devolveu todos.
                   </p>
                 </div>
               )}
@@ -448,7 +441,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {FORMAS_PAGAMENTO.map((f) => (
+                        {formasDisponiveis.map((f) => (
                           <SelectItem key={f} value={f}>
                             {f === "Fiado" ? "Fiado / Caderneta" : f}
                           </SelectItem>
@@ -489,8 +482,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                     Informado: <strong className="tabular-nums">{brl(informado)}</strong>
                   </span>
                   <span className={restante > 0.009 ? "text-destructive" : "text-success"}>
-                    Restante:{" "}
-                    <strong className="tabular-nums">{brl(Math.max(0, restante))}</strong>
+                    Restante: <strong className="tabular-nums">{brl(Math.max(0, restante))}</strong>
                   </span>
                 </div>
                 <Button
@@ -522,8 +514,8 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                     />
                   </Campo>
                   <p className="text-xs text-muted-foreground">
-                    Recebido em dinheiro: <strong>{brl(valorDinheiro)}</strong> · Troco a
-                    devolver: <strong>{brl(troco)}</strong>
+                    Recebido em dinheiro: <strong>{brl(valorDinheiro)}</strong> · Troco a devolver:{" "}
+                    <strong>{brl(troco)}</strong>
                   </p>
                 </div>
               )}
@@ -550,10 +542,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                 ) : (
                   <ul className="flex flex-col gap-1">
                     {itens.map((i) => (
-                      <li
-                        key={i.produtoId}
-                        className="flex items-center justify-between text-sm"
-                      >
+                      <li key={i.produtoId} className="flex items-center justify-between text-sm">
                         <span className="truncate pr-2">
                           {i.qtd}x {i.nome}
                         </span>

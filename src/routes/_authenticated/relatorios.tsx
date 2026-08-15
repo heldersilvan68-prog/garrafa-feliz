@@ -31,7 +31,8 @@ import { LABEL_MODO, type ModoVenda } from "@/lib/vasilhames";
 
 import { brl } from "@/lib/erp";
 import { dataBR } from "@/lib/despesas";
-import { FORMAS_PAGAMENTO, STATUS_PEDIDO_LABEL, type StatusPedido } from "@/lib/pedidos";
+import { STATUS_PEDIDO_LABEL, type FormaPagamento, type StatusPedido } from "@/lib/pedidos";
+import { useConfiguracoes } from "@/context/configuracoes";
 import { baixarCSV, imprimir, maisVendidos } from "@/lib/relatorios";
 import { dentroFaixa, rotuloFaixa } from "@/lib/periodo";
 import { FiltroPeriodo } from "@/components/filtro-periodo";
@@ -77,7 +78,8 @@ function RelatoriosPage() {
   const { produtos } = useEstoque();
   const { caixaAberto } = useCaixa();
   const { clientes } = useClientes();
-
+  const { metodosAtivos, taxaDe } = useConfiguracoes();
+  const formasFiltro = metodosAtivos as FormaPagamento[];
 
   const periodoEstado = usePeriodo("hoje");
   const faixa = periodoEstado.faixa;
@@ -103,11 +105,20 @@ function RelatoriosPage() {
   const ticket = validos.length > 0 ? faturado / validos.length : 0;
   const cancelados = filtrados.filter((p) => p.status === "cancelado");
 
-  const porForma = FORMAS_PAGAMENTO.map((f) => ({
-    forma: f,
-    qtd: validos.filter((p) => p.pagamento === f).length,
-    valor: validos.filter((p) => p.pagamento === f).reduce((s, p) => s + p.total, 0),
-  }));
+  // Formas e taxas vêm das Configurações (contexto global).
+  const porForma = formasFiltro.map((f) => {
+    const valor = validos.filter((p) => p.pagamento === f).reduce((s, p) => s + p.total, 0);
+    const taxa = taxaDe(f);
+    return {
+      forma: f,
+      qtd: validos.filter((p) => p.pagamento === f).length,
+      valor,
+      taxa,
+      taxaValor: (valor * taxa) / 100,
+      liquido: valor - (valor * taxa) / 100,
+    };
+  });
+  const totalTaxas = porForma.reduce((s, f) => s + f.taxaValor, 0);
 
   const ranking = maisVendidos(validos);
 
@@ -134,7 +145,9 @@ function RelatoriosPage() {
   const vaziosRecolhidos = validos.reduce((s, p) => s + p.vaziosRecolhidos, 0);
 
   // Novos clientes cadastrados dentro do período filtrado.
-  const novosClientes = clientes.filter((c) => c.cadastradoEm && dentroFaixa(c.cadastradoEm, faixa));
+  const novosClientes = clientes.filter(
+    (c) => c.cadastradoEm && dentroFaixa(c.cadastradoEm, faixa),
+  );
 
   // Faturamento e lucro por modalidade de vasilhame retornável.
   const porModalidade = useMemo(() => {
@@ -171,7 +184,6 @@ function RelatoriosPage() {
       };
     });
   }, [validos, produtos]);
-
 
   return (
     <div className="flex flex-col gap-6 print:gap-4">
@@ -218,7 +230,7 @@ function RelatoriosPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="todas">Todas</SelectItem>
-                {FORMAS_PAGAMENTO.map((f) => (
+                {formasFiltro.map((f) => (
                   <SelectItem key={f} value={f}>
                     {f}
                   </SelectItem>
@@ -324,12 +336,14 @@ function RelatoriosPage() {
             </CardContent>
           </Card>
 
-
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-3">
               <div>
                 <CardTitle className="text-base">Por forma de pagamento</CardTitle>
-                <CardDescription>Somente pedidos não cancelados.</CardDescription>
+                <CardDescription>
+                  Somente pedidos não cancelados · taxas conforme Configurações ({brl(totalTaxas)}{" "}
+                  em taxas)
+                </CardDescription>
               </div>
               <Button
                 variant="outline"
@@ -338,8 +352,15 @@ function RelatoriosPage() {
                 onClick={() =>
                   baixarCSV(
                     "formas-pagamento",
-                    ["Forma", "Pedidos", "Valor"],
-                    porForma.map((f) => [f.forma, f.qtd, f.valor.toFixed(2)]),
+                    ["Forma", "Pedidos", "Valor", "Taxa %", "Taxa R$", "Líquido"],
+                    porForma.map((f) => [
+                      f.forma,
+                      f.qtd,
+                      f.valor.toFixed(2),
+                      f.taxa.toFixed(2),
+                      f.taxaValor.toFixed(2),
+                      f.liquido.toFixed(2),
+                    ]),
                   )
                 }
               >
@@ -353,6 +374,8 @@ function RelatoriosPage() {
                     <TableHead>Forma</TableHead>
                     <TableHead>Pedidos</TableHead>
                     <TableHead className="text-right">Valor</TableHead>
+                    <TableHead className="text-right">Taxa</TableHead>
+                    <TableHead className="text-right">Líquido</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -361,6 +384,12 @@ function RelatoriosPage() {
                       <TableCell className="font-medium">{f.forma}</TableCell>
                       <TableCell>{f.qtd}</TableCell>
                       <TableCell className="text-right">{brl(f.valor)}</TableCell>
+                      <TableCell className="text-right text-muted-foreground tabular-nums">
+                        {f.taxa > 0 ? `${f.taxa.toFixed(2)}% · ${brl(f.taxaValor)}` : "—"}
+                      </TableCell>
+                      <TableCell className="text-right font-medium tabular-nums">
+                        {brl(f.liquido)}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

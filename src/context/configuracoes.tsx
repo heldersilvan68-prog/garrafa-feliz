@@ -168,12 +168,10 @@ export function ConfiguracoesProvider({ children }: { children: ReactNode }) {
   const semearMut = acao<void>(
     async () => {
       if (!userId) throw new Error("Sessão expirada");
-      const { error } = await supabase
-        .from("payment_methods")
-        .upsert(
-          FORMAS_PADRAO.map((f) => ({ user_id: userId, ...f, ativo: true })),
-          { onConflict: "user_id,nome" },
-        );
+      const { error } = await supabase.from("payment_methods").upsert(
+        FORMAS_PADRAO.map((f) => ({ user_id: userId, ...f, ativo: true })),
+        { onConflict: "user_id,nome" },
+      );
       if (error) throw error;
     },
     "Não foi possível criar as formas padrão",
@@ -217,11 +215,38 @@ export function ConfiguracoesProvider({ children }: { children: ReactNode }) {
     "Categoria excluída.",
   );
 
+  const formas = data?.formas ?? [];
+  const ativas = formas.filter((f) => f.ativo);
+
+  /** Casa um método do enum com a forma cadastrada (por nome ou por tipo). */
+  const formaDoMetodo = (metodo: string) => {
+    const alvo = metodo.toLowerCase();
+    return (
+      ativas.find((f) => f.nome.toLowerCase() === alvo) ??
+      ativas.find((f) => f.nome.toLowerCase().includes(alvo)) ??
+      ativas.find((f) => f.tipo.toLowerCase() === alvo) ??
+      ((alvo === "débito" || alvo === "crédito") &&
+      ativas.some((f) => f.tipo.toLowerCase() === "cartão")
+        ? ativas.find((f) => f.tipo.toLowerCase() === "cartão")
+        : undefined)
+    );
+  };
+
+  // Sem formas cadastradas, todos os métodos ficam disponíveis.
+  const metodosAtivos =
+    ativas.length === 0
+      ? [...METODOS_BASE]
+      : METODOS_BASE.filter((m) => !!formaDoMetodo(m)).map((m) => m as string);
+
+  const taxaDe = (metodo: string) => formaDoMetodo(metodo)?.taxa ?? 0;
+
   return (
     <ConfiguracoesContext.Provider
       value={{
         config,
-        formas: data?.formas ?? [],
+        formas,
+        metodosAtivos: metodosAtivos.length > 0 ? metodosAtivos : [...METODOS_BASE],
+        taxaDe,
         categoriasCliente: data?.categoriasCliente ?? [],
         carregando: isLoading,
         salvarConfig: (c) => configMut.mutateAsync(c).then(() => undefined),
