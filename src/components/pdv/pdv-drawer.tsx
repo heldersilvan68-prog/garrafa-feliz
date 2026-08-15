@@ -30,12 +30,12 @@ import { useClientes } from "@/context/clientes";
 import { useEstoque } from "@/context/estoque";
 import { usePedidos } from "@/context/pedidos";
 import { useEntregadores } from "@/context/entregadores";
+import { useConfiguracoes } from "@/context/configuracoes";
 
 import { bairroDe, hojeISO, rotuloCliente } from "@/lib/clientes";
 import { brl } from "@/lib/erp";
 import { BALCAO } from "@/lib/entregadores";
 import {
-  FORMAS_PAGAMENTO,
   resumoItens,
   type FormaPagamento,
   type ItemPedido,
@@ -448,7 +448,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {FORMAS_PAGAMENTO.map((f) => (
+                        {formasDisponiveis.map((f) => (
                           <SelectItem key={f} value={f}>
                             {f === "Fiado" ? "Fiado / Caderneta" : f}
                           </SelectItem>
