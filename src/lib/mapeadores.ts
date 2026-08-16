@@ -37,7 +37,12 @@ export const paraProduto = (r: ProdutoRow): Produto => ({
   estoqueVazio: r.estoque_vazio,
   custoCasco: num(r.custo_casco),
   custoEnvase: num(r.custo_envase),
+  unidadesPorFardo: Math.max(1, r.unidades_por_fardo ?? 1),
+  precoCustoFardo: num(r.preco_custo_fardo),
+  precoFardo: num(r.preco_fardo),
+  margemDesejada: num(r.margem_desejada),
 });
+
 
 export const paraCompra = (r: CompraRow): Compra => ({
   id: r.id,

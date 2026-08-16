@@ -118,7 +118,12 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
       estoque_vazio: p.estoqueVazio,
       custo_casco: p.custoCasco,
       custo_envase: p.custoEnvase,
+      unidades_por_fardo: Math.max(1, Math.floor(p.unidadesPorFardo || 1)),
+      preco_custo_fardo: p.precoCustoFardo || 0,
+      preco_fardo: p.precoFardo || 0,
+      margem_desejada: p.margemDesejada || 0,
     };
+
     const existe = produtos.some((x) => x.id === p.id);
     const { error } = existe
       ? await supabase.from("products").update(linha).eq("id", p.id)
