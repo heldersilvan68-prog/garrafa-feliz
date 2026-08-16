@@ -126,10 +126,7 @@ export function DespesasProvider({ children }: { children: ReactNode }) {
 
   const removerCategoriaMut = useMutation({
     mutationFn: async (id: string) => {
-      const emUso = (data?.despesas ?? []).some(
-        (d) => d.categoria === data?.categorias.find((c) => c.id === id)?.nome,
-      );
-      if (emUso) throw new Error("Existem despesas usando esta categoria.");
+      // Controle total: exclui mesmo em uso; as despesas antigas mantêm o nome histórico.
       const { error } = await supabase.from("expense_categories").delete().eq("id", id);
       if (error) throw error;
     },
