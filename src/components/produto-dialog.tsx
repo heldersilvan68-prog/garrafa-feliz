@@ -35,7 +35,12 @@ const vazio: Produto = {
   estoqueVazio: 0,
   custoCasco: 0,
   custoEnvase: 0,
+  unidadesPorFardo: 1,
+  precoCustoFardo: 0,
+  precoFardo: 0,
+  margemDesejada: 0,
 };
+
 
 export function ProdutoDialog({
   produto,
