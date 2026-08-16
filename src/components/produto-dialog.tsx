@@ -18,7 +18,15 @@ import { SelectComCadastro } from "@/components/select-com-cadastro";
 import { ProdutoFoto } from "@/components/produto-foto";
 import { useEstoque } from "@/context/estoque";
 import { arquivoParaMiniatura } from "@/lib/imagem";
-import { CATEGORIAS_SUGERIDAS, type Produto } from "@/lib/erp";
+import {
+  CATEGORIAS_SUGERIDAS,
+  brl,
+  margemReal,
+  precoSugerido,
+  rotuloEstoque,
+  unidPorFardo,
+  type Produto,
+} from "@/lib/erp";
 
 const vazio: Produto = {
   id: "",
@@ -60,6 +68,10 @@ export function ProdutoDialog({
 
   const set = <K extends keyof Produto>(k: K, v: Produto[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
+
+  const upf = unidPorFardo(form);
+  const sugerido = precoSugerido(form.precoCusto, form.margemDesejada);
+  const margem = margemReal(form.precoCusto, form.precoVenda);
 
   const escolherArquivo = async (file?: File | null) => {
     if (!file) return;
