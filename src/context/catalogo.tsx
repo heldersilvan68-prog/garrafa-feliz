@@ -101,22 +101,33 @@ export function CatalogoProvider({ children }: { children: ReactNode }) {
   const removerMut = useMutation({
     mutationFn: async ({ tipo, id }: { tipo: TipoAuxiliar; id: string }) => {
       const item = lista(tipo).find((x) => x.id === id);
-      if (!item) return;
+      if (!item) return 0;
       const coluna = tipo === "categorias" ? "categoria" : tipo === "marcas" ? "marca" : "unidade";
+      // Controle total: exclui mesmo em uso e apenas desvincula os produtos afetados.
       const { count, error: erroVinculo } = await supabase
         .from("products")
         .select("id", { count: "exact", head: true })
         .eq(coluna, item.nome);
       if (erroVinculo) throw erroVinculo;
       if ((count ?? 0) > 0) {
-        throw new Error(`${count} produto(s) usam "${item.nome}". Altere-os antes de excluir.`);
+        const { error: erroLimpeza } = await supabase
+          .from("products")
+          .update(coluna === "categoria" ? { categoria: "Sem categoria" } : { [coluna]: null })
+          .eq(coluna, item.nome);
+        if (erroLimpeza) throw erroLimpeza;
       }
       const { error } = await supabase.from(TABELA[tipo]).delete().eq("id", id);
       if (error) throw error;
+      return count ?? 0;
     },
-    onSuccess: () => {
+    onSuccess: (afetados) => {
       invalidar();
-      toast.success("Cadastro excluído!");
+      queryClient.invalidateQueries({ queryKey: ["produtos"] });
+      toast.success(
+        afetados && afetados > 0
+          ? `Cadastro excluído! ${afetados} produto(s) foram desvinculados.`
+          : "Cadastro excluído!",
+      );
     },
     onError: (e: Error) => toast.error(e.message),
   });
