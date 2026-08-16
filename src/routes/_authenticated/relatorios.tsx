@@ -38,6 +38,7 @@ import { dentroFaixa, rotuloFaixa } from "@/lib/periodo";
 import { FiltroPeriodo } from "@/components/filtro-periodo";
 import { usePeriodo } from "@/hooks/use-periodo";
 import { useResumo } from "@/hooks/use-resumo";
+import { AnaliseProdutos } from "@/components/relatorios/analise-produtos";
 
 export const Route = createFileRoute("/_authenticated/relatorios")({
   head: () => ({
@@ -246,6 +247,7 @@ function RelatoriosPage() {
           <TabsTrigger value="vendas">Vendas</TabsTrigger>
           <TabsTrigger value="estoque">Estoque</TabsTrigger>
           <TabsTrigger value="financeiro">Financeiro</TabsTrigger>
+          <TabsTrigger value="produtos">Produtos & Reposição</TabsTrigger>
         </TabsList>
 
         <TabsContent value="vendas" className="mt-4 flex flex-col gap-4">
@@ -595,6 +597,10 @@ function RelatoriosPage() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="produtos" className="mt-4">
+          <AnaliseProdutos />
         </TabsContent>
 
         <TabsContent value="financeiro" className="mt-4 flex flex-col gap-4">

@@ -18,7 +18,15 @@ import { SelectComCadastro } from "@/components/select-com-cadastro";
 import { ProdutoFoto } from "@/components/produto-foto";
 import { useEstoque } from "@/context/estoque";
 import { arquivoParaMiniatura } from "@/lib/imagem";
-import { CATEGORIAS_SUGERIDAS, type Produto } from "@/lib/erp";
+import {
+  CATEGORIAS_SUGERIDAS,
+  brl,
+  margemReal,
+  precoSugerido,
+  rotuloEstoque,
+  unidPorFardo,
+  type Produto,
+} from "@/lib/erp";
 
 const vazio: Produto = {
   id: "",
@@ -35,7 +43,12 @@ const vazio: Produto = {
   estoqueVazio: 0,
   custoCasco: 0,
   custoEnvase: 0,
+  unidadesPorFardo: 1,
+  precoCustoFardo: 0,
+  precoFardo: 0,
+  margemDesejada: 0,
 };
+
 
 export function ProdutoDialog({
   produto,
@@ -55,6 +68,10 @@ export function ProdutoDialog({
 
   const set = <K extends keyof Produto>(k: K, v: Produto[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
+
+  const upf = unidPorFardo(form);
+  const sugerido = precoSugerido(form.precoCusto, form.margemDesejada);
+  const margem = margemReal(form.precoCusto, form.precoVenda);
 
   const escolherArquivo = async (file?: File | null) => {
     if (!file) return;
@@ -170,29 +187,113 @@ export function ProdutoDialog({
             </Campo>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Campo label="Preço de Custo (R$)" htmlFor="custo">
-              <Input
-                id="custo"
-                type="number"
-                step="0.01"
-                value={form.precoCusto}
-                onChange={(e) => set("precoCusto", Number(e.target.value))}
-              />
-            </Campo>
-            <Campo label="Preço de Venda (R$)" htmlFor="venda">
-              <Input
-                id="venda"
-                type="number"
-                step="0.01"
-                value={form.precoVenda}
-                onChange={(e) => set("precoVenda", Number(e.target.value))}
-              />
-            </Campo>
+          <div className="rounded-xl border border-border p-4">
+            <p className="text-sm font-medium">Fardo / caixa</p>
+            <p className="mb-3 text-xs text-muted-foreground">
+              Informe quantas unidades vêm no fardo para o sistema converter as baixas de estoque
+              automaticamente nas vendas avulsas e fechadas.
+            </p>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <Campo label="Unidades por fardo/caixa" htmlFor="upf">
+                <Input
+                  id="upf"
+                  type="number"
+                  min={1}
+                  value={form.unidadesPorFardo}
+                  onChange={(e) => set("unidadesPorFardo", Math.max(1, Number(e.target.value) || 1))}
+                />
+              </Campo>
+              <Campo label="Preço de Custo do Fardo (R$)" htmlFor="custo-fardo">
+                <Input
+                  id="custo-fardo"
+                  type="number"
+                  step="0.01"
+                  value={form.precoCustoFardo}
+                  onChange={(e) => {
+                    const v = Number(e.target.value) || 0;
+                    setForm((f) => ({
+                      ...f,
+                      precoCustoFardo: v,
+                      precoCusto: upf > 1 ? Math.round((v / upf) * 100) / 100 : f.precoCusto,
+                    }));
+                  }}
+                />
+              </Campo>
+              <Campo label="Preço de Venda do Fardo (R$)" htmlFor="venda-fardo">
+                <Input
+                  id="venda-fardo"
+                  type="number"
+                  step="0.01"
+                  value={form.precoFardo}
+                  onChange={(e) => set("precoFardo", Number(e.target.value) || 0)}
+                />
+              </Campo>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-border p-4">
+            <p className="mb-3 text-sm font-medium">Precificação inteligente (unidade avulsa)</p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Campo label="Preço de Custo Unitário (R$)" htmlFor="custo">
+                <Input
+                  id="custo"
+                  type="number"
+                  step="0.01"
+                  value={form.precoCusto}
+                  onChange={(e) => set("precoCusto", Number(e.target.value) || 0)}
+                />
+              </Campo>
+              <Campo label="Margem de Lucro Desejada (%)" htmlFor="margem">
+                <Input
+                  id="margem"
+                  type="number"
+                  step="0.01"
+                  value={form.margemDesejada}
+                  onChange={(e) => set("margemDesejada", Number(e.target.value) || 0)}
+                />
+              </Campo>
+              <Campo label="Valor do Lucro Previsto (R$)" htmlFor="lucro-prev">
+                <Input id="lucro-prev" readOnly value={brl(sugerido - form.precoCusto)} />
+              </Campo>
+              <Campo label="Preço de Venda Sugerido (R$)" htmlFor="sugerido">
+                <div className="flex items-center gap-2">
+                  <Input id="sugerido" readOnly value={brl(sugerido)} />
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="shrink-0"
+                    onClick={() => set("precoVenda", sugerido)}
+                  >
+                    Usar
+                  </Button>
+                </div>
+              </Campo>
+              <Campo
+                label="Preço de Venda Praticado (R$)"
+                htmlFor="venda"
+                className="sm:col-span-2"
+              >
+                <Input
+                  id="venda"
+                  type="number"
+                  step="0.01"
+                  value={form.precoVenda}
+                  onChange={(e) => set("precoVenda", Number(e.target.value) || 0)}
+                />
+              </Campo>
+            </div>
+            <p className="mt-3 text-xs text-muted-foreground">
+              Margem real praticada:{" "}
+              <strong className={margem < 0 ? "text-destructive" : "text-success"}>
+                {margem.toFixed(2)}%
+              </strong>{" "}
+              · Lucro por unidade: <strong>{brl(form.precoVenda - form.precoCusto)}</strong>
+            </p>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <Campo label="Quantidade mínima" htmlFor="min">
+            <Campo label="Quantidade mínima (unidades)" htmlFor="min">
               <Input
                 id="min"
                 type="number"
@@ -200,7 +301,7 @@ export function ProdutoDialog({
                 onChange={(e) => set("estoqueMinimo", Number(e.target.value))}
               />
             </Campo>
-            <Campo label="Quantidade atual" htmlFor="cheio">
+            <Campo label="Quantidade atual (unidades)" htmlFor="cheio">
               <Input
                 id="cheio"
                 type="number"
@@ -208,7 +309,11 @@ export function ProdutoDialog({
                 onChange={(e) => set("estoqueCheio", Number(e.target.value))}
               />
             </Campo>
+            <p className="text-xs text-muted-foreground sm:col-span-2">
+              Estoque atual equivale a <strong>{rotuloEstoque(form.estoqueCheio, upf)}</strong>.
+            </p>
           </div>
+
 
           <div className="flex items-center justify-between rounded-xl border border-border bg-muted/40 p-4">
             <div className="min-w-0 pr-4">

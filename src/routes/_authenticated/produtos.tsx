@@ -19,7 +19,7 @@ import { ProdutoFoto } from "@/components/produto-foto";
 import { ProdutoDialog } from "@/components/produto-dialog";
 import { EntradaEstoqueDialog } from "@/components/estoque-dialogs";
 import { useEstoque } from "@/context/estoque";
-import { brl } from "@/lib/erp";
+import { brl, rotuloEstoque, unidPorFardo } from "@/lib/erp";
 
 export const Route = createFileRoute("/_authenticated/produtos")({
   head: () => ({
@@ -65,6 +65,33 @@ function Produtos() {
           </Button>
         </ProdutoDialog>
       </header>
+
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Card className="shadow-[var(--shadow-card)]">
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground">Total de produtos cadastrados</p>
+            <p className="mt-1 text-2xl font-semibold tracking-tight tabular-nums">
+              {produtos.length}
+            </p>
+          </CardContent>
+        </Card>
+        <Card className="shadow-[var(--shadow-card)]">
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground">Unidades em estoque</p>
+            <p className="mt-1 text-2xl font-semibold tracking-tight tabular-nums">
+              {produtos.reduce((s, p) => s + (p.estoqueCheio || 0), 0)}
+            </p>
+          </CardContent>
+        </Card>
+        <Card className="shadow-[var(--shadow-card)]">
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground">Abaixo do estoque mínimo</p>
+            <p className="mt-1 text-2xl font-semibold tracking-tight tabular-nums text-warning">
+              {produtos.filter((p) => (p.estoqueCheio || 0) <= (p.estoqueMinimo || 0)).length}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
 
       <div className="relative max-w-sm">
         <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -115,12 +142,17 @@ function Produtos() {
 
 {/* 2. Qtd. Disponível */}
 <TableCell className="text-center tabular-nums font-medium">
-  {p.estoqueCheio ?? 0}
+  <span>{rotuloEstoque(p.estoqueCheio || 0, unidPorFardo(p))}</span>
+  {unidPorFardo(p) > 1 ? (
+    <span className="block text-xs font-normal text-muted-foreground">
+      {p.estoqueCheio || 0} un. · fardo de {unidPorFardo(p)}
+    </span>
+  ) : null}
 </TableCell>
 
 {/* 3. Estoque Mínimo */}
 <TableCell className="text-center tabular-nums text-muted-foreground">
-  {p.estoqueMinimo ?? 0}
+  {rotuloEstoque(p.estoqueMinimo || 0, unidPorFardo(p))}
 </TableCell>
 
 {/* 4. Preço de Custo */}
