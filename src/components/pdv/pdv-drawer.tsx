@@ -33,7 +33,7 @@ import { useEntregadores } from "@/context/entregadores";
 import { useConfiguracoes } from "@/context/configuracoes";
 
 import { bairroDe, hojeISO, rotuloCliente } from "@/lib/clientes";
-import { brl } from "@/lib/erp";
+import { brl, rotuloEstoque, unidPorFardo } from "@/lib/erp";
 import { BALCAO } from "@/lib/entregadores";
 import { resumoItens, type FormaPagamento, type ItemPedido } from "@/lib/pedidos";
 import { LABEL_MODO, type ModoVenda } from "@/lib/vasilhames";
@@ -59,11 +59,29 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
   const [vazios, setVazios] = useState("0");
   const [vaziosEditado, setVaziosEditado] = useState(false);
   const [modos, setModos] = useState<Record<string, ModoVenda>>({});
+  // Embalagem escolhida por produto: unidade avulsa ou fardo fechado.
+  const [embalagens, setEmbalagens] = useState<Record<string, "un" | "fardo">>({});
   const [parcelas, setParcelas] = useState<Parcela[]>([{ forma: "PIX", valor: "" }]);
   const [trocoPara, setTrocoPara] = useState("");
   const [entregador, setEntregador] = useState<string>(BALCAO);
 
   const cliente = clientes.find((c) => c.id === clienteId);
+
+  /** Passo de incremento no carrinho: 1 unidade ou o fardo inteiro. */
+  const passoDe = (id: string) => {
+    const p = produtos.find((x) => x.id === id);
+    if (!p) return 1;
+    return (embalagens[id] ?? "un") === "fardo" ? unidPorFardo(p) : 1;
+  };
+
+  /** Preço unitário padrão conforme a embalagem (fardo é convertido por unidade). */
+  const precoPadrao = (id: string) => {
+    const p = produtos.find((x) => x.id === id);
+    if (!p) return 0;
+    if ((embalagens[id] ?? "un") === "fardo" && p.precoFardo > 0)
+      return Math.round((p.precoFardo / unidPorFardo(p)) * 100) / 100;
+    return p.precoVenda;
+  };
 
   const filtrados = useMemo(() => {
     const q = busca.trim().toLowerCase();
@@ -84,7 +102,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
       nome: p.nome,
       qtd: carrinho[p.id]!,
       // Preço negociado apenas nesta venda — não altera o cadastro do produto.
-      precoUnit: Math.max(0, Number(precos[p.id] ?? p.precoVenda) || 0),
+      precoUnit: Math.max(0, Number(precos[p.id] ?? precoPadrao(p.id)) || 0),
       retornavel: p.retornavel,
       modo: p.retornavel ? (modos[p.id] ?? "refil") : "refil",
     }));
@@ -114,7 +132,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
 
   const mudar = (id: string, delta: number) =>
     setCarrinho((c) => {
-      const n = Math.max(0, (c[id] ?? 0) + delta);
+      const n = Math.max(0, (c[id] ?? 0) + delta * passoDe(id));
       const next = { ...c };
       if (n === 0) delete next[id];
       else next[id] = n;
@@ -125,6 +143,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
     setCarrinho({});
     setPrecos({});
     setModos({});
+    setEmbalagens({});
     setVazios("0");
     setVaziosEditado(false);
     setTrocoPara("");
@@ -303,11 +322,16 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                           <div className="min-w-0 flex-1 space-y-1">
                             <p className="truncate text-sm font-semibold leading-tight">{p.nome}</p>
                             <p className="text-sm font-medium tabular-nums text-primary">
-                              {brl(p.precoVenda)}
+                              {brl(precoPadrao(p.id))}
+                              {(embalagens[p.id] ?? "un") === "fardo" ? (
+                                <span className="ml-1 text-xs font-normal text-muted-foreground">
+                                  /un · fardo {brl(p.precoFardo || p.precoVenda * unidPorFardo(p))}
+                                </span>
+                              ) : null}
                             </p>
                             <div className="flex flex-wrap items-center gap-1.5">
                               <span className="text-xs text-muted-foreground">
-                                {p.estoqueCheio} em estoque
+                                {rotuloEstoque(p.estoqueCheio, unidPorFardo(p))} em estoque
                               </span>
                               {p.retornavel && (
                                 <Badge variant="secondary" className="px-1.5 py-0 text-[10px]">
@@ -327,7 +351,11 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                             >
                               <Plus className="size-4" />
                             </Button>
-                            <span className="text-sm font-semibold tabular-nums">{q}</span>
+                            <span className="text-sm font-semibold tabular-nums">
+                              {(embalagens[p.id] ?? "un") === "fardo"
+                                ? `${Math.floor(q / unidPorFardo(p))}f`
+                                : q}
+                            </span>
                             <Button
                               type="button"
                               size="icon"
@@ -340,6 +368,30 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                             </Button>
                           </div>
                         </div>
+
+                        {unidPorFardo(p) > 1 && (
+                          <Select
+                            value={embalagens[p.id] ?? "un"}
+                            onValueChange={(v) => {
+                              setEmbalagens((m) => ({ ...m, [p.id]: v as "un" | "fardo" }));
+                              setPrecos((s2) => {
+                                const next = { ...s2 };
+                                delete next[p.id];
+                                return next;
+                              });
+                            }}
+                          >
+                            <SelectTrigger className="h-8 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="un">Unidade avulsa</SelectItem>
+                              <SelectItem value="fardo">
+                                Fardo fechado ({unidPorFardo(p)} un.)
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        )}
 
                         {q > 0 && p.retornavel && (
                           <Select
@@ -369,11 +421,12 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                               step="0.01"
                               className="h-9 w-32 rounded-lg"
                               placeholder="Preço unit. negociado"
-                              value={precos[p.id] ?? String(p.precoVenda)}
+                              value={precos[p.id] ?? String(precoPadrao(p.id))}
                               onChange={(e) => setPrecos((s) => ({ ...s, [p.id]: e.target.value }))}
                             />
                             <span className="ml-auto text-xs tabular-nums text-muted-foreground">
-                              = {brl(q * (Number(precos[p.id] ?? p.precoVenda) || 0))}
+                              {rotuloEstoque(q, unidPorFardo(p))} ={" "}
+                              {brl(q * (Number(precos[p.id] ?? precoPadrao(p.id)) || 0))}
                             </span>
                           </div>
                         )}
