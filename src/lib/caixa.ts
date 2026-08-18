@@ -51,7 +51,7 @@ export type PagamentoComissao = {
 
 export const hojeISO = () => isoLocal(new Date());
 
-export const mesmoDia = (iso: string, dia: string) => iso.slice(0, 10) === dia;
+export const mesmoDia = (iso: string, dia: string) => isoLocal(iso) === dia;
 
 export const FORMAS_DINHEIRO: FormaPagamento[] = ["Dinheiro"];
 

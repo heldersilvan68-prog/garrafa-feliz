@@ -1,4 +1,4 @@
-import { isoLocal } from "@/lib/periodo";
+import { isoLocal, isoParaDataLocal } from "@/lib/periodo";
 import type { Categoria, Produto } from "@/lib/erp";
 import type { Cliente, Compra } from "@/lib/clientes";
 import type { FormaPagamento, ItemPedido, Pedido, StatusPedido } from "@/lib/pedidos";
@@ -58,8 +58,8 @@ const consumoMedio = (datas: string[], padrao: number) => {
   const intervalos: number[] = [];
   for (let i = 1; i < unicas.length; i++) {
     const dias = Math.round(
-      (new Date(`${unicas[i]}T00:00:00`).getTime() -
-        new Date(`${unicas[i - 1]}T00:00:00`).getTime()) /
+      (isoParaDataLocal(unicas[i]).getTime() -
+        isoParaDataLocal(unicas[i - 1]).getTime()) /
         86_400_000,
     );
     if (dias > 0) intervalos.push(dias);

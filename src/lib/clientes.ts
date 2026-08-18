@@ -1,4 +1,4 @@
-import { isoLocal } from "@/lib/periodo";
+import { isoLocal, isoParaDataLocal, somarDiasIso } from "@/lib/periodo";
 
 export type Compra = {
   id: string;
@@ -57,16 +57,13 @@ export const DIA_MS = 86_400_000;
 
 export const hojeISO = () => isoLocal(new Date());
 
-export const isoParaData = (iso: string) => new Date(`${iso}T00:00:00`);
+export const isoParaData = (iso: string) => isoParaDataLocal(iso);
 
 export const formatarData = (iso: string) =>
   isoParaData(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
 
-export const proximaCompra = (c: Cliente) => {
-  const d = isoParaData(c.ultimaCompra);
-  d.setDate(d.getDate() + Math.max(1, Math.round(c.consumoMedioDias)));
-  return isoLocal(d);
-};
+export const proximaCompra = (c: Cliente) =>
+  somarDiasIso(c.ultimaCompra, Math.max(1, Math.round(c.consumoMedioDias)));
 
 /** Dias restantes até a próxima compra prevista (negativo = atrasado). */
 export const diasRestantes = (c: Cliente) =>
