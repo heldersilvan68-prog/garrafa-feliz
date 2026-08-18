@@ -9,6 +9,8 @@ import {
   faixaAnterior,
   faixaDeUmDia,
   isoLocal,
+  horaLocal,
+  somarDiasIso,
   type Faixa,
 } from "@/lib/periodo";
 
@@ -44,7 +46,7 @@ export type ResumoPeriodo = {
 
 const METODOS = ["PIX", "Dinheiro", "Débito", "Crédito"] as const;
 
-const diaDoPedido = (p: Pedido) => isoLocal(new Date(p.criadoEm));
+const diaDoPedido = (p: Pedido) => isoLocal(p.criadoEm);
 
 const naFaixa = (iso: string, f: Faixa) => dentroFaixa(iso, f);
 
@@ -155,7 +157,7 @@ export function calcularResumo(
       const h = 8 + i * 2;
       const valor = doPeriodo
         .filter((p) => {
-          const hora = new Date(p.criadoEm).getHours();
+          const hora = horaLocal(p.criadoEm);
           return hora >= h && hora < h + 2;
         })
         .reduce((s, p) => s + p.total, 0);
@@ -163,20 +165,11 @@ export function calcularResumo(
     });
   } else {
     const dias: string[] = [];
-    const inicio =
-      faixa.inicio === INICIO_TUDO
-        ? (() => {
-            const d = new Date(hoje);
-            d.setDate(d.getDate() - 13);
-            return d;
-          })()
-        : new Date(`${faixa.inicio}T00:00:00`);
-    for (
-      const cursor = new Date(inicio);
-      isoLocal(cursor) <= faixa.fim && isoLocal(cursor) <= hojeIso;
-      cursor.setDate(cursor.getDate() + 1)
-    ) {
-      dias.push(isoLocal(cursor));
+    let cursorIso =
+      faixa.inicio === INICIO_TUDO ? somarDiasIso(hojeIso, -13) : faixa.inicio;
+    while (cursorIso <= faixa.fim && cursorIso <= hojeIso) {
+      dias.push(cursorIso);
+      cursorIso = somarDiasIso(cursorIso, 1);
     }
     vendasDia = dias.map((iso) => ({
       rotulo: rotuloDia(iso),

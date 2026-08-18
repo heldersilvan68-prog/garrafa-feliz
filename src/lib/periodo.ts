@@ -20,9 +20,53 @@ export const PERIODOS: { id: PeriodoId; label: string }[] = [
 export const INICIO_TUDO = "0000-01-01";
 export const FIM_TUDO = "9999-12-31";
 
-/** ISO yyyy-mm-dd no fuso local (evita o deslocamento de toISOString). */
-export const isoLocal = (d: Date) =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+/** Fuso operacional do sistema (America/Bahia, UTC-3, sem horário de verão). */
+export const TIMEZONE = "America/Bahia";
+const OFFSET = "-03:00";
+
+const fmtDia = new Intl.DateTimeFormat("en-CA", {
+  timeZone: TIMEZONE,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+/**
+ * ISO yyyy-mm-dd sempre no fuso America/Bahia, independente do fuso do
+ * navegador/servidor. Aceita Date ou string (data ou datetime ISO).
+ */
+export const isoLocal = (d: Date | string) => {
+  if (typeof d === "string") {
+    if (!d) return "";
+    if (!d.includes("T")) return d.slice(0, 10);
+    return fmtDia.format(new Date(d));
+  }
+  return fmtDia.format(d);
+};
+
+/** Converte yyyy-mm-dd em Date ancorado ao meio-dia de Bahia (round-trip seguro). */
+export const isoParaDataLocal = (iso: string) =>
+  new Date(`${iso.slice(0, 10)}T12:00:00${OFFSET}`);
+
+/** "Agora" com os componentes de data/hora de Bahia. */
+export const agoraLocal = () => new Date();
+
+/** Hora do dia (0-23) em Bahia. */
+export const horaLocal = (iso: string | Date) =>
+  Number(
+    new Intl.DateTimeFormat("en-GB", {
+      timeZone: TIMEZONE,
+      hour: "2-digit",
+      hour12: false,
+    }).format(typeof iso === "string" ? new Date(iso) : iso),
+  ) % 24;
+
+/** Soma dias a um yyyy-mm-dd sem sofrer deslocamento de fuso. */
+export const somarDiasIso = (iso: string, n: number) => {
+  const d = isoParaDataLocal(iso);
+  d.setUTCDate(d.getUTCDate() + n);
+  return isoLocal(d);
+};
 
 export function faixaPeriodo(
   periodo: PeriodoId,
@@ -30,11 +74,7 @@ export function faixaPeriodo(
   hoje = new Date()
 ): Faixa {
   const fim = isoLocal(hoje);
-  const menos = (dias: number) => {
-    const d = new Date(hoje);
-    d.setDate(d.getDate() - dias);
-    return isoLocal(d);
-  };
+  const menos = (dias: number) => somarDiasIso(fim, -dias);
 
   switch (periodo) {
     case "hoje": {
@@ -57,21 +97,18 @@ export function faixaPeriodo(
 /** Intervalo imediatamente anterior, do mesmo tamanho (para variação %). */
 export function faixaAnterior(f: Faixa): Faixa {
   if (f.inicio === INICIO_TUDO) return { inicio: INICIO_TUDO, fim: INICIO_TUDO };
-  const ini = new Date(`${f.inicio}T00:00:00`);
-  const fim = new Date(`${f.fim}T00:00:00`);
+  const ini = isoParaDataLocal(f.inicio);
+  const fim = isoParaDataLocal(f.fim);
   const dias = Math.round((fim.getTime() - ini.getTime()) / 86_400_000) + 1;
-  const novoFim = new Date(ini);
-  novoFim.setDate(novoFim.getDate() - 1);
-  const novoIni = new Date(novoFim);
-  novoIni.setDate(novoIni.getDate() - (dias - 1));
-  return { inicio: isoLocal(novoIni), fim: isoLocal(novoFim) };
+  const novoFim = somarDiasIso(f.inicio, -1);
+  const novoIni = somarDiasIso(novoFim, -(dias - 1));
+  return { inicio: novoIni, fim: novoFim };
 }
 
 /** Aceita data (yyyy-mm-dd) ou datetime ISO. */
 export const dentroFaixa = (iso: string, f: Faixa) => {
   if (!iso) return false;
-  const d = new Date(iso);
-  const dia = isoLocal(d);
+  const dia = isoLocal(iso);
   return dia >= f.inicio && dia <= f.fim;
 };
 

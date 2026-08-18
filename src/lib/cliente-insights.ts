@@ -7,16 +7,12 @@ import {
   type Cliente,
   type Compra,
 } from "@/lib/clientes";
-import { isoLocal } from "@/lib/periodo";
+import { isoLocal, somarDiasIso } from "@/lib/periodo";
 import type { Pedido } from "@/lib/pedidos";
 
 export type Periodo = { de: string; ate: string };
 
-export const somaDias = (iso: string, n: number) => {
-  const d = isoParaData(iso);
-  d.setDate(d.getDate() + n);
-  return isoLocal(d);
-};
+export const somaDias = (iso: string, n: number) => somarDiasIso(iso, n);
 
 export const periodoPadrao = (): Periodo => ({
   de: somaDias(hojeISO(), -180),

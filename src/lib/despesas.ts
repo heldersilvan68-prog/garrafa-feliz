@@ -1,4 +1,4 @@
-import { isoLocal } from "@/lib/periodo";
+import { isoLocal, somarDiasIso } from "@/lib/periodo";
 
 export const CATEGORIAS_DESPESA = [
   "Combustível",
@@ -52,17 +52,15 @@ export const dataBR = (iso: string) => {
 
 /** Despesas dentro de um período (em dias) contando a partir de hoje. */
 export const despesasNoPeriodo = (despesas: Despesa[], periodo: string) => {
-  const hoje = new Date();
-  const iso = (d: Date) => isoLocal(d);
-  if (periodo === "hoje") return despesas.filter((d) => d.data === iso(hoje));
+  const hojeIso = isoLocal(new Date());
+  if (periodo === "hoje") return despesas.filter((d) => isoLocal(d.data) === hojeIso);
   if (periodo === "7d" || periodo === "30d") {
     const dias = periodo === "7d" ? 7 : 30;
-    const limite = new Date(hoje);
-    limite.setDate(limite.getDate() - dias);
-    return despesas.filter((d) => d.data >= iso(limite) && d.data <= iso(hoje));
+    const limite = somarDiasIso(hojeIso, -dias);
+    return despesas.filter((d) => d.data >= limite && d.data <= hojeIso);
   }
   if (periodo === "mes") {
-    const prefixo = iso(hoje).slice(0, 7);
+    const prefixo = hojeIso.slice(0, 7);
     return despesas.filter((d) => d.data.startsWith(prefixo));
   }
   return despesas;
