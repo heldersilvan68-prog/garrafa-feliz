@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { ProdutoFoto } from "@/components/produto-foto";
-import { Minus, Plus } from "lucide-react";
+import { Minus, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,7 +14,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
@@ -30,10 +29,13 @@ import { useEntregadores } from "@/context/entregadores";
 import { brl } from "@/lib/erp";
 import {
   FORMAS_PAGAMENTO,
+  parcelasDe,
   type FormaPagamento,
   type ItemPedido,
   type Pedido,
 } from "@/lib/pedidos";
+
+type Parcela = { forma: FormaPagamento; valor: string };
 
 export function EditarPedidoDialog({
   pedido,
@@ -50,7 +52,7 @@ export function EditarPedidoDialog({
   const [carrinho, setCarrinho] = useState<Record<string, number>>({});
   const [precos, setPrecos] = useState<Record<string, string>>({});
   const [endereco, setEndereco] = useState(pedido.endereco);
-  const [pagamento, setPagamento] = useState<FormaPagamento>(pedido.pagamento);
+  const [parcelas, setParcelas] = useState<Parcela[]>([]);
   const [trocoPara, setTrocoPara] = useState(pedido.trocoPara ? String(pedido.trocoPara) : "");
   const [vazios, setVazios] = useState(String(pedido.vaziosRecolhidos));
   const [entregador, setEntregador] = useState(pedido.entregador);
@@ -62,7 +64,9 @@ export function EditarPedidoDialog({
     setCarrinho(Object.fromEntries(pedido.itens.map((i) => [i.produtoId, i.qtd])));
     setPrecos(Object.fromEntries(pedido.itens.map((i) => [i.produtoId, String(i.precoUnit)])));
     setEndereco(pedido.endereco);
-    setPagamento(pedido.pagamento);
+    setParcelas(
+      parcelasDe(pedido).map((x) => ({ forma: x.forma, valor: String(x.valor || "") })),
+    );
     setTrocoPara(pedido.trocoPara ? String(pedido.trocoPara) : "");
     setVazios(String(pedido.vaziosRecolhidos));
     setEntregador(pedido.entregador);
@@ -82,6 +86,21 @@ export function EditarPedidoDialog({
 
 
   const total = itens.reduce((s, i) => s + i.qtd * i.precoUnit, 0);
+  const pago = Math.round(parcelas.reduce((s, x) => s + (Number(x.valor) || 0), 0) * 100) / 100;
+  const restante = Math.round((total - pago) * 100) / 100;
+  const valorFiado =
+    Math.round(
+      parcelas
+        .filter((x) => x.forma === "Fiado")
+        .reduce((s, x) => s + (Number(x.valor) || 0), 0) * 100,
+    ) / 100;
+  const dinheiroInformado = parcelas.some((x) => x.forma === "Dinheiro");
+  const formaPrincipal =
+    [...parcelas]
+      .filter((x) => (Number(x.valor) || 0) > 0)
+      .sort((a, b) => (Number(b.valor) || 0) - (Number(a.valor) || 0))[0]?.forma ??
+    parcelas[0]?.forma ??
+    pedido.pagamento;
 
   const mudar = (id: string, delta: number) =>
     setCarrinho((c) => {
@@ -97,15 +116,25 @@ export function EditarPedidoDialog({
       toast.error("O pedido precisa ter pelo menos um produto.");
       return;
     }
+    if (Math.abs(restante) > 0.009) {
+      toast.error(
+        restante > 0
+          ? `Falta distribuir ${brl(restante)} entre as formas de pagamento.`
+          : `Total pago excede o pedido em ${brl(Math.abs(restante))}.`,
+      );
+      return;
+    }
     atualizar(pedido.id, {
       itens,
       total,
       endereco: endereco || pedido.endereco,
-      pagamento,
-      pago: pagamento !== "Fiado",
-      valorFiado: pagamento === "Fiado" ? total : 0,
-      pagamentos: [{ forma: pagamento, valor: total }],
-      trocoPara: pagamento === "Dinheiro" ? Number(trocoPara) || undefined : undefined,
+      pagamento: formaPrincipal,
+      pago: valorFiado <= 0,
+      valorFiado,
+      pagamentos: parcelas
+        .filter((x) => (Number(x.valor) || 0) > 0)
+        .map((x) => ({ forma: x.forma, valor: Number(x.valor) })),
+      trocoPara: dinheiroInformado ? Number(trocoPara) || undefined : undefined,
       vaziosRecolhidos: Math.max(0, Number(vazios) || 0),
       entregador,
     });
@@ -208,27 +237,106 @@ export function EditarPedidoDialog({
               </div>
             </div>
 
-            <div className="flex flex-col gap-2">
-              <Label>Forma de pagamento</Label>
-              <RadioGroup
-                value={pagamento}
-                onValueChange={(v) => setPagamento(v as FormaPagamento)}
-                className="grid gap-2 sm:grid-cols-3"
-              >
-                {FORMAS_PAGAMENTO.map((f) => (
-                  <Label
-                    key={f}
-                    htmlFor={`edit-pg-${pedido.id}-${f}`}
-                    className="flex cursor-pointer items-center gap-2 rounded-lg border border-border p-3 text-sm has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-primary/5"
+            <div className="flex flex-col gap-3">
+              <Label>Formas de pagamento</Label>
+              {parcelas.map((x, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <Select
+                    value={x.forma}
+                    onValueChange={(v) =>
+                      setParcelas((ps) =>
+                        ps.map((y, i) => (i === idx ? { ...y, forma: v as FormaPagamento } : y)),
+                      )
+                    }
                   >
-                    <RadioGroupItem id={`edit-pg-${pedido.id}-${f}`} value={f} />
-                    {f === "Fiado" ? "Fiado" : f}
-                  </Label>
-                ))}
-              </RadioGroup>
+                    <SelectTrigger className="w-40">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {FORMAS_PAGAMENTO.map((f) => (
+                        <SelectItem key={f} value={f}>
+                          {f}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="0,00"
+                    className="w-32"
+                    value={x.valor}
+                    onChange={(e) =>
+                      setParcelas((ps) =>
+                        ps.map((y, i) => (i === idx ? { ...y, valor: e.target.value } : y)),
+                      )
+                    }
+                  />
+                  {parcelas.length > 1 && (
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      className="size-8"
+                      aria-label="Remover forma de pagamento"
+                      onClick={() => setParcelas((ps) => ps.filter((_, i) => i !== idx))}
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() =>
+                    setParcelas((ps) => [
+                      ...ps,
+                      { forma: "Dinheiro", valor: restante > 0 ? String(restante) : "" },
+                    ])
+                  }
+                >
+                  <Plus className="size-4" />
+                  Adicionar forma
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() =>
+                    setParcelas((ps) =>
+                      ps.length === 0
+                        ? [{ forma: pedido.pagamento, valor: String(total) }]
+                        : ps.map((y, i) => (i === 0 ? { ...y, valor: String(total) } : { ...y, valor: "" })),
+                    )
+                  }
+                >
+                  Lançar total na 1ª forma
+                </Button>
+              </div>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-border bg-muted/30 p-3 text-sm">
+                <span className="text-muted-foreground">
+                  Total do pedido: <strong className="tabular-nums text-foreground">{brl(total)}</strong>
+                </span>
+                <span className="text-muted-foreground">
+                  Total pago: <strong className="tabular-nums text-foreground">{brl(pago)}</strong>
+                </span>
+                <span
+                  className={
+                    Math.abs(restante) < 0.01
+                      ? "font-medium text-success"
+                      : "font-medium text-destructive"
+                  }
+                >
+                  Saldo restante: <span className="tabular-nums">{brl(restante)}</span>
+                </span>
+              </div>
             </div>
 
-            {pagamento === "Dinheiro" && (
+            {dinheiroInformado && (
               <div className="flex flex-col gap-2">
                 <Label htmlFor={`edit-troco-${pedido.id}`}>Troco para R$</Label>
                 <Input
