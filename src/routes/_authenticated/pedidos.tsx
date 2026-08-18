@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { PdvDrawer } from "@/components/pdv/pdv-drawer";
 import { BaixaFiadoDialog } from "@/components/pedidos/baixa-fiado-dialog";
 import { CancelarPedidoDialog } from "@/components/pedidos/cancelar-pedido-dialog";
+import { DetalhesPedidoDialog } from "@/components/pedidos/detalhes-pedido-dialog";
 import { EditarPedidoDialog } from "@/components/pedidos/editar-pedido-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,7 @@ import {
   proximoStatus,
   reciboWhatsApp,
   resumoItens,
+  rotuloPagamento,
   tempoDecorrido,
   type Pedido,
   type StatusPedido,
@@ -76,7 +78,12 @@ function PedidoCard({ pedido }: { pedido: Pedido }) {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-2 pb-3">
+      <DetalhesPedidoDialog pedido={pedido}>
+        <CardHeader
+          role="button"
+          tabIndex={0}
+          className="flex cursor-pointer flex-row flex-wrap items-start justify-between gap-2 pb-3 transition-colors hover:bg-muted/40"
+        >
         <div className="min-w-0">
           <CardTitle className="text-base">
             #{pedido.numero} · {pedido.clienteNome}
@@ -94,12 +101,17 @@ function PedidoCard({ pedido }: { pedido: Pedido }) {
         <div className="flex flex-wrap items-center gap-1.5">
           <Badge variant={STATUS_BADGE[pedido.status]}>{STATUS_PEDIDO_LABEL[pedido.status]}</Badge>
           <Badge variant={pedido.pago ? "outline" : "destructive"}>
-            {pedido.pago ? pedido.pagamento : "Fiado em aberto"}
+            {pedido.pago ? rotuloPagamento(pedido) : "Fiado em aberto"}
           </Badge>
         </div>
-      </CardHeader>
+        </CardHeader>
+      </DetalhesPedidoDialog>
       <CardContent className="flex flex-col gap-3">
-        <p className="text-sm text-muted-foreground">{resumoItens(pedido.itens)}</p>
+        <DetalhesPedidoDialog pedido={pedido}>
+          <p className="cursor-pointer text-sm text-muted-foreground hover:text-foreground">
+            {resumoItens(pedido.itens)}
+          </p>
+        </DetalhesPedidoDialog>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
           <span className="flex items-center gap-1">
             <Bike className="size-3.5" /> {pedido.entregador}
