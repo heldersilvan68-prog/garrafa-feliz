@@ -1,6 +1,6 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { ProdutoFoto } from "@/components/produto-foto";
-import { Minus, Plus, Search, ShoppingCart, Trash2 } from "lucide-react";
+import { Loader2, Plus, Search, ShoppingCart, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -64,6 +64,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
   const [parcelas, setParcelas] = useState<Parcela[]>([{ forma: "PIX", valor: "" }]);
   const [trocoPara, setTrocoPara] = useState("");
   const [entregador, setEntregador] = useState<string>(BALCAO);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const cliente = clientes.find((c) => c.id === clienteId);
 
