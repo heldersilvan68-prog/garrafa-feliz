@@ -54,6 +54,9 @@ export function AnaliseProdutos() {
           minimo: p.estoqueMinimo || 0,
           repor,
           custoReposicao: repor * custoUnit,
+          // Reposição por giro: repor exatamente o que foi vendido no período.
+          reporGiro: qtd,
+          custoReposicaoGiro: qtd * custoUnit,
         };
       })
       .sort((a, b) => b.qtd - a.qtd);
@@ -63,6 +66,8 @@ export function AnaliseProdutos() {
   const totalLucro = linhas.reduce((s, l) => s + l.lucro, 0);
   const totalRepor = linhas.reduce((s, l) => s + l.repor, 0);
   const custoRepor = linhas.reduce((s, l) => s + l.custoReposicao, 0);
+  const totalReporGiro = linhas.reduce((s, l) => s + l.reporGiro, 0);
+  const custoReporGiro = linhas.reduce((s, l) => s + l.custoReposicaoGiro, 0);
 
   const exportar = () =>
     baixarCSV(
@@ -77,8 +82,10 @@ export function AnaliseProdutos() {
         "Margem %",
         "Estoque atual",
         "Estoque mínimo",
-        "Repor (un)",
-        "Custo reposição",
+        "Repor mínimo (un)",
+        "Custo reposição mínimo",
+        "Repor giro (un)",
+        "Custo reposição giro",
       ],
       linhas.map((l) => [
         l.nome,
@@ -92,6 +99,8 @@ export function AnaliseProdutos() {
         l.minimo,
         l.repor,
         l.custoReposicao.toFixed(2),
+        l.reporGiro,
+        l.custoReposicaoGiro.toFixed(2),
       ]),
     );
 
@@ -125,16 +134,22 @@ export function AnaliseProdutos() {
             <p className="mt-1 text-xl font-semibold tabular-nums">{brl(totalLucro)}</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="border-warning/40 bg-warning/5">
           <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">Qtd. necessária para reposição</p>
+            <p className="text-xs text-muted-foreground">Reposição por estoque mínimo</p>
             <p className="mt-1 text-xl font-semibold tabular-nums">{totalRepor} un.</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Custo estimado: {brl(custoRepor)}
+            </p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="border-primary/40 bg-primary/5">
           <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">Estimativa de custo de reposição</p>
-            <p className="mt-1 text-xl font-semibold tabular-nums">{brl(custoRepor)}</p>
+            <p className="text-xs text-muted-foreground">Reposição por giro de vendas</p>
+            <p className="mt-1 text-xl font-semibold tabular-nums">{totalReporGiro} un.</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Custo estimado: {brl(custoReporGiro)}
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -151,8 +166,10 @@ export function AnaliseProdutos() {
                   <TableHead className="text-right">Lucro bruto</TableHead>
                   <TableHead className="text-right">Margem</TableHead>
                   <TableHead className="text-center">Estoque / mínimo</TableHead>
-                  <TableHead className="text-center">Repor</TableHead>
-                  <TableHead className="text-right">Custo reposição</TableHead>
+                  <TableHead className="text-center">Repor (mínimo)</TableHead>
+                  <TableHead className="text-right">Custo (mínimo)</TableHead>
+                  <TableHead className="text-center">Repor (giro)</TableHead>
+                  <TableHead className="text-right">Custo (giro)</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -178,11 +195,15 @@ export function AnaliseProdutos() {
                     <TableCell className="text-right tabular-nums">
                       {brl(l.custoReposicao)}
                     </TableCell>
+                    <TableCell className="text-center tabular-nums">{l.reporGiro}</TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {brl(l.custoReposicaoGiro)}
+                    </TableCell>
                   </TableRow>
                 ))}
                 {linhas.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={8} className="py-8 text-center text-muted-foreground">
+                    <TableCell colSpan={10} className="py-8 text-center text-muted-foreground">
                       Nenhum produto cadastrado.
                     </TableCell>
                   </TableRow>

@@ -248,6 +248,7 @@ function RelatoriosPage() {
           <TabsTrigger value="estoque">Estoque</TabsTrigger>
           <TabsTrigger value="financeiro">Financeiro</TabsTrigger>
           <TabsTrigger value="produtos">Produtos & Reposição</TabsTrigger>
+          <TabsTrigger value="clientes">Clientes</TabsTrigger>
         </TabsList>
 
         <TabsContent value="vendas" className="mt-4 flex flex-col gap-4">
@@ -270,11 +271,6 @@ function RelatoriosPage() {
                   .filter((p) => p.pagamento === "Fiado" && !p.pago)
                   .reduce((s, p) => s + p.total, 0),
               )}
-            />
-            <Kpi
-              label="Novos clientes cadastrados"
-              valor={String(novosClientes.length)}
-              hint={`No período: ${rotuloFaixa(faixa)}`}
             />
           </div>
 
@@ -601,6 +597,126 @@ function RelatoriosPage() {
 
         <TabsContent value="produtos" className="mt-4">
           <AnaliseProdutos />
+        </TabsContent>
+
+        <TabsContent value="clientes" className="mt-4 flex flex-col gap-4">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <Kpi
+              label="Novos clientes cadastrados"
+              valor={String(novosClientes.length)}
+              hint={`No período: ${rotuloFaixa(faixa)}`}
+            />
+            <Kpi
+              label="Clientes com pendências"
+              valor={String(pendentes.length)}
+              hint="Fiado em aberto"
+            />
+            <Kpi
+              label="Total a receber"
+              valor={brl(totalPendente)}
+              hint="Soma das dívidas em aberto"
+            />
+            <Kpi
+              label="Fiado gerado no período"
+              valor={brl(fiadoPeriodo)}
+              hint={rotuloFaixa(faixa)}
+            />
+          </div>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
+              <div>
+                <CardTitle className="text-base">Clientes com pendências financeiras</CardTitle>
+                <CardDescription>
+                  Valor devido individual · total a receber: {brl(totalPendente)}
+                </CardDescription>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="print:hidden"
+                onClick={() =>
+                  baixarCSV(
+                    "clientes-pendencias",
+                    ["Cliente", "Telefone", "Fiado no período", "Devido total"],
+                    pendentes.map((c) => [
+                      c.nome,
+                      c.telefone,
+                      c.fiadoPeriodo.toFixed(2),
+                      c.divida.toFixed(2),
+                    ]),
+                  )
+                }
+              >
+                <FileSpreadsheet className="size-4" /> CSV
+              </Button>
+            </CardHeader>
+            <CardContent className="overflow-x-auto">
+              {pendentes.length === 0 ? (
+                <p className="py-6 text-center text-sm text-muted-foreground">
+                  Nenhum cliente com fiado em aberto.
+                </p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Cliente</TableHead>
+                      <TableHead>Telefone</TableHead>
+                      <TableHead className="text-right">Fiado no período</TableHead>
+                      <TableHead className="text-right">Devido total</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {pendentes.map((c) => (
+                      <TableRow key={c.id}>
+                        <TableCell className="font-medium">{c.nome}</TableCell>
+                        <TableCell className="text-muted-foreground">{c.telefone}</TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {brl(c.fiadoPeriodo)}
+                        </TableCell>
+                        <TableCell className="text-right font-semibold tabular-nums text-destructive">
+                          {brl(c.divida)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Novos clientes do período</CardTitle>
+              <CardDescription>{novosClientes.length} cadastro(s)</CardDescription>
+            </CardHeader>
+            <CardContent className="overflow-x-auto">
+              {novosClientes.length === 0 ? (
+                <p className="py-6 text-center text-sm text-muted-foreground">
+                  Nenhum cliente cadastrado no período.
+                </p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Cliente</TableHead>
+                      <TableHead>Telefone</TableHead>
+                      <TableHead>Endereço</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {novosClientes.map((c) => (
+                      <TableRow key={c.id}>
+                        <TableCell className="font-medium">{c.nome}</TableCell>
+                        <TableCell className="text-muted-foreground">{c.telefone}</TableCell>
+                        <TableCell className="text-muted-foreground">{c.endereco}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="financeiro" className="mt-4 flex flex-col gap-4">

@@ -1,6 +1,6 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { ProdutoFoto } from "@/components/produto-foto";
-import { Minus, Plus, Search, ShoppingCart, Trash2 } from "lucide-react";
+import { Loader2, Plus, Search, ShoppingCart, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -64,6 +64,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
   const [parcelas, setParcelas] = useState<Parcela[]>([{ forma: "PIX", valor: "" }]);
   const [trocoPara, setTrocoPara] = useState("");
   const [entregador, setEntregador] = useState<string>(BALCAO);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const cliente = clientes.find((c) => c.id === clienteId);
 
@@ -130,11 +131,13 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
   const vaziosValor = vaziosEditado ? vazios : String(qtdRetornavel);
   const troco = Math.max(0, (Number(trocoPara) || 0) - valorDinheiro);
 
-  const mudar = (id: string, delta: number) =>
+  /** Digitação direta: valor em fardos ou unidades conforme a embalagem escolhida. */
+  const definirQtd = (id: string, texto: string) =>
     setCarrinho((c) => {
-      const n = Math.max(0, (c[id] ?? 0) + delta * passoDe(id));
+      const bruto = Math.max(0, Math.floor(Number(texto.replace(",", ".")) || 0));
+      const n = bruto * passoDe(id);
       const next = { ...c };
-      if (n === 0) delete next[id];
+      if (n <= 0) delete next[id];
       else next[id] = n;
       return next;
     });
@@ -182,8 +185,11 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
       toast.error("Vendas com fiado exigem um cliente cadastrado.");
       return;
     }
-    const nVazios = Math.max(0, Number(vaziosValor) || 0);
-    const pedido = await criar({
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      const nVazios = Math.max(0, Number(vaziosValor) || 0);
+      const pedido = await criar({
       clienteId: cliente.id,
       clienteNome: cliente.nome,
       telefone: cliente.telefone,
@@ -200,24 +206,29 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
       trocoPara: valorDinheiro > 0 ? Number(trocoPara) || undefined : undefined,
       vaziosRecolhidos: nVazios,
       entregador: entregador || BALCAO,
-    });
+      });
 
-    baixaVenda(
-      itens.map((i) => ({ produtoId: i.produtoId, qtd: i.qtd, modo: i.modo })),
-      nVazios,
-    );
-    registrarCompra(cliente.id, resumoItens(itens), total, hojeISO());
-    // Débito lançado exatamente igual ao valor informado como fiado.
-    if (valorFiado > 0) ajustarDivida(cliente.id, valorFiado);
-    // Cascos que saíram e não voltaram ficam na conta do cliente.
-    const naRua = Math.max(0, qtdRetornavel - nVazios);
-    if (naRua > 0) void ajustarVasilhames(cliente.id, naRua);
+      baixaVenda(
+        itens.map((i) => ({ produtoId: i.produtoId, qtd: i.qtd, modo: i.modo })),
+        nVazios,
+      );
+      registrarCompra(cliente.id, resumoItens(itens), total, hojeISO());
+      // Débito lançado exatamente igual ao valor informado como fiado.
+      if (valorFiado > 0) ajustarDivida(cliente.id, valorFiado);
+      // Cascos que saíram e não voltaram ficam na conta do cliente.
+      const naRua = Math.max(0, qtdRetornavel - nVazios);
+      if (naRua > 0) void ajustarVasilhames(cliente.id, naRua);
 
-    toast.success(`Pedido #${pedido.numero} criado — ${brl(total)}`, {
-      description: `${cliente.nome} · ${pagamento} · ${entregador}`,
-    });
-    limpar();
-    setAberto(false);
+      toast.success(`Pedido #${pedido.numero} criado — ${brl(total)}`, {
+        description: `${cliente.nome} · ${pagamento} · ${entregador}`,
+      });
+      limpar();
+      setAberto(false);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Não foi possível criar o pedido.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -340,32 +351,28 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                               )}
                             </div>
                           </div>
-                          <div className="flex shrink-0 flex-col items-center gap-1">
-                            <Button
-                              type="button"
-                              size="icon"
-                              variant="outline"
-                              className="size-8"
-                              onClick={() => mudar(p.id, 1)}
-                              aria-label={`Adicionar ${p.nome}`}
-                            >
-                              <Plus className="size-4" />
-                            </Button>
-                            <span className="text-sm font-semibold tabular-nums">
-                              {(embalagens[p.id] ?? "un") === "fardo"
-                                ? `${Math.floor(q / unidPorFardo(p))}f`
-                                : q}
+                          <div className="flex w-20 shrink-0 flex-col items-center gap-1">
+                            <Input
+                              type="number"
+                              min={0}
+                              step={1}
+                              inputMode="numeric"
+                              className="h-9 w-20 text-center tabular-nums"
+                              aria-label={`Quantidade de ${p.nome}`}
+                              value={
+                                (embalagens[p.id] ?? "un") === "fardo"
+                                  ? q > 0
+                                    ? String(q / unidPorFardo(p))
+                                    : ""
+                                  : q > 0
+                                    ? String(q)
+                                    : ""
+                              }
+                              onChange={(e) => definirQtd(p.id, e.target.value)}
+                            />
+                            <span className="text-[10px] text-muted-foreground">
+                              {(embalagens[p.id] ?? "un") === "fardo" ? "fardos" : "un."}
                             </span>
-                            <Button
-                              type="button"
-                              size="icon"
-                              variant="outline"
-                              className="size-8"
-                              onClick={() => mudar(p.id, -1)}
-                              aria-label={`Remover ${p.nome}`}
-                            >
-                              <Minus className="size-4" />
-                            </Button>
                           </div>
                         </div>
 
@@ -618,8 +625,19 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
           <DialogClose asChild>
             <Button variant="outline">Cancelar</Button>
           </DialogClose>
-          <Button onClick={finalizar} disabled={!caixaAberto || restante > 0.009}>
-            {caixaAberto ? `Criar pedido · ${brl(total)}` : "Caixa fechado"}
+          <Button
+            onClick={finalizar}
+            disabled={!caixaAberto || restante > 0.009 || isSubmitting}
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="size-4 animate-spin" /> Criando pedido...
+              </>
+            ) : caixaAberto ? (
+              `Criar pedido · ${brl(total)}`
+            ) : (
+              "Caixa fechado"
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>
