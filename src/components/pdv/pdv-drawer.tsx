@@ -185,8 +185,11 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
       toast.error("Vendas com fiado exigem um cliente cadastrado.");
       return;
     }
-    const nVazios = Math.max(0, Number(vaziosValor) || 0);
-    const pedido = await criar({
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      const nVazios = Math.max(0, Number(vaziosValor) || 0);
+      const pedido = await criar({
       clienteId: cliente.id,
       clienteNome: cliente.nome,
       telefone: cliente.telefone,
