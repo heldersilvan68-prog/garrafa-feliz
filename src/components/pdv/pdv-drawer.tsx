@@ -206,24 +206,29 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
       trocoPara: valorDinheiro > 0 ? Number(trocoPara) || undefined : undefined,
       vaziosRecolhidos: nVazios,
       entregador: entregador || BALCAO,
-    });
+      });
 
-    baixaVenda(
-      itens.map((i) => ({ produtoId: i.produtoId, qtd: i.qtd, modo: i.modo })),
-      nVazios,
-    );
-    registrarCompra(cliente.id, resumoItens(itens), total, hojeISO());
-    // Débito lançado exatamente igual ao valor informado como fiado.
-    if (valorFiado > 0) ajustarDivida(cliente.id, valorFiado);
-    // Cascos que saíram e não voltaram ficam na conta do cliente.
-    const naRua = Math.max(0, qtdRetornavel - nVazios);
-    if (naRua > 0) void ajustarVasilhames(cliente.id, naRua);
+      baixaVenda(
+        itens.map((i) => ({ produtoId: i.produtoId, qtd: i.qtd, modo: i.modo })),
+        nVazios,
+      );
+      registrarCompra(cliente.id, resumoItens(itens), total, hojeISO());
+      // Débito lançado exatamente igual ao valor informado como fiado.
+      if (valorFiado > 0) ajustarDivida(cliente.id, valorFiado);
+      // Cascos que saíram e não voltaram ficam na conta do cliente.
+      const naRua = Math.max(0, qtdRetornavel - nVazios);
+      if (naRua > 0) void ajustarVasilhames(cliente.id, naRua);
 
-    toast.success(`Pedido #${pedido.numero} criado — ${brl(total)}`, {
-      description: `${cliente.nome} · ${pagamento} · ${entregador}`,
-    });
-    limpar();
-    setAberto(false);
+      toast.success(`Pedido #${pedido.numero} criado — ${brl(total)}`, {
+        description: `${cliente.nome} · ${pagamento} · ${entregador}`,
+      });
+      limpar();
+      setAberto(false);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Não foi possível criar o pedido.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
