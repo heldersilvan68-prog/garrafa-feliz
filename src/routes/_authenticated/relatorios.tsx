@@ -248,6 +248,7 @@ function RelatoriosPage() {
           <TabsTrigger value="estoque">Estoque</TabsTrigger>
           <TabsTrigger value="financeiro">Financeiro</TabsTrigger>
           <TabsTrigger value="produtos">Produtos & Reposição</TabsTrigger>
+          <TabsTrigger value="clientes">Clientes</TabsTrigger>
         </TabsList>
 
         <TabsContent value="vendas" className="mt-4 flex flex-col gap-4">
@@ -270,11 +271,6 @@ function RelatoriosPage() {
                   .filter((p) => p.pagamento === "Fiado" && !p.pago)
                   .reduce((s, p) => s + p.total, 0),
               )}
-            />
-            <Kpi
-              label="Novos clientes cadastrados"
-              valor={String(novosClientes.length)}
-              hint={`No período: ${rotuloFaixa(faixa)}`}
             />
           </div>
 
