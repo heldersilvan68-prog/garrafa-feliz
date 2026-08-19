@@ -54,6 +54,9 @@ export function AnaliseProdutos() {
           minimo: p.estoqueMinimo || 0,
           repor,
           custoReposicao: repor * custoUnit,
+          // Reposição por giro: repor exatamente o que foi vendido no período.
+          reporGiro: qtd,
+          custoReposicaoGiro: qtd * custoUnit,
         };
       })
       .sort((a, b) => b.qtd - a.qtd);
