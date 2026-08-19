@@ -82,8 +82,10 @@ export function AnaliseProdutos() {
         "Margem %",
         "Estoque atual",
         "Estoque mínimo",
-        "Repor (un)",
-        "Custo reposição",
+        "Repor mínimo (un)",
+        "Custo reposição mínimo",
+        "Repor giro (un)",
+        "Custo reposição giro",
       ],
       linhas.map((l) => [
         l.nome,
@@ -162,8 +164,10 @@ export function AnaliseProdutos() {
                   <TableHead className="text-right">Lucro bruto</TableHead>
                   <TableHead className="text-right">Margem</TableHead>
                   <TableHead className="text-center">Estoque / mínimo</TableHead>
-                  <TableHead className="text-center">Repor</TableHead>
-                  <TableHead className="text-right">Custo reposição</TableHead>
+                  <TableHead className="text-center">Repor (mínimo)</TableHead>
+                  <TableHead className="text-right">Custo (mínimo)</TableHead>
+                  <TableHead className="text-center">Repor (giro)</TableHead>
+                  <TableHead className="text-right">Custo (giro)</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -189,11 +193,15 @@ export function AnaliseProdutos() {
                     <TableCell className="text-right tabular-nums">
                       {brl(l.custoReposicao)}
                     </TableCell>
+                    <TableCell className="text-center tabular-nums">{l.reporGiro}</TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {brl(l.custoReposicaoGiro)}
+                    </TableCell>
                   </TableRow>
                 ))}
                 {linhas.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={8} className="py-8 text-center text-muted-foreground">
+                    <TableCell colSpan={10} className="py-8 text-center text-muted-foreground">
                       Nenhum produto cadastrado.
                     </TableCell>
                   </TableRow>
