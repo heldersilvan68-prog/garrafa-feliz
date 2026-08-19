@@ -99,6 +99,8 @@ export function AnaliseProdutos() {
         l.minimo,
         l.repor,
         l.custoReposicao.toFixed(2),
+        l.reporGiro,
+        l.custoReposicaoGiro.toFixed(2),
       ]),
     );
 
