@@ -340,32 +340,28 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                               )}
                             </div>
                           </div>
-                          <div className="flex shrink-0 flex-col items-center gap-1">
-                            <Button
-                              type="button"
-                              size="icon"
-                              variant="outline"
-                              className="size-8"
-                              onClick={() => mudar(p.id, 1)}
-                              aria-label={`Adicionar ${p.nome}`}
-                            >
-                              <Plus className="size-4" />
-                            </Button>
-                            <span className="text-sm font-semibold tabular-nums">
-                              {(embalagens[p.id] ?? "un") === "fardo"
-                                ? `${Math.floor(q / unidPorFardo(p))}f`
-                                : q}
+                          <div className="flex w-20 shrink-0 flex-col items-center gap-1">
+                            <Input
+                              type="number"
+                              min={0}
+                              step={1}
+                              inputMode="numeric"
+                              className="h-9 w-20 text-center tabular-nums"
+                              aria-label={`Quantidade de ${p.nome}`}
+                              value={
+                                (embalagens[p.id] ?? "un") === "fardo"
+                                  ? q > 0
+                                    ? String(q / unidPorFardo(p))
+                                    : ""
+                                  : q > 0
+                                    ? String(q)
+                                    : ""
+                              }
+                              onChange={(e) => definirQtd(p.id, e.target.value)}
+                            />
+                            <span className="text-[10px] text-muted-foreground">
+                              {(embalagens[p.id] ?? "un") === "fardo" ? "fardos" : "un."}
                             </span>
-                            <Button
-                              type="button"
-                              size="icon"
-                              variant="outline"
-                              className="size-8"
-                              onClick={() => mudar(p.id, -1)}
-                              aria-label={`Remover ${p.nome}`}
-                            >
-                              <Minus className="size-4" />
-                            </Button>
                           </div>
                         </div>
 

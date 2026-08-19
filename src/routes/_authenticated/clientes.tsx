@@ -311,7 +311,14 @@ function ClientesPage() {
                   <CardTitle className="truncate text-base">{rotuloCliente(c)}</CardTitle>
                   <p className="truncate text-xs text-muted-foreground">{c.endereco}</p>
                 </div>
-                <StatusBadge status={status} />
+                <div className="flex shrink-0 flex-col items-end gap-1">
+                  <StatusBadge status={status} />
+                  {(c.divida ?? 0) > 0 && (
+                    <Badge variant="destructive" className="font-semibold tracking-wide">
+                      PENDENTE
+                    </Badge>
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="flex flex-col gap-3">
                 <div className="grid grid-cols-2 gap-3 text-sm">
