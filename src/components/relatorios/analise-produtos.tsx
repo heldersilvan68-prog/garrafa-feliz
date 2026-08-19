@@ -66,6 +66,8 @@ export function AnaliseProdutos() {
   const totalLucro = linhas.reduce((s, l) => s + l.lucro, 0);
   const totalRepor = linhas.reduce((s, l) => s + l.repor, 0);
   const custoRepor = linhas.reduce((s, l) => s + l.custoReposicao, 0);
+  const totalReporGiro = linhas.reduce((s, l) => s + l.reporGiro, 0);
+  const custoReporGiro = linhas.reduce((s, l) => s + l.custoReposicaoGiro, 0);
 
   const exportar = () =>
     baixarCSV(
@@ -128,16 +130,22 @@ export function AnaliseProdutos() {
             <p className="mt-1 text-xl font-semibold tabular-nums">{brl(totalLucro)}</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="border-warning/40 bg-warning/5">
           <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">Qtd. necessária para reposição</p>
+            <p className="text-xs text-muted-foreground">Reposição por estoque mínimo</p>
             <p className="mt-1 text-xl font-semibold tabular-nums">{totalRepor} un.</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Custo estimado: {brl(custoRepor)}
+            </p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="border-primary/40 bg-primary/5">
           <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">Estimativa de custo de reposição</p>
-            <p className="mt-1 text-xl font-semibold tabular-nums">{brl(custoRepor)}</p>
+            <p className="text-xs text-muted-foreground">Reposição por giro de vendas</p>
+            <p className="mt-1 text-xl font-semibold tabular-nums">{totalReporGiro} un.</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Custo estimado: {brl(custoReporGiro)}
+            </p>
           </CardContent>
         </Card>
       </div>
