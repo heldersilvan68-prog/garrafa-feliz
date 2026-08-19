@@ -625,8 +625,19 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
           <DialogClose asChild>
             <Button variant="outline">Cancelar</Button>
           </DialogClose>
-          <Button onClick={finalizar} disabled={!caixaAberto || restante > 0.009}>
-            {caixaAberto ? `Criar pedido · ${brl(total)}` : "Caixa fechado"}
+          <Button
+            onClick={finalizar}
+            disabled={!caixaAberto || restante > 0.009 || isSubmitting}
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="size-4 animate-spin" /> Criando pedido...
+              </>
+            ) : caixaAberto ? (
+              `Criar pedido · ${brl(total)}`
+            ) : (
+              "Caixa fechado"
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>
