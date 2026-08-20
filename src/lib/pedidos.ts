@@ -85,6 +85,13 @@ export const valorPorForma = (p: Pedido, forma: FormaPagamento) =>
     .filter((x) => x.forma === forma)
     .reduce((s, x) => s + x.valor, 0);
 
+/**
+ * Faturamento novo do pedido: exclui a parte paga em Vale, cujo dinheiro
+ * já entrou no caixa quando o cliente comprou o pacote de vales.
+ */
+export const valorFaturado = (p: Pedido) => Math.max(0, p.total - valorPorForma(p, "Vale"));
+
+
 export const rotuloPagamento = (p: Pedido) => {
   const parcelas = parcelasDe(p);
   if (parcelas.length <= 1) return p.pagamento;
