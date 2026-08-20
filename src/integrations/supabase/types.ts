@@ -222,6 +222,7 @@ export type Database = {
           ultima_compra: string | null
           updated_at: string
           user_id: string
+          vales_saldo: number
           vasilhames_rua: number
         }
         Insert: {
@@ -241,6 +242,7 @@ export type Database = {
           ultima_compra?: string | null
           updated_at?: string
           user_id: string
+          vales_saldo?: number
           vasilhames_rua?: number
         }
         Update: {
@@ -260,6 +262,7 @@ export type Database = {
           ultima_compra?: string | null
           updated_at?: string
           user_id?: string
+          vales_saldo?: number
           vasilhames_rua?: number
         }
         Relationships: []
@@ -588,6 +591,8 @@ export type Database = {
           troco_para: number | null
           updated_at: string
           user_id: string
+          vales_credito: number
+          vales_resgatados: number
           valor_fiado: number
           vazios_recolhidos: number
         }
@@ -615,6 +620,8 @@ export type Database = {
           troco_para?: number | null
           updated_at?: string
           user_id: string
+          vales_credito?: number
+          vales_resgatados?: number
           valor_fiado?: number
           vazios_recolhidos?: number
         }
@@ -642,6 +649,8 @@ export type Database = {
           troco_para?: number | null
           updated_at?: string
           user_id?: string
+          vales_credito?: number
+          vales_resgatados?: number
           valor_fiado?: number
           vazios_recolhidos?: number
         }
