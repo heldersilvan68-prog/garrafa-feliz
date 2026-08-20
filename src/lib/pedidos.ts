@@ -9,7 +9,7 @@ export const STATUS_PEDIDO_LABEL: Record<StatusPedido, string> = {
   cancelado: "Cancelado",
 };
 
-export type FormaPagamento = "PIX" | "Dinheiro" | "Débito" | "Crédito" | "Fiado";
+export type FormaPagamento = "PIX" | "Dinheiro" | "Débito" | "Crédito" | "Fiado" | "Vale";
 
 export const FORMAS_PAGAMENTO: FormaPagamento[] = [
   "PIX",
@@ -17,10 +17,12 @@ export const FORMAS_PAGAMENTO: FormaPagamento[] = [
   "Débito",
   "Crédito",
   "Fiado",
+  "Vale",
 ];
 
 /** Formas efetivamente recebidas na baixa de um fiado. */
 export const FORMAS_RECEBIMENTO: FormaPagamento[] = ["PIX", "Dinheiro", "Débito", "Crédito"];
+
 
 
 export type ItemPedido = {
