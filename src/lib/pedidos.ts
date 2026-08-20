@@ -9,7 +9,7 @@ export const STATUS_PEDIDO_LABEL: Record<StatusPedido, string> = {
   cancelado: "Cancelado",
 };
 
-export type FormaPagamento = "PIX" | "Dinheiro" | "Débito" | "Crédito" | "Fiado";
+export type FormaPagamento = "PIX" | "Dinheiro" | "Débito" | "Crédito" | "Fiado" | "Vale";
 
 export const FORMAS_PAGAMENTO: FormaPagamento[] = [
   "PIX",
@@ -17,10 +17,12 @@ export const FORMAS_PAGAMENTO: FormaPagamento[] = [
   "Débito",
   "Crédito",
   "Fiado",
+  "Vale",
 ];
 
 /** Formas efetivamente recebidas na baixa de um fiado. */
 export const FORMAS_RECEBIMENTO: FormaPagamento[] = ["PIX", "Dinheiro", "Débito", "Crédito"];
+
 
 
 export type ItemPedido = {
@@ -52,7 +54,12 @@ export type Pedido = {
   /** Valor exatamente lançado como fiado nesta venda. */
   valorFiado: number;
   trocoPara?: number;
+  /** Vales (galões) vendidos como pacote de crédito nesta venda. */
+  valesCredito: number;
+  /** Vales (galões) resgatados do saldo do cliente nesta venda. */
+  valesResgatados: number;
   vaziosRecolhidos: number;
+
   entregador: string;
   status: StatusPedido;
   criadoEm: string; // ISO datetime
@@ -77,6 +84,13 @@ export const valorPorForma = (p: Pedido, forma: FormaPagamento) =>
   parcelasDe(p)
     .filter((x) => x.forma === forma)
     .reduce((s, x) => s + x.valor, 0);
+
+/**
+ * Faturamento novo do pedido: exclui a parte paga em Vale, cujo dinheiro
+ * já entrou no caixa quando o cliente comprou o pacote de vales.
+ */
+export const valorFaturado = (p: Pedido) => Math.max(0, p.total - valorPorForma(p, "Vale"));
+
 
 export const rotuloPagamento = (p: Pedido) => {
   const parcelas = parcelasDe(p);

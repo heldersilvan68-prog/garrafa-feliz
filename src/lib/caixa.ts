@@ -67,10 +67,12 @@ export const totaisPorPagamento = (pedidos: Pedido[]) => {
     Débito: 0,
     Crédito: 0,
     Fiado: 0,
+    Vale: 0,
   };
   for (const p of pedidos) for (const x of parcelasDe(p)) base[x.forma] += x.valor;
   return base;
 };
+
 
 export const somaMovimentos = (movs: MovimentoCaixa[], tipo: TipoMovimento) =>
   movs.filter((m) => m.tipo === tipo).reduce((s, m) => s + m.valor, 0);

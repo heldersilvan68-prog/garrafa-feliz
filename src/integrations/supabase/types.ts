@@ -222,6 +222,7 @@ export type Database = {
           ultima_compra: string | null
           updated_at: string
           user_id: string
+          vales_saldo: number
           vasilhames_rua: number
         }
         Insert: {
@@ -241,6 +242,7 @@ export type Database = {
           ultima_compra?: string | null
           updated_at?: string
           user_id: string
+          vales_saldo?: number
           vasilhames_rua?: number
         }
         Update: {
@@ -260,6 +262,7 @@ export type Database = {
           ultima_compra?: string | null
           updated_at?: string
           user_id?: string
+          vales_saldo?: number
           vasilhames_rua?: number
         }
         Relationships: []
@@ -588,6 +591,8 @@ export type Database = {
           troco_para: number | null
           updated_at: string
           user_id: string
+          vales_credito: number
+          vales_resgatados: number
           valor_fiado: number
           vazios_recolhidos: number
         }
@@ -615,6 +620,8 @@ export type Database = {
           troco_para?: number | null
           updated_at?: string
           user_id: string
+          vales_credito?: number
+          vales_resgatados?: number
           valor_fiado?: number
           vazios_recolhidos?: number
         }
@@ -642,6 +649,8 @@ export type Database = {
           troco_para?: number | null
           updated_at?: string
           user_id?: string
+          vales_credito?: number
+          vales_resgatados?: number
           valor_fiado?: number
           vazios_recolhidos?: number
         }
@@ -982,7 +991,13 @@ export type Database = {
       deliverer_kind: "entregador" | "auxiliar"
       expense_status: "Pago" | "Pendente"
       order_status: "pendente" | "em-rota" | "concluido" | "cancelado"
-      payment_method: "PIX" | "Dinheiro" | "Débito" | "Crédito" | "Fiado"
+      payment_method:
+        | "PIX"
+        | "Dinheiro"
+        | "Débito"
+        | "Crédito"
+        | "Fiado"
+        | "Vale"
       returnable_movement_type:
         | "recolhido"
         | "envasado"
@@ -1127,7 +1142,7 @@ export const Constants = {
       deliverer_kind: ["entregador", "auxiliar"],
       expense_status: ["Pago", "Pendente"],
       order_status: ["pendente", "em-rota", "concluido", "cancelado"],
-      payment_method: ["PIX", "Dinheiro", "Débito", "Crédito", "Fiado"],
+      payment_method: ["PIX", "Dinheiro", "Débito", "Crédito", "Fiado", "Vale"],
       returnable_movement_type: [
         "recolhido",
         "envasado",
