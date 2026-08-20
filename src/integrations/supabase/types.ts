@@ -982,7 +982,13 @@ export type Database = {
       deliverer_kind: "entregador" | "auxiliar"
       expense_status: "Pago" | "Pendente"
       order_status: "pendente" | "em-rota" | "concluido" | "cancelado"
-      payment_method: "PIX" | "Dinheiro" | "Débito" | "Crédito" | "Fiado"
+      payment_method:
+        | "PIX"
+        | "Dinheiro"
+        | "Débito"
+        | "Crédito"
+        | "Fiado"
+        | "Vale"
       returnable_movement_type:
         | "recolhido"
         | "envasado"
@@ -1127,7 +1133,7 @@ export const Constants = {
       deliverer_kind: ["entregador", "auxiliar"],
       expense_status: ["Pago", "Pendente"],
       order_status: ["pendente", "em-rota", "concluido", "cancelado"],
-      payment_method: ["PIX", "Dinheiro", "Débito", "Crédito", "Fiado"],
+      payment_method: ["PIX", "Dinheiro", "Débito", "Crédito", "Fiado", "Vale"],
       returnable_movement_type: [
         "recolhido",
         "envasado",
