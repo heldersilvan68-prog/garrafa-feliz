@@ -150,6 +150,28 @@ function RelatoriosPage() {
     (c) => c.cadastradoEm && dentroFaixa(c.cadastradoEm, faixa),
   );
 
+  // Fiado gerado dentro do período (pedidos válidos com valor fiado).
+  const fiadoPeriodo = validos.reduce((s, p) => s + (p.valorFiado ?? 0), 0);
+
+  // Clientes com dívida em aberto + quanto desse fiado nasceu no período.
+  const pendentes = useMemo(
+    () =>
+      clientes
+        .filter((c) => (c.divida ?? 0) > 0)
+        .map((c) => ({
+          id: c.id,
+          nome: c.nome,
+          telefone: c.telefone,
+          divida: c.divida ?? 0,
+          fiadoPeriodo: validos
+            .filter((p) => p.clienteId === c.id)
+            .reduce((s, p) => s + (p.valorFiado ?? 0), 0),
+        }))
+        .sort((a, b) => b.divida - a.divida),
+    [clientes, validos],
+  );
+  const totalPendente = pendentes.reduce((s, c) => s + c.divida, 0);
+
   // Faturamento e lucro por modalidade de vasilhame retornável.
   const porModalidade = useMemo(() => {
     const modos: { id: ModoVenda; label: string }[] = [
