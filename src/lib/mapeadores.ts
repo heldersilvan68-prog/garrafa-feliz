@@ -85,6 +85,7 @@ export const paraCliente = (r: ClienteRow, compras: CompraRow[]): Cliente => {
     cadastradoEm: r.cadastrado_em ?? undefined,
     divida: num(r.divida),
     vasilhamesRua: r.vasilhames_rua ?? 0,
+    valesSaldo: r.vales_saldo ?? 0,
     // Consumo médio e última compra são 100% calculados pelo sistema.
     consumoMedioDias: consumoMedio(datas, r.consumo_medio_dias),
     ultimaCompra:
@@ -127,6 +128,8 @@ export const paraPedido = (
   pago: r.pago,
   valorFiado: num(r.valor_fiado),
   trocoPara: r.troco_para === null ? undefined : num(r.troco_para),
+  valesCredito: r.vales_credito ?? 0,
+  valesResgatados: r.vales_resgatados ?? 0,
   vaziosRecolhidos: r.vazios_recolhidos,
   entregador: r.entregador,
   status: r.status as StatusPedido,
