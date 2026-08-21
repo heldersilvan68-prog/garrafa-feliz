@@ -28,6 +28,7 @@ const vazio: Cliente = {
   telefone: "",
   endereco: "",
   documento: "",
+  valesSaldo: 0,
   consumoMedioDias: 7,
   ultimaCompra: hojeISO(),
   historico: [],
@@ -73,6 +74,7 @@ export function ClienteDialog({
       codigo: form.codigo?.trim() || proximoCodigo(clientes),
       telefone: telefoneInternacional(telefone),
       documento: form.documento?.trim() || undefined,
+      valesSaldo: Math.max(0, Math.round(form.valesSaldo ?? 0)),
       consumoMedioDias: Math.max(1, Math.round(form.consumoMedioDias || 1)),
     });
     toast.success(cliente ? "Cliente atualizado." : "Cliente cadastrado.");
@@ -134,6 +136,24 @@ export function ClienteDialog({
                 placeholder="Opcional"
               />
             </div>
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="cvales">Saldo de vales (galões)</Label>
+            <Input
+              id="cvales"
+              type="number"
+              min={0}
+              step={1}
+              inputMode="numeric"
+              value={String(form.valesSaldo ?? 0)}
+              onChange={(e) => set("valesSaldo", Math.max(0, Number(e.target.value) || 0))}
+              placeholder="0"
+            />
+            <p className="text-xs text-muted-foreground">
+              Vales já pagos pelo cliente e ainda não retirados. É somado na venda de pacotes e
+              descontado nos resgates.
+            </p>
           </div>
 
           <div className="grid gap-2">

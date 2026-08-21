@@ -318,6 +318,9 @@ function ClientesPage() {
                       PENDENTE
                     </Badge>
                   )}
+                  <Badge variant={(c.valesSaldo ?? 0) > 0 ? "default" : "secondary"}>
+                    Saldo: {c.valesSaldo ?? 0} vales
+                  </Badge>
                 </div>
               </CardHeader>
               <CardContent className="flex flex-col gap-3">
