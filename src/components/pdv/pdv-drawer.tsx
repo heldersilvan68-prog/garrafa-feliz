@@ -1,6 +1,6 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { ProdutoFoto } from "@/components/produto-foto";
-import { Loader2, Plus, Search, ShoppingCart, Trash2 } from "lucide-react";
+import { Loader2, Plus, Search, ShoppingCart, Ticket, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -42,13 +42,17 @@ type Parcela = { forma: FormaPagamento; valor: string };
 
 export function PdvDrawer({ children }: { children: ReactNode }) {
   const { produtos, baixaVenda } = useEstoque();
-  const { clientes, registrarCompra, ajustarDivida, ajustarVasilhames } = useClientes();
+  const { clientes, registrarCompra, ajustarDivida, ajustarVasilhames, ajustarVales } =
+    useClientes();
   const { criar } = usePedidos();
   const { caixaAberto } = useCaixa();
   const { opcoes } = useEntregadores();
   const { metodosAtivos } = useConfiguracoes();
   // Formas de pagamento vêm das Configurações (globais) e atualizam na hora.
-  const formasDisponiveis = metodosAtivos as FormaPagamento[];
+  // "Vale" é sempre oferecido: é resgate de crédito já pago pelo cliente.
+  const formasDisponiveis = [
+    ...new Set([...(metodosAtivos as FormaPagamento[]), "Vale" as FormaPagamento]),
+  ];
 
   const [aberto, setAberto] = useState(false);
   const [busca, setBusca] = useState("");
@@ -64,6 +68,9 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
   const [parcelas, setParcelas] = useState<Parcela[]>([{ forma: "PIX", valor: "" }]);
   const [trocoPara, setTrocoPara] = useState("");
   const [entregador, setEntregador] = useState<string>(BALCAO);
+  // Pacote de vales: entrada financeira que gera crédito, sem baixa de estoque.
+  const [pacoteQtd, setPacoteQtd] = useState("");
+  const [pacoteValorUnit, setPacoteValorUnit] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const cliente = clientes.find((c) => c.id === clienteId);
@@ -96,7 +103,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
       .slice(0, 6);
   }, [busca, clientes]);
 
-  const itens: ItemPedido[] = produtos
+  const itensFisicos: ItemPedido[] = produtos
     .filter((p) => (carrinho[p.id] ?? 0) > 0)
     .map((p) => ({
       produtoId: p.id,
@@ -108,9 +115,26 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
       modo: p.retornavel ? (modos[p.id] ?? "refil") : "refil",
     }));
 
+  const valesVendidos = Math.max(0, Math.floor(Number(pacoteQtd) || 0));
+  const valorValeUnit = Math.max(0, Number(pacoteValorUnit) || 0);
+  const itemPacote: ItemPedido[] =
+    valesVendidos > 0
+      ? [
+          {
+            produtoId: "",
+            nome: `Pacote de Vales (${valesVendidos} vales)`,
+            qtd: valesVendidos,
+            precoUnit: valorValeUnit,
+            retornavel: false,
+            modo: "refil",
+          },
+        ]
+      : [];
+  const itens: ItemPedido[] = [...itensFisicos, ...itemPacote];
+
   const total = itens.reduce((s, i) => s + i.qtd * i.precoUnit, 0);
   // Só as trocas de refil geram devolução de vasilhame vazio.
-  const qtdRetornavel = itens
+  const qtdRetornavel = itensFisicos
     .filter((i) => i.retornavel && i.modo === "refil")
     .reduce((s, i) => s + i.qtd, 0);
 
@@ -119,6 +143,16 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
   const valorFiado = parcelas
     .filter((x) => x.forma === "Fiado")
     .reduce((s, x) => s + (Number(x.valor) || 0), 0);
+  const valorVale = parcelas
+    .filter((x) => x.forma === "Vale")
+    .reduce((s, x) => s + (Number(x.valor) || 0), 0);
+  // Vales resgatados: galões retornáveis do carrinho (ou unidades físicas, se não houver).
+  const unidadesFisicas = itensFisicos.reduce((s, i) => s + i.qtd, 0);
+  const valesResgatados =
+    valorVale > 0
+      ? itensFisicos.filter((i) => i.retornavel).reduce((s, i) => s + i.qtd, 0) || unidadesFisicas
+      : 0;
+  const saldoVales = cliente?.valesSaldo ?? 0;
   const valorDinheiro = parcelas
     .filter((x) => x.forma === "Dinheiro")
     .reduce((s, x) => s + (Number(x.valor) || 0), 0);
@@ -150,6 +184,8 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
     setVazios("0");
     setVaziosEditado(false);
     setTrocoPara("");
+    setPacoteQtd("");
+    setPacoteValorUnit("");
     setParcelas([{ forma: "PIX", valor: "" }]);
     setBusca("");
     setClienteId("");
@@ -175,6 +211,16 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
 
     if (itens.length === 0) {
       toast.error("Adicione pelo menos um produto ao carrinho.");
+      return;
+    }
+    if (valorVale > 0 && valesResgatados > saldoVales) {
+      toast.error(
+        `Saldo de vales insuficiente: cliente tem ${saldoVales} e a venda precisa de ${valesResgatados}.`,
+      );
+      return;
+    }
+    if (valesVendidos > 0 && valorValeUnit <= 0) {
+      toast.error("Informe o valor de cada vale do pacote.");
       return;
     }
     if (restante > 0.009) {
@@ -206,12 +252,19 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
       trocoPara: valorDinheiro > 0 ? Number(trocoPara) || undefined : undefined,
       vaziosRecolhidos: nVazios,
       entregador: entregador || BALCAO,
+      valesCredito: valesVendidos,
+      valesResgatados,
+      // Venda de balcão já sai concluída; entregas seguem em "pendente".
+      status: (entregador || BALCAO) === BALCAO ? "concluido" : undefined,
       });
 
+      // Pacote de vales não baixa estoque físico — só os itens de produto.
       baixaVenda(
-        itens.map((i) => ({ produtoId: i.produtoId, qtd: i.qtd, modo: i.modo })),
+        itensFisicos.map((i) => ({ produtoId: i.produtoId, qtd: i.qtd, modo: i.modo })),
         nVazios,
       );
+      if (valesVendidos > 0) await ajustarVales(cliente.id, valesVendidos);
+      if (valesResgatados > 0) await ajustarVales(cliente.id, -valesResgatados);
       registrarCompra(cliente.id, resumoItens(itens), total, hojeISO());
       // Débito lançado exatamente igual ao valor informado como fiado.
       if (valorFiado > 0) ajustarDivida(cliente.id, valorFiado);
@@ -297,9 +350,15 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                   <div className="flex flex-col gap-2 rounded-lg border border-border bg-muted/40 p-3">
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-sm font-medium">{rotuloCliente(cliente)}</span>
-                      {(cliente.divida ?? 0) > 0 && (
-                        <Badge variant="destructive">Fiado: {brl(cliente.divida ?? 0)}</Badge>
-                      )}
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {(cliente.divida ?? 0) > 0 && (
+                          <Badge variant="destructive">Fiado: {brl(cliente.divida ?? 0)}</Badge>
+                        )}
+                        <Badge variant={saldoVales > 0 ? "default" : "secondary"}>
+                          <Ticket className="mr-1 size-3" />
+                          Saldo: {saldoVales} vales
+                        </Badge>
+                      </div>
                     </div>
                     <Campo label="Endereço de entrega" htmlFor="pdv-endereco">
                       <Input
@@ -470,6 +529,42 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                 </div>
               )}
 
+              <div className="flex flex-col gap-2 rounded-lg border border-primary/30 bg-primary/5 p-3">
+                <p className="flex items-center gap-2 text-sm font-medium">
+                  <Ticket className="size-4 text-primary" /> Pacote de vales (crédito)
+                </p>
+                <div className="flex items-center gap-2">
+                  <Campo label="Qtd. de vales" htmlFor="pdv-vales-qtd">
+                    <Input
+                      id="pdv-vales-qtd"
+                      type="number"
+                      min={0}
+                      step={1}
+                      inputMode="numeric"
+                      value={pacoteQtd}
+                      onChange={(e) => setPacoteQtd(e.target.value)}
+                      placeholder="0"
+                    />
+                  </Campo>
+                  <Campo label="Valor por vale (R$)" htmlFor="pdv-vales-valor">
+                    <Input
+                      id="pdv-vales-valor"
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={pacoteValorUnit}
+                      onChange={(e) => setPacoteValorUnit(e.target.value)}
+                      placeholder="0,00"
+                    />
+                  </Campo>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {valesVendidos > 0
+                    ? `${valesVendidos} vales × ${brl(valorValeUnit)} = ${brl(valesVendidos * valorValeUnit)} — entra no caixa e credita o saldo do cliente, sem baixar estoque.`
+                    : "Venda de crédito antecipado: soma no caixa e credita vales ao cliente, sem baixa de estoque."}
+                </p>
+              </div>
+
               <div className="flex flex-col gap-2 rounded-lg border border-border p-3">
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-sm font-medium">Formas de pagamento</p>
@@ -534,6 +629,13 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                     </Button>
                   </div>
                 ))}
+                {valorVale > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Resgate em vale: <strong>{valesResgatados}</strong> galão(ões) ·{" "}
+                    <strong>saldo do cliente: {saldoVales}</strong> · não entra como novo
+                    faturamento no caixa.
+                  </p>
+                )}
                 <div className="grid grid-cols-3 gap-2 text-xs">
                   <span className="text-muted-foreground">
                     Total: <strong className="tabular-nums">{brl(total)}</strong>

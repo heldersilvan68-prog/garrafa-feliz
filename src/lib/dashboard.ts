@@ -2,7 +2,7 @@ import type { Produto } from "@/lib/erp";
 import type { Cliente } from "@/lib/clientes";
 import type { Despesa } from "@/lib/despesas";
 import { CORES_CATEGORIA } from "@/lib/despesas";
-import { fiadoEmAberto, valorPorForma, type Pedido } from "@/lib/pedidos";
+import { fiadoEmAberto, valorFaturado, valorPorForma, type Pedido } from "@/lib/pedidos";
 import {
   INICIO_TUDO,
   dentroFaixa,
@@ -91,8 +91,9 @@ export function calcularResumo(
   const doPeriodo = ativos.filter((p) => naFaixa(diaDoPedido(p), faixa));
   const doAnterior = ativos.filter((p) => naFaixa(diaDoPedido(p), anterior));
 
-  const vendas = doPeriodo.reduce((s, p) => s + p.total, 0);
-  const vendasAnt = doAnterior.reduce((s, p) => s + p.total, 0);
+  // Vendas em Vale não somam faturamento novo (dinheiro entrou na compra do pacote).
+  const vendas = doPeriodo.reduce((s, p) => s + valorFaturado(p), 0);
+  const vendasAnt = doAnterior.reduce((s, p) => s + valorFaturado(p), 0);
   const custoProduto = doPeriodo.reduce((s, p) => s + custo(p, produtos), 0);
 
   const pagas = despesas.filter((d) => d.status === "Pago");
@@ -160,7 +161,7 @@ export function calcularResumo(
           const hora = horaLocal(p.criadoEm);
           return hora >= h && hora < h + 2;
         })
-        .reduce((s, p) => s + p.total, 0);
+        .reduce((s, p) => s + valorFaturado(p), 0);
       return { rotulo: `${String(h).padStart(2, "0")}h`, valor };
     });
   } else {
@@ -173,7 +174,9 @@ export function calcularResumo(
     }
     vendasDia = dias.map((iso) => ({
       rotulo: rotuloDia(iso),
-      valor: ativos.filter((p) => diaDoPedido(p) === iso).reduce((s, p) => s + p.total, 0),
+      valor: ativos
+        .filter((p) => diaDoPedido(p) === iso)
+        .reduce((s, p) => s + valorFaturado(p), 0),
     }));
   }
 
@@ -184,7 +187,7 @@ export function calcularResumo(
       rotulo: MESES[d.getMonth()],
       valor: ativos
         .filter((p) => diaDoPedido(p).startsWith(prefixo))
-        .reduce((s, p) => s + p.total, 0),
+        .reduce((s, p) => s + valorFaturado(p), 0),
     };
   });
 

@@ -15,6 +15,8 @@ type Ctx = {
   ajustarDivida: (id: string, delta: number) => void;
   /** Ajusta os cascos que o cliente tem na rua (positivo = levou, negativo = devolveu). */
   ajustarVasilhames: (id: string, delta: number) => Promise<void>;
+  /** Ajusta o saldo de vales do cliente (positivo = comprou pacote, negativo = resgatou). */
+  ajustarVales: (id: string, delta: number) => Promise<void>;
 };
 
 const ClientesContext = createContext<Ctx | null>(null);
@@ -58,6 +60,7 @@ export function ClientesProvider({ children }: { children: ReactNode }) {
       documento: c.documento ?? null,
       divida: c.divida ?? 0,
       vasilhames_rua: c.vasilhamesRua ?? 0,
+      vales_saldo: Math.max(0, Math.round(c.valesSaldo ?? 0)),
       consumo_medio_dias: c.consumoMedioDias,
       ultima_compra: c.ultimaCompra,
     };
@@ -109,6 +112,15 @@ export function ClientesProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
   }, "Não foi possível atualizar os vasilhames do cliente");
 
+  const valesMut = useMutacao<{ id: string; delta: number }>(async ({ id, delta }) => {
+    const atual = clientes.find((c) => c.id === id)?.valesSaldo ?? 0;
+    const { error } = await supabase
+      .from("clients")
+      .update({ vales_saldo: Math.max(0, atual + delta) })
+      .eq("id", id);
+    if (error) throw error;
+  }, "Não foi possível atualizar o saldo de vales");
+
   return (
     <ClientesContext.Provider
       value={{
@@ -121,6 +133,7 @@ export function ClientesProvider({ children }: { children: ReactNode }) {
         ajustarDivida: (id, delta) => dividaMut.mutate({ id, delta }),
         ajustarVasilhames: (id, delta) =>
           vasilhamesMut.mutateAsync({ id, delta }).then(() => undefined),
+        ajustarVales: (id, delta) => valesMut.mutateAsync({ id, delta }).then(() => undefined),
       }}
     >
       {children}

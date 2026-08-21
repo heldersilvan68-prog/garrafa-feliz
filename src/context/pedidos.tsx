@@ -12,7 +12,10 @@ import {
 import type { FormaPagamento, Pedido, StatusPedido } from "@/lib/pedidos";
 import type { Database } from "@/integrations/supabase/types";
 
-type NovoPedido = Omit<Pedido, "id" | "numero" | "criadoEm" | "status">;
+type NovoPedido = Omit<Pedido, "id" | "numero" | "criadoEm" | "status"> & {
+  /** Status inicial — vendas de balcão já entram como concluídas. */
+  status?: StatusPedido;
+};
 
 type Ctx = {
   pedidos: Pedido[];
@@ -81,6 +84,9 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
           valor_fiado: dados.valorFiado ?? 0,
           troco_para: dados.trocoPara ?? null,
           vazios_recolhidos: dados.vaziosRecolhidos,
+          vales_credito: dados.valesCredito ?? 0,
+          vales_resgatados: dados.valesResgatados ?? 0,
+          ...(dados.status ? { status: dados.status } : {}),
           entregador: dados.entregador,
           observacao: dados.observacao ?? null,
         })
