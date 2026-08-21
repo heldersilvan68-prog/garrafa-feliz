@@ -350,9 +350,15 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                   <div className="flex flex-col gap-2 rounded-lg border border-border bg-muted/40 p-3">
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-sm font-medium">{rotuloCliente(cliente)}</span>
-                      {(cliente.divida ?? 0) > 0 && (
-                        <Badge variant="destructive">Fiado: {brl(cliente.divida ?? 0)}</Badge>
-                      )}
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {(cliente.divida ?? 0) > 0 && (
+                          <Badge variant="destructive">Fiado: {brl(cliente.divida ?? 0)}</Badge>
+                        )}
+                        <Badge variant={saldoVales > 0 ? "default" : "secondary"}>
+                          <Ticket className="mr-1 size-3" />
+                          Saldo: {saldoVales} vales
+                        </Badge>
+                      </div>
                     </div>
                     <Campo label="Endereço de entrega" htmlFor="pdv-endereco">
                       <Input
@@ -523,6 +529,42 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                 </div>
               )}
 
+              <div className="flex flex-col gap-2 rounded-lg border border-primary/30 bg-primary/5 p-3">
+                <p className="flex items-center gap-2 text-sm font-medium">
+                  <Ticket className="size-4 text-primary" /> Pacote de vales (crédito)
+                </p>
+                <div className="flex items-center gap-2">
+                  <Campo label="Qtd. de vales" htmlFor="pdv-vales-qtd">
+                    <Input
+                      id="pdv-vales-qtd"
+                      type="number"
+                      min={0}
+                      step={1}
+                      inputMode="numeric"
+                      value={pacoteQtd}
+                      onChange={(e) => setPacoteQtd(e.target.value)}
+                      placeholder="0"
+                    />
+                  </Campo>
+                  <Campo label="Valor por vale (R$)" htmlFor="pdv-vales-valor">
+                    <Input
+                      id="pdv-vales-valor"
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={pacoteValorUnit}
+                      onChange={(e) => setPacoteValorUnit(e.target.value)}
+                      placeholder="0,00"
+                    />
+                  </Campo>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {valesVendidos > 0
+                    ? `${valesVendidos} vales × ${brl(valorValeUnit)} = ${brl(valesVendidos * valorValeUnit)} — entra no caixa e credita o saldo do cliente, sem baixar estoque.`
+                    : "Venda de crédito antecipado: soma no caixa e credita vales ao cliente, sem baixa de estoque."}
+                </p>
+              </div>
+
               <div className="flex flex-col gap-2 rounded-lg border border-border p-3">
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-sm font-medium">Formas de pagamento</p>
@@ -587,6 +629,13 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                     </Button>
                   </div>
                 ))}
+                {valorVale > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Resgate em vale: <strong>{valesResgatados}</strong> galão(ões) ·{" "}
+                    <strong>saldo do cliente: {saldoVales}</strong> · não entra como novo
+                    faturamento no caixa.
+                  </p>
+                )}
                 <div className="grid grid-cols-3 gap-2 text-xs">
                   <span className="text-muted-foreground">
                     Total: <strong className="tabular-nums">{brl(total)}</strong>
