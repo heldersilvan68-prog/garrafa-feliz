@@ -38,6 +38,19 @@ export type Produto = {
   precoFardo: number;
   /** Margem de lucro desejada (%) usada para sugerir o preço de venda. */
   margemDesejada: number;
+  /** Preço de venda do casco/vasilhame vazio (R$). */
+  precoVendaCasco: number;
+  /** Desconto automático aplicado na venda completa (casco + água), em R$. */
+  descontoCompleta: number;
+  /** Promoção de atacado: quantidade do combo (0 = sem promoção). */
+  promoQtd: number;
+  /** Promoção de atacado: preço do combo fechado (R$). */
+  promoPreco: number;
+  /**
+   * Patrimônio fixo de cascos (ativo imobilizado). Só muda em compra de
+   * vasilhames, avarias/perdas e venda definitiva de casco.
+   */
+  patrimonioCascos: number;
 };
 
 export const brl = (v: number) =>
@@ -73,6 +86,52 @@ export const precoSugerido = (custo: number, margem: number) =>
 /** Margem real praticada sobre o custo (%). */
 export const margemReal = (custo: number, venda: number) =>
   custo > 0 ? ((venda - custo) / custo) * 100 : 0;
+
+/* ---------- Promoções progressivas (atacado) ---------- */
+
+/** Produto com tabela de atacado configurada ("a cada X unidades por R$ Y"). */
+export const temPromocao = (p: Pick<Produto, "promoQtd" | "promoPreco">) =>
+  (p.promoQtd || 0) > 1 && (p.promoPreco || 0) > 0;
+
+/**
+ * Total do item aplicando a promoção progressiva:
+ * combos fechados no preço do lote + unidades restantes no preço avulso.
+ */
+export const totalComPromocao = (
+  qtd: number,
+  precoUnit: number,
+  promoQtd: number,
+  promoPreco: number,
+) => {
+  const q = Math.max(0, Math.floor(qtd || 0));
+  if (!(promoQtd > 1 && promoPreco > 0)) return q * precoUnit;
+  const combos = Math.floor(q / promoQtd);
+  const restante = q % promoQtd;
+  return Math.round((combos * promoPreco + restante * precoUnit) * 100) / 100;
+};
+
+/** Preço de venda praticado conforme o modo de venda de um retornável. */
+export const precoPorModo = (
+  p: Pick<Produto, "precoVenda" | "precoVendaCasco" | "descontoCompleta">,
+  modo: "refil" | "casco" | "completa",
+) => {
+  if (modo === "casco") return p.precoVendaCasco || 0;
+  if (modo === "completa")
+    return Math.max(
+      0,
+      Math.round(((p.precoVenda || 0) + (p.precoVendaCasco || 0) - (p.descontoCompleta || 0)) * 100) /
+        100,
+    );
+  return p.precoVenda || 0;
+};
+
+/** Valor do estoque considerando fardos fechados + unidades avulsas. */
+export const valorEstoque = (p: Produto) => {
+  const upf = unidPorFardo(p);
+  if (upf <= 1 || !(p.precoFardo > 0)) return (p.estoqueCheio || 0) * (p.precoVenda || 0);
+  const { fardos, soltas } = emFardos(p.estoqueCheio || 0, upf);
+  return fardos * p.precoFardo + soltas * (p.precoVenda || 0);
+};
 
 /** Lucro previsto por unidade/fardo. */
 export const lucroPrevisto = (custo: number, venda: number) => venda - custo;

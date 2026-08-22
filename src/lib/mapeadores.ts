@@ -41,6 +41,11 @@ export const paraProduto = (r: ProdutoRow): Produto => ({
   precoCustoFardo: num(r.preco_custo_fardo),
   precoFardo: num(r.preco_fardo),
   margemDesejada: num(r.margem_desejada),
+  precoVendaCasco: num(r.preco_venda_casco),
+  descontoCompleta: num(r.desconto_completa),
+  promoQtd: r.promo_qtd ?? 0,
+  promoPreco: num(r.promo_preco),
+  patrimonioCascos: r.patrimonio_cascos ?? 0,
 });
 
 
@@ -128,6 +133,7 @@ export const paraPedido = (
   pago: r.pago,
   valorFiado: num(r.valor_fiado),
   trocoPara: r.troco_para === null ? undefined : num(r.troco_para),
+  desconto: num(r.desconto),
   valesCredito: r.vales_credito ?? 0,
   valesResgatados: r.vales_resgatados ?? 0,
   vaziosRecolhidos: r.vazios_recolhidos,
