@@ -573,6 +573,7 @@ export type Database = {
           client_id: string | null
           cliente_nome: string
           created_at: string
+          desconto: number
           endereco: string
           entregador: string
           forma_baixa: Database["public"]["Enums"]["payment_method"] | null
@@ -602,6 +603,7 @@ export type Database = {
           client_id?: string | null
           cliente_nome?: string
           created_at?: string
+          desconto?: number
           endereco?: string
           entregador?: string
           forma_baixa?: Database["public"]["Enums"]["payment_method"] | null
@@ -631,6 +633,7 @@ export type Database = {
           client_id?: string | null
           cliente_nome?: string
           created_at?: string
+          desconto?: number
           endereco?: string
           entregador?: string
           forma_baixa?: Database["public"]["Enums"]["payment_method"] | null
@@ -782,6 +785,7 @@ export type Database = {
           created_at: string
           custo_casco: number
           custo_envase: number
+          desconto_completa: number
           estoque_cheio: number
           estoque_minimo: number
           estoque_vazio: number
@@ -791,10 +795,14 @@ export type Database = {
           marca: string | null
           margem_desejada: number
           nome: string
+          patrimonio_cascos: number
           preco_custo: number
           preco_custo_fardo: number
           preco_fardo: number
           preco_venda: number
+          preco_venda_casco: number
+          promo_preco: number
+          promo_qtd: number
           retornavel: boolean
           unidade: string | null
           unidades_por_fardo: number
@@ -806,6 +814,7 @@ export type Database = {
           created_at?: string
           custo_casco?: number
           custo_envase?: number
+          desconto_completa?: number
           estoque_cheio?: number
           estoque_minimo?: number
           estoque_vazio?: number
@@ -815,10 +824,14 @@ export type Database = {
           marca?: string | null
           margem_desejada?: number
           nome: string
+          patrimonio_cascos?: number
           preco_custo?: number
           preco_custo_fardo?: number
           preco_fardo?: number
           preco_venda?: number
+          preco_venda_casco?: number
+          promo_preco?: number
+          promo_qtd?: number
           retornavel?: boolean
           unidade?: string | null
           unidades_por_fardo?: number
@@ -830,6 +843,7 @@ export type Database = {
           created_at?: string
           custo_casco?: number
           custo_envase?: number
+          desconto_completa?: number
           estoque_cheio?: number
           estoque_minimo?: number
           estoque_vazio?: number
@@ -839,10 +853,14 @@ export type Database = {
           marca?: string | null
           margem_desejada?: number
           nome?: string
+          patrimonio_cascos?: number
           preco_custo?: number
           preco_custo_fardo?: number
           preco_fardo?: number
           preco_venda?: number
+          preco_venda_casco?: number
+          promo_preco?: number
+          promo_qtd?: number
           retornavel?: boolean
           unidade?: string | null
           unidades_por_fardo?: number

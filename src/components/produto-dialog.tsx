@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Campo } from "@/components/ui/campo";
+import { InputNumero } from "@/components/ui/input-numero";
 import { Switch } from "@/components/ui/switch";
 import { SelectComCadastro } from "@/components/select-com-cadastro";
 import { ProdutoFoto } from "@/components/produto-foto";
@@ -47,6 +48,11 @@ const vazio: Produto = {
   precoCustoFardo: 0,
   precoFardo: 0,
   margemDesejada: 0,
+  precoVendaCasco: 0,
+  descontoCompleta: 0,
+  promoQtd: 0,
+  promoPreco: 0,
+  patrimonioCascos: 0,
 };
 
 
@@ -195,22 +201,19 @@ export function ProdutoDialog({
             </p>
             <div className="grid gap-4 sm:grid-cols-3">
               <Campo label="Unidades por fardo/caixa" htmlFor="upf">
-                <Input
+                <InputNumero
                   id="upf"
-                  type="number"
                   min={1}
-                  value={form.unidadesPorFardo}
-                  onChange={(e) => set("unidadesPorFardo", Math.max(1, Number(e.target.value) || 1))}
+                  valor={form.unidadesPorFardo}
+                  onValor={(n) => set("unidadesPorFardo", Math.max(1, n || 1))}
                 />
               </Campo>
               <Campo label="Preço de Custo do Fardo (R$)" htmlFor="custo-fardo">
-                <Input
+                <InputNumero
                   id="custo-fardo"
-                  type="number"
-                  step="0.01"
-                  value={form.precoCustoFardo}
-                  onChange={(e) => {
-                    const v = Number(e.target.value) || 0;
+                  decimal
+                  valor={form.precoCustoFardo}
+                  onValor={(v) => {
                     setForm((f) => ({
                       ...f,
                       precoCustoFardo: v,
@@ -220,12 +223,11 @@ export function ProdutoDialog({
                 />
               </Campo>
               <Campo label="Preço de Venda do Fardo (R$)" htmlFor="venda-fardo">
-                <Input
+                <InputNumero
                   id="venda-fardo"
-                  type="number"
-                  step="0.01"
-                  value={form.precoFardo}
-                  onChange={(e) => set("precoFardo", Number(e.target.value) || 0)}
+                  decimal
+                  valor={form.precoFardo}
+                  onValor={(n) => set("precoFardo", n)}
                 />
               </Campo>
             </div>
@@ -235,21 +237,19 @@ export function ProdutoDialog({
             <p className="mb-3 text-sm font-medium">Precificação inteligente (unidade avulsa)</p>
             <div className="grid gap-4 sm:grid-cols-2">
               <Campo label="Preço de Custo Unitário (R$)" htmlFor="custo">
-                <Input
+                <InputNumero
                   id="custo"
-                  type="number"
-                  step="0.01"
-                  value={form.precoCusto}
-                  onChange={(e) => set("precoCusto", Number(e.target.value) || 0)}
+                  decimal
+                  valor={form.precoCusto}
+                  onValor={(n) => set("precoCusto", n)}
                 />
               </Campo>
               <Campo label="Margem de Lucro Desejada (%)" htmlFor="margem">
-                <Input
+                <InputNumero
                   id="margem"
-                  type="number"
-                  step="0.01"
-                  value={form.margemDesejada}
-                  onChange={(e) => set("margemDesejada", Number(e.target.value) || 0)}
+                  decimal
+                  valor={form.margemDesejada}
+                  onValor={(n) => set("margemDesejada", n)}
                 />
               </Campo>
               <Campo label="Valor do Lucro Previsto (R$)" htmlFor="lucro-prev">
@@ -274,12 +274,11 @@ export function ProdutoDialog({
                 htmlFor="venda"
                 className="sm:col-span-2"
               >
-                <Input
+                <InputNumero
                   id="venda"
-                  type="number"
-                  step="0.01"
-                  value={form.precoVenda}
-                  onChange={(e) => set("precoVenda", Number(e.target.value) || 0)}
+                  decimal
+                  valor={form.precoVenda}
+                  onValor={(n) => set("precoVenda", n)}
                 />
               </Campo>
             </div>
@@ -294,19 +293,17 @@ export function ProdutoDialog({
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Campo label="Quantidade mínima (unidades)" htmlFor="min">
-              <Input
+              <InputNumero
                 id="min"
-                type="number"
-                value={form.estoqueMinimo}
-                onChange={(e) => set("estoqueMinimo", Number(e.target.value))}
+                valor={form.estoqueMinimo}
+                onValor={(n) => set("estoqueMinimo", n)}
               />
             </Campo>
             <Campo label="Quantidade atual (unidades)" htmlFor="cheio">
-              <Input
+              <InputNumero
                 id="cheio"
-                type="number"
-                value={form.estoqueCheio}
-                onChange={(e) => set("estoqueCheio", Number(e.target.value))}
+                valor={form.estoqueCheio}
+                onValor={(n) => set("estoqueCheio", n)}
               />
             </Campo>
             <p className="text-xs text-muted-foreground sm:col-span-2">
@@ -314,6 +311,37 @@ export function ProdutoDialog({
             </p>
           </div>
 
+
+          <div className="rounded-xl border border-border p-4">
+            <p className="text-sm font-medium">Promoção / Tabela de atacado (opcional)</p>
+            <p className="mb-3 text-xs text-muted-foreground">
+              Regra progressiva: a cada X unidades, o lote sai pelo preço do combo. As unidades
+              restantes seguem no preço avulso.
+            </p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Campo label="A cada quantas unidades" htmlFor="promo-qtd">
+                <InputNumero
+                  id="promo-qtd"
+                  valor={form.promoQtd}
+                  onValor={(n) => set("promoQtd", Math.max(0, n))}
+                />
+              </Campo>
+              <Campo label="Preço do combo (R$)" htmlFor="promo-preco">
+                <InputNumero
+                  id="promo-preco"
+                  decimal
+                  valor={form.promoPreco}
+                  onValor={(n) => set("promoPreco", n)}
+                />
+              </Campo>
+            </div>
+            {form.promoQtd > 1 && form.promoPreco > 0 && (
+              <p className="mt-3 text-xs text-muted-foreground">
+                {form.promoQtd} un. por <strong>{brl(form.promoPreco)}</strong> · avulsa{" "}
+                <strong>{brl(form.precoVenda)}</strong>
+              </p>
+            )}
+          </div>
 
           <div className="flex items-center justify-between rounded-xl border border-border bg-muted/40 p-4">
             <div className="min-w-0 pr-4">
@@ -326,31 +354,48 @@ export function ProdutoDialog({
           </div>
 
           {form.retornavel && (
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2">
               <Campo label="Vazios no depósito" htmlFor="vazio">
-                <Input
+                <InputNumero
                   id="vazio"
-                  type="number"
-                  value={form.estoqueVazio}
-                  onChange={(e) => set("estoqueVazio", Number(e.target.value))}
+                  valor={form.estoqueVazio}
+                  onValor={(n) => set("estoqueVazio", n)}
                 />
               </Campo>
               <Campo label="Custo do casco (R$)" htmlFor="casco">
-                <Input
+                <InputNumero
                   id="casco"
-                  type="number"
-                  step="0.01"
-                  value={form.custoCasco}
-                  onChange={(e) => set("custoCasco", Number(e.target.value))}
+                  decimal
+                  valor={form.custoCasco}
+                  onValor={(n) => set("custoCasco", n)}
+                />
+              </Campo>
+              <Campo label="Preço de venda do casco (R$)" htmlFor="venda-casco">
+                <InputNumero
+                  id="venda-casco"
+                  decimal
+                  valor={form.precoVendaCasco}
+                  onValor={(n) => set("precoVendaCasco", n)}
                 />
               </Campo>
               <Campo label="Custo do envase (R$)" htmlFor="envase">
-                <Input
+                <InputNumero
                   id="envase"
-                  type="number"
-                  step="0.01"
-                  value={form.custoEnvase}
-                  onChange={(e) => set("custoEnvase", Number(e.target.value))}
+                  decimal
+                  valor={form.custoEnvase}
+                  onValor={(n) => set("custoEnvase", n)}
+                />
+              </Campo>
+              <Campo
+                label="Desconto automático na venda completa (R$)"
+                htmlFor="desc-completa"
+                className="sm:col-span-2"
+              >
+                <InputNumero
+                  id="desc-completa"
+                  decimal
+                  valor={form.descontoCompleta}
+                  onValor={(n) => set("descontoCompleta", n)}
                 />
               </Campo>
             </div>

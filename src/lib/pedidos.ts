@@ -54,6 +54,8 @@ export type Pedido = {
   /** Valor exatamente lançado como fiado nesta venda. */
   valorFiado: number;
   trocoPara?: number;
+  /** Desconto manual aplicado no fechamento da venda (R$). */
+  desconto: number;
   /** Vales (galões) vendidos como pacote de crédito nesta venda. */
   valesCredito: number;
   /** Vales (galões) resgatados do saldo do cliente nesta venda. */

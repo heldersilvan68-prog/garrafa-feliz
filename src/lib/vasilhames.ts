@@ -69,8 +69,11 @@ export function resumoVasilhames(produtos: Produto[], vasilhamesNaRua: number, e
   const valorVenda = lista.reduce((s, p) => s + p.estoqueCheio * p.precoVenda, 0);
   const valorCusto = lista.reduce((s, p) => s + p.estoqueCheio * p.precoCusto, 0);
 
+  // Patrimônio é ativo imobilizado: vem do saldo fixo de cascos de cada produto,
+  // nunca da soma dinâmica de cheios + vazios (que é só movimentação de estado).
+  const patrimonioCascos = lista.reduce((s, p) => s + (p.patrimonioCascos || 0), 0);
   const patrimonioValor = lista.reduce(
-    (s, p) => s + (p.estoqueCheio + p.estoqueVazio) * p.custoCasco,
+    (s, p) => s + (p.patrimonioCascos || 0) * p.custoCasco,
     0,
   );
 
@@ -79,8 +82,9 @@ export function resumoVasilhames(produtos: Produto[], vasilhamesNaRua: number, e
     vazios,
     naRua: vasilhamesNaRua,
     emTransito,
-    // Patrimônio Total Fixo: Cheios + Vazios + Em Trânsito (Fonte) + Na Rua
-    patrimonio: cheios + vazios + emTransito + vasilhamesNaRua,
+    // Patrimônio Total Fixo (ativo imobilizado), alterado só por compra,
+    // avaria/perda e venda definitiva de casco.
+    patrimonio: patrimonioCascos,
     patrimonioValor,
     custoEnvasePrevisto: custoEnvase,
     valorVenda,

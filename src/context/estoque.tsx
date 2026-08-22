@@ -122,12 +122,23 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
       preco_custo_fardo: p.precoCustoFardo || 0,
       preco_fardo: p.precoFardo || 0,
       margem_desejada: p.margemDesejada || 0,
+      preco_venda_casco: p.precoVendaCasco || 0,
+      desconto_completa: p.descontoCompleta || 0,
+      promo_qtd: Math.max(0, Math.floor(p.promoQtd || 0)),
+      promo_preco: p.promoPreco || 0,
     };
 
     const existe = produtos.some((x) => x.id === p.id);
+    // Patrimônio de cascos NUNCA é recalculado por edição manual de cheios/vazios:
+    // no cadastro inicial ele nasce do saldo informado e depois só muda por evento.
     const { error } = existe
       ? await supabase.from("products").update(linha).eq("id", p.id)
-      : await supabase.from("products").insert(linha);
+      : await supabase.from("products").insert({
+          ...linha,
+          patrimonio_cascos: p.retornavel
+            ? Math.max(0, Math.floor((p.estoqueCheio || 0) + (p.estoqueVazio || 0)))
+            : 0,
+        });
     if (error) throw error;
   }, "Não foi possível salvar o produto");
 
@@ -182,6 +193,7 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
     if (!p) return;
     await patch(id, {
       estoque_cheio: p.estoqueCheio + qtd,
+      patrimonio_cascos: Math.max(0, (p.patrimonioCascos || 0) + qtd),
     });
     await logar({
       produtoId: id,
@@ -229,12 +241,13 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
       const perdidos = Math.min(qtd, cheio ? p.estoqueCheio : p.estoqueVazio);
       if (perdidos <= 0) throw new Error("Sem saldo suficiente para registrar a avaria");
 
-      await patch(
-        produtoId,
-        cheio
+      await patch(produtoId, {
+        ...(cheio
           ? { estoque_cheio: p.estoqueCheio - perdidos }
-          : { estoque_vazio: p.estoqueVazio - perdidos },
-      );
+          : { estoque_vazio: p.estoqueVazio - perdidos }),
+        // Avaria/perda descarta o casco: reduz o patrimônio.
+        patrimonio_cascos: Math.max(0, (p.patrimonioCascos || 0) - perdidos),
+      });
 
       const unitario = cheio ? p.custoCasco + p.custoEnvase : p.custoCasco;
       const valor = unitario * perdidos;
@@ -321,7 +334,16 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
 
       cheio = Math.max(0, cheio + deltaCheio);
       vazio = Math.max(0, vazio + deltaVazio);
-      await patch(p.id, { estoque_cheio: cheio, estoque_vazio: vazio });
+      await patch(p.id, {
+        estoque_cheio: cheio,
+        estoque_vazio: vazio,
+        // Só venda definitiva de casco mexe no patrimônio (refil mantém intacto).
+        ...(deltaPatrimonio !== 0
+          ? {
+              patrimonio_cascos: Math.max(0, (p.patrimonioCascos || 0) + deltaPatrimonio),
+            }
+          : {}),
+      });
 
       if (p.retornavel) {
         await logar({
