@@ -19,7 +19,7 @@ import { ProdutoFoto } from "@/components/produto-foto";
 import { ProdutoDialog } from "@/components/produto-dialog";
 import { EntradaEstoqueDialog } from "@/components/estoque-dialogs";
 import { useEstoque } from "@/context/estoque";
-import { brl, rotuloEstoque, unidPorFardo } from "@/lib/erp";
+import { brl, rotuloEstoque, unidPorFardo, valorEstoque } from "@/lib/erp";
 
 export const Route = createFileRoute("/_authenticated/produtos")({
   head: () => ({
@@ -142,12 +142,7 @@ function Produtos() {
 
 {/* 2. Qtd. Disponível */}
 <TableCell className="text-center tabular-nums font-medium">
-  <span>{rotuloEstoque(p.estoqueCheio || 0, unidPorFardo(p))}</span>
-  {unidPorFardo(p) > 1 ? (
-    <span className="block text-xs font-normal text-muted-foreground">
-      {p.estoqueCheio || 0} un. · fardo de {unidPorFardo(p)}
-    </span>
-  ) : null}
+  {rotuloEstoque(p.estoqueCheio || 0, unidPorFardo(p))}
 </TableCell>
 
 {/* 3. Estoque Mínimo */}
@@ -155,19 +150,33 @@ function Produtos() {
   {rotuloEstoque(p.estoqueMinimo || 0, unidPorFardo(p))}
 </TableCell>
 
-{/* 4. Preço de Custo */}
+{/* 4. Preço de Custo — por fardo quando o produto é vendido em fardo/caixa */}
 <TableCell className="text-right tabular-nums">
-  {brl(p.precoCusto || 0)}
+  {unidPorFardo(p) > 1 && (p.precoCustoFardo || 0) > 0 ? (
+    <>
+      {brl(p.precoCustoFardo)}
+      <span className="block text-xs text-muted-foreground">/fardo</span>
+    </>
+  ) : (
+    brl(p.precoCusto || 0)
+  )}
 </TableCell>
 
 {/* 5. Preço de Venda */}
 <TableCell className="text-right tabular-nums">
-  {brl(p.precoVenda || 0)}
+  {unidPorFardo(p) > 1 && (p.precoFardo || 0) > 0 ? (
+    <>
+      {brl(p.precoFardo)}
+      <span className="block text-xs text-muted-foreground">/fardo</span>
+    </>
+  ) : (
+    brl(p.precoVenda || 0)
+  )}
 </TableCell>
 
-{/* 6. Valor Total de Venda */}
+{/* 6. Valor Total de Venda (fardos fechados + unidades avulsas) */}
 <TableCell className="text-right tabular-nums font-bold">
-  {brl((p.estoqueCheio || 0) * (p.precoVenda || 0))}
+  {brl(valorEstoque(p))}
 </TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-1">

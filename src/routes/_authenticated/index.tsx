@@ -59,7 +59,9 @@ function Painel() {
 
       <BreakdownSection resumo={resumo} />
 
-      <CoberturaCards />
+      {/* Métricas de produtos só fazem sentido no fechamento mensal. */}
+      {periodo.periodo === "mes" && <CoberturaCards />}
+
 
       <VendasChart resumo={resumo} />
     </div>
