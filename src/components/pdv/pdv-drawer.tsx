@@ -1,6 +1,6 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { ProdutoFoto } from "@/components/produto-foto";
-import { Loader2, Plus, Search, ShoppingCart, Ticket, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Loader2, Plus, ShoppingCart, Ticket, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,9 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { InputNumero } from "@/components/ui/input-numero";
 import { Campo } from "@/components/ui/campo";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
@@ -33,12 +35,15 @@ import { useEntregadores } from "@/context/entregadores";
 import { useConfiguracoes } from "@/context/configuracoes";
 
 import { bairroDe, hojeISO, rotuloCliente } from "@/lib/clientes";
-import { brl, rotuloEstoque, unidPorFardo } from "@/lib/erp";
+import { brl, precoPorModo, totalComPromocao, unidPorFardo } from "@/lib/erp";
 import { BALCAO } from "@/lib/entregadores";
 import { resumoItens, type FormaPagamento, type ItemPedido } from "@/lib/pedidos";
 import { LABEL_MODO, type ModoVenda } from "@/lib/vasilhames";
 
 type Parcela = { forma: FormaPagamento; valor: string };
+
+/** Cliente padrão das vendas de balcão sem cadastro. */
+const CONSUMIDOR_FINAL = "Consumidor Final / Balcão";
 
 export function PdvDrawer({ children }: { children: ReactNode }) {
   const { produtos, baixaVenda } = useEstoque();
@@ -67,6 +72,9 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
   const [embalagens, setEmbalagens] = useState<Record<string, "un" | "fardo">>({});
   const [parcelas, setParcelas] = useState<Parcela[]>([{ forma: "PIX", valor: "" }]);
   const [trocoPara, setTrocoPara] = useState("");
+  // Desconto manual aplicado sobre o total da venda.
+  const [desconto, setDesconto] = useState(0);
+  const [listaAberta, setListaAberta] = useState(false);
   const [entregador, setEntregador] = useState<string>(BALCAO);
   // Pacote de vales: entrada financeira que gera crédito, sem baixa de estoque.
   const [pacoteQtd, setPacoteQtd] = useState("");
@@ -82,13 +90,33 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
     return (embalagens[id] ?? "un") === "fardo" ? unidPorFardo(p) : 1;
   };
 
-  /** Preço unitário padrão conforme a embalagem (fardo é convertido por unidade). */
+  /**
+   * Preço da unidade de venda escolhida:
+   * fardo fechado = preço cheio do fardo; retornável = preço do modo (refil,
+   * casco avulso ou venda completa já com o desconto automático).
+   */
   const precoPadrao = (id: string) => {
     const p = produtos.find((x) => x.id === id);
     if (!p) return 0;
-    if ((embalagens[id] ?? "un") === "fardo" && p.precoFardo > 0)
-      return Math.round((p.precoFardo / unidPorFardo(p)) * 100) / 100;
+    if ((embalagens[id] ?? "un") === "fardo")
+      return p.precoFardo > 0 ? p.precoFardo : p.precoVenda * unidPorFardo(p);
+    if (p.retornavel) return precoPorModo(p, modos[id] ?? "refil");
     return p.precoVenda;
+  };
+
+  /** Preço praticado (com edição manual) na unidade de venda escolhida. */
+  const precoVenda = (id: string) =>
+    Math.max(0, Number(precos[id] ?? precoPadrao(id)) || 0);
+
+  /** Preço unitário final do item, já com fardo e promoção progressiva aplicados. */
+  const precoUnitario = (id: string, qtd: number) => {
+    const p = produtos.find((x) => x.id === id);
+    if (!p || qtd <= 0) return 0;
+    const fardo = (embalagens[id] ?? "un") === "fardo";
+    const preco = precoVenda(id);
+    if (fardo) return Math.round((preco / unidPorFardo(p)) * 100) / 100;
+    const bruto = totalComPromocao(qtd, preco, p.promoQtd || 0, p.promoPreco || 0);
+    return Math.round((bruto / qtd) * 100) / 100;
   };
 
   const filtrados = useMemo(() => {
@@ -110,7 +138,9 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
       nome: p.nome,
       qtd: carrinho[p.id]!,
       // Preço negociado apenas nesta venda — não altera o cadastro do produto.
-      precoUnit: Math.max(0, Number(precos[p.id] ?? precoPadrao(p.id)) || 0),
+      // Fardo fechado: o valor digitado é do fardo, convertido por unidade.
+      // Atacado: aplica combos fechados + unidades avulsas progressivamente.
+      precoUnit: precoUnitario(p.id, carrinho[p.id]!),
       retornavel: p.retornavel,
       modo: p.retornavel ? (modos[p.id] ?? "refil") : "refil",
     }));
@@ -132,7 +162,9 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
       : [];
   const itens: ItemPedido[] = [...itensFisicos, ...itemPacote];
 
-  const total = itens.reduce((s, i) => s + i.qtd * i.precoUnit, 0);
+  const subtotal = itens.reduce((s, i) => s + i.qtd * i.precoUnit, 0);
+  const descontoAplicado = Math.min(Math.max(0, desconto), subtotal);
+  const total = Math.round((subtotal - descontoAplicado) * 100) / 100;
   // Só as trocas de refil geram devolução de vasilhame vazio.
   const qtdRetornavel = itensFisicos
     .filter((i) => i.retornavel && i.modo === "refil")
@@ -184,6 +216,8 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
     setVazios("0");
     setVaziosEditado(false);
     setTrocoPara("");
+    setDesconto(0);
+    setListaAberta(false);
     setPacoteQtd("");
     setPacoteValorUnit("");
     setParcelas([{ forma: "PIX", valor: "" }]);
@@ -197,6 +231,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
     setClienteId(id);
     setEndereco(c?.endereco ?? "");
     setBusca(c ? rotuloCliente(c) : "");
+    setListaAberta(false);
   };
 
   const finalizar = async () => {
@@ -204,13 +239,12 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
       toast.error("Abra o caixa para realizar vendas");
       return;
     }
-    if (!cliente) {
-      toast.error("Selecione um cliente para o pedido.");
-      return;
-    }
-
     if (itens.length === 0) {
       toast.error("Adicione pelo menos um produto ao carrinho.");
+      return;
+    }
+    if ((valorVale > 0 || valesVendidos > 0) && !cliente) {
+      toast.error("Vales exigem um cliente cadastrado.");
       return;
     }
     if (valorVale > 0 && valesResgatados > saldoVales) {
@@ -228,7 +262,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
       return;
     }
     if (valorFiado > 0 && !cliente) {
-      toast.error("Vendas com fiado exigem um cliente cadastrado.");
+      toast.error("Vendas no fiado exigem um cliente cadastrado.");
       return;
     }
     if (isSubmitting) return;
@@ -236,16 +270,18 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
     try {
       const nVazios = Math.max(0, Number(vaziosValor) || 0);
       const pedido = await criar({
-      clienteId: cliente.id,
-      clienteNome: cliente.nome,
-      telefone: cliente.telefone,
-      endereco: endereco || cliente.endereco,
-      bairro: bairroDe(cliente),
+      // Venda de balcão sem cadastro entra como consumidor final.
+      clienteId: cliente?.id ?? "",
+      clienteNome: cliente?.nome ?? CONSUMIDOR_FINAL,
+      telefone: cliente?.telefone ?? "",
+      endereco: endereco || cliente?.endereco || "",
+      bairro: cliente ? bairroDe(cliente) : "",
       itens,
       pagamentos: parcelas
         .filter((x) => (Number(x.valor) || 0) > 0)
         .map((x) => ({ forma: x.forma, valor: Number(x.valor) })),
       total,
+      desconto: descontoAplicado,
       pagamento,
       pago: valorFiado === 0,
       valorFiado,
@@ -263,17 +299,19 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
         itensFisicos.map((i) => ({ produtoId: i.produtoId, qtd: i.qtd, modo: i.modo })),
         nVazios,
       );
-      if (valesVendidos > 0) await ajustarVales(cliente.id, valesVendidos);
-      if (valesResgatados > 0) await ajustarVales(cliente.id, -valesResgatados);
-      registrarCompra(cliente.id, resumoItens(itens), total, hojeISO());
-      // Débito lançado exatamente igual ao valor informado como fiado.
-      if (valorFiado > 0) ajustarDivida(cliente.id, valorFiado);
-      // Cascos que saíram e não voltaram ficam na conta do cliente.
-      const naRua = Math.max(0, qtdRetornavel - nVazios);
-      if (naRua > 0) void ajustarVasilhames(cliente.id, naRua);
+      if (cliente) {
+        if (valesVendidos > 0) await ajustarVales(cliente.id, valesVendidos);
+        if (valesResgatados > 0) await ajustarVales(cliente.id, -valesResgatados);
+        registrarCompra(cliente.id, resumoItens(itens), total, hojeISO());
+        // Débito lançado exatamente igual ao valor informado como fiado.
+        if (valorFiado > 0) ajustarDivida(cliente.id, valorFiado);
+        // Cascos que saíram e não voltaram ficam na conta do cliente.
+        const naRua = Math.max(0, qtdRetornavel - nVazios);
+        if (naRua > 0) void ajustarVasilhames(cliente.id, naRua);
+      }
 
       toast.success(`Pedido #${pedido.numero} criado — ${brl(total)}`, {
-        description: `${cliente.nome} · ${pagamento} · ${entregador}`,
+        description: `${cliente?.nome ?? CONSUMIDOR_FINAL} · ${pagamento} · ${entregador}`,
       });
       limpar();
       setAberto(false);
@@ -285,7 +323,14 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
   };
 
   return (
-    <Dialog open={aberto} onOpenChange={setAberto}>
+    <Dialog
+      open={aberto}
+      onOpenChange={(v) => {
+        // Fechar por X, "Cancelar" ou clique fora zera o formulário por completo.
+        if (!v) limpar();
+        setAberto(v);
+      }}
+    >
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="max-w-4xl rounded-3xl p-0 shadow-2xl max-h-[90vh] overflow-hidden flex flex-col gap-0">
         <DialogHeader className="p-6 pb-2 text-left">
@@ -309,43 +354,69 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
             {/* Cliente + produtos */}
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-2">
-                <Campo label="Cliente (nome, telefone ou bairro)" htmlFor="pdv-cliente">
-                  <div className="relative flex items-center">
-                    <Search className="pointer-events-none absolute left-3 size-4 text-muted-foreground" />
-                    <Input
-                      id="pdv-cliente"
-                      className="pl-9"
-                      placeholder="Buscar cliente..."
-                      value={busca}
-                      onChange={(e) => {
-                        setBusca(e.target.value);
-                        setClienteId("");
-                      }}
-                    />
-                  </div>
-                </Campo>
-                {!clienteId && (
-                  <div className="overflow-hidden rounded-lg border border-border">
-                    {filtrados.length === 0 && (
-                      <p className="px-3 py-2 text-sm text-muted-foreground">
-                        Nenhum cliente encontrado.
-                      </p>
-                    )}
-                    {filtrados.map((c) => (
-                      <button
-                        key={c.id}
+                <Campo
+                  label="Cliente (opcional — nome, telefone ou código)"
+                  htmlFor="pdv-cliente"
+                >
+                  <Popover open={listaAberta} onOpenChange={setListaAberta}>
+                    <div className="relative flex items-center">
+                      <PopoverTrigger asChild>
+                        <span className="absolute inset-0 -z-10" aria-hidden />
+                      </PopoverTrigger>
+                      <Input
+                        id="pdv-cliente"
+                        className="pr-10"
+                        placeholder={`Buscar cliente ou deixe vazio (${CONSUMIDOR_FINAL})`}
+                        value={busca}
+                        onChange={(e) => {
+                          setBusca(e.target.value);
+                          setClienteId("");
+                          setListaAberta(true);
+                        }}
+                        onClick={() => setListaAberta(true)}
+                      />
+                      <Button
                         type="button"
-                        onClick={() => selecionar(c.id)}
-                        className="flex w-full flex-col items-start gap-0.5 border-b border-border px-3 py-2 text-left last:border-0 hover:bg-muted/60"
+                        variant="ghost"
+                        size="icon"
+                        aria-label={listaAberta ? "Fechar lista de clientes" : "Abrir lista de clientes"}
+                        className="absolute right-0 size-9 text-muted-foreground"
+                        onClick={() => setListaAberta((v) => !v)}
                       >
-                        <span className="text-sm font-medium">{rotuloCliente(c)}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {bairroDe(c) || c.endereco} · {c.telefone}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                )}
+                        {listaAberta ? (
+                          <ChevronUp className="size-4" />
+                        ) : (
+                          <ChevronDown className="size-4" />
+                        )}
+                      </Button>
+                    </div>
+                    <PopoverContent
+                      align="start"
+                      className="w-[--radix-popover-trigger-width] min-w-[18rem] p-0"
+                      onOpenAutoFocus={(e) => e.preventDefault()}
+                    >
+                      {filtrados.length === 0 ? (
+                        <p className="px-3 py-2 text-sm text-muted-foreground">
+                          Nenhum cliente encontrado.
+                        </p>
+                      ) : (
+                        filtrados.map((c) => (
+                          <button
+                            key={c.id}
+                            type="button"
+                            onClick={() => selecionar(c.id)}
+                            className="flex w-full flex-col items-start gap-0.5 border-b border-border px-3 py-2 text-left last:border-0 hover:bg-muted/60"
+                          >
+                            <span className="text-sm font-medium">{rotuloCliente(c)}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {bairroDe(c) || c.endereco} · {c.telefone}
+                            </span>
+                          </button>
+                        ))
+                      )}
+                    </PopoverContent>
+                  </Popover>
+                </Campo>
                 {cliente && (
                   <div className="flex flex-col gap-2 rounded-lg border border-border bg-muted/40 p-3">
                     <div className="flex items-center justify-between gap-2">
@@ -391,24 +462,10 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                           />
                           <div className="min-w-0 flex-1 space-y-1">
                             <p className="truncate text-sm font-semibold leading-tight">{p.nome}</p>
-                            <p className="text-sm font-medium tabular-nums text-primary">
-                              {brl(precoPadrao(p.id))}
-                              {(embalagens[p.id] ?? "un") === "fardo" ? (
-                                <span className="ml-1 text-xs font-normal text-muted-foreground">
-                                  /un · fardo {brl(p.precoFardo || p.precoVenda * unidPorFardo(p))}
-                                </span>
-                              ) : null}
+                            <p className="text-base font-semibold tabular-nums text-primary">
+                              {brl(precoVenda(p.id))}
+                              {(embalagens[p.id] ?? "un") === "fardo" ? " /fardo" : ""}
                             </p>
-                            <div className="flex flex-wrap items-center gap-1.5">
-                              <span className="text-xs text-muted-foreground">
-                                {rotuloEstoque(p.estoqueCheio, unidPorFardo(p))} em estoque
-                              </span>
-                              {p.retornavel && (
-                                <Badge variant="secondary" className="px-1.5 py-0 text-[10px]">
-                                  retornável
-                                </Badge>
-                              )}
-                            </div>
                           </div>
                           <div className="flex w-20 shrink-0 flex-col items-center gap-1">
                             <Input
@@ -418,14 +475,15 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                               inputMode="numeric"
                               className="h-9 w-20 text-center tabular-nums"
                               aria-label={`Quantidade de ${p.nome}`}
+                              placeholder="0"
                               value={
-                                (embalagens[p.id] ?? "un") === "fardo"
-                                  ? q > 0
-                                    ? String(q / unidPorFardo(p))
-                                    : ""
-                                  : q > 0
-                                    ? String(q)
-                                    : ""
+                                q > 0
+                                  ? String(
+                                      (embalagens[p.id] ?? "un") === "fardo"
+                                        ? q / unidPorFardo(p)
+                                        : q,
+                                    )
+                                  : ""
                               }
                               onChange={(e) => definirQtd(p.id, e.target.value)}
                             />
@@ -462,9 +520,15 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                         {q > 0 && p.retornavel && (
                           <Select
                             value={modos[p.id] ?? "refil"}
-                            onValueChange={(v) =>
-                              setModos((m) => ({ ...m, [p.id]: v as ModoVenda }))
-                            }
+                            onValueChange={(v) => {
+                              setModos((m) => ({ ...m, [p.id]: v as ModoVenda }));
+                              // O preço acompanha o modo escolhido automaticamente.
+                              setPrecos((s2) => {
+                                const next = { ...s2 };
+                                delete next[p.id];
+                                return next;
+                              });
+                            }}
                           >
                             <SelectTrigger className="h-8 text-xs">
                               <SelectValue />
@@ -479,20 +543,18 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                           </Select>
                         )}
                         {q > 0 && (
-                          <div className="flex items-center gap-2">
-                            <Input
+                          <div className="flex items-center justify-between gap-2">
+                            <InputNumero
                               id={`preco-${p.id}`}
-                              type="number"
-                              min="0"
-                              step="0.01"
+                              decimal
+                              min={0}
                               className="h-9 w-32 rounded-lg"
-                              placeholder="Preço unit. negociado"
-                              value={precos[p.id] ?? String(precoPadrao(p.id))}
-                              onChange={(e) => setPrecos((s) => ({ ...s, [p.id]: e.target.value }))}
+                              aria-label={`Preço de ${p.nome}`}
+                              valor={precoVenda(p.id)}
+                              onValor={(n) => setPrecos((s) => ({ ...s, [p.id]: String(n) }))}
                             />
-                            <span className="ml-auto text-xs tabular-nums text-muted-foreground">
-                              {rotuloEstoque(q, unidPorFardo(p))} ={" "}
-                              {brl(q * (Number(precos[p.id] ?? precoPadrao(p.id)) || 0))}
+                            <span className="text-sm font-medium tabular-nums">
+                              {brl(q * precoUnitario(p.id, q))}
                             </span>
                           </div>
                         )}
@@ -535,26 +597,20 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                 </p>
                 <div className="flex items-center gap-2">
                   <Campo label="Qtd. de vales" htmlFor="pdv-vales-qtd">
-                    <Input
+                    <InputNumero
                       id="pdv-vales-qtd"
-                      type="number"
                       min={0}
-                      step={1}
-                      inputMode="numeric"
-                      value={pacoteQtd}
-                      onChange={(e) => setPacoteQtd(e.target.value)}
-                      placeholder="0"
+                      valor={valesVendidos}
+                      onValor={(n) => setPacoteQtd(String(Math.max(0, n)))}
                     />
                   </Campo>
                   <Campo label="Valor por vale (R$)" htmlFor="pdv-vales-valor">
-                    <Input
+                    <InputNumero
                       id="pdv-vales-valor"
-                      type="number"
+                      decimal
                       min={0}
-                      step="0.01"
-                      value={pacoteValorUnit}
-                      onChange={(e) => setPacoteValorUnit(e.target.value)}
-                      placeholder="0,00"
+                      valor={valorValeUnit}
+                      onValor={(n) => setPacoteValorUnit(String(Math.max(0, n)))}
                     />
                   </Campo>
                 </div>
@@ -647,19 +703,32 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                     Restante: <strong className="tabular-nums">{brl(Math.max(0, restante))}</strong>
                   </span>
                 </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="self-start"
-                  onClick={() =>
-                    setParcelas((ps) =>
-                      ps.map((y, i) => (i === 0 ? { ...y, valor: String(total) } : y)),
-                    )
-                  }
-                >
-                  Lançar total na 1ª forma
-                </Button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() =>
+                      setParcelas((ps) =>
+                        ps.map((y, i) => (i === 0 ? { ...y, valor: String(total) } : y)),
+                      )
+                    }
+                  >
+                    Lançar total na 1ª forma
+                  </Button>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs text-muted-foreground">Desconto (R$)</span>
+                    <InputNumero
+                      id="pdv-desconto"
+                      decimal
+                      min={0}
+                      className="h-8 w-24"
+                      aria-label="Desconto em reais"
+                      valor={desconto}
+                      onValor={setDesconto}
+                    />
+                  </div>
+                </div>
               </div>
 
               {valorDinheiro > 0 && (
@@ -714,6 +783,16 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                   </ul>
                 )}
                 <Separator className="my-2" />
+                {descontoAplicado > 0 && (
+                  <div className="mb-1 flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">
+                      Subtotal {brl(subtotal)} · desconto
+                    </span>
+                    <span className="tabular-nums text-destructive">
+                      − {brl(descontoAplicado)}
+                    </span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Total</span>
                   <span className="text-xl font-semibold tabular-nums">{brl(total)}</span>
