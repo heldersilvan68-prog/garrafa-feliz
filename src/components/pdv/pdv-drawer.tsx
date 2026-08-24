@@ -464,88 +464,76 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                 <div className="grid gap-3 sm:grid-cols-2">
                   {produtos.map((p) => {
                     const q = carrinho[p.id] ?? 0;
+                    const upf = unidPorFardo(p);
+                    const emFardo = (embalagens[p.id] ?? "un") === "fardo";
+                    // Quantidade exibida: fardos inteiros ou unidades.
+                    const qExibida = emFardo ? Math.round(q / upf) : q;
+                    const limparPreco = () =>
+                      setPrecos((s2) => {
+                        const next = { ...s2 };
+                        delete next[p.id];
+                        return next;
+                      });
+                    // Ao trocar de modo/embalagem a quantidade volta para 1.
+                    const resetQtd = (passo: number) =>
+                      setCarrinho((c) => (c[p.id] ? { ...c, [p.id]: passo } : c));
                     return (
                       <div
                         key={p.id}
-                        className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4"
+                        className="flex flex-col gap-2 rounded-xl border border-border bg-card p-4"
                       >
+                        {/* Linha 1: foto + nome completo */}
                         <div className="flex items-start gap-3">
                           <ProdutoFoto
                             url={p.imagemUrl}
                             nome={p.nome}
-                            className="size-[50px] rounded-lg"
+                            className="size-[50px] shrink-0 rounded-lg"
                           />
-                          <div className="min-w-0 flex-1 space-y-1">
-                            <p className="truncate text-sm font-semibold leading-tight">{p.nome}</p>
-                            <p className="text-base font-semibold tabular-nums text-primary">
-                              {brl(precoVenda(p.id))}
-                              {(embalagens[p.id] ?? "un") === "fardo" ? " /fardo" : ""}
-                            </p>
-                          </div>
-                          <div className="flex w-20 shrink-0 flex-col items-center gap-1">
-                            <Input
-                              type="number"
-                              min={0}
-                              step={1}
-                              inputMode="numeric"
-                              className="h-9 w-20 text-center tabular-nums"
-                              aria-label={`Quantidade de ${p.nome}`}
-                              placeholder="0"
-                              value={
-                                q > 0
-                                  ? String(
-                                      (embalagens[p.id] ?? "un") === "fardo"
-                                        ? q / unidPorFardo(p)
-                                        : q,
-                                    )
-                                  : ""
-                              }
-                              onChange={(e) => definirQtd(p.id, e.target.value)}
-                            />
-                            <span className="text-[10px] text-muted-foreground">
-                              {(embalagens[p.id] ?? "un") === "fardo" ? "fardos" : "un."}
-                            </span>
-                          </div>
+                          <p className="flex-1 break-words text-sm font-semibold leading-snug">
+                            {p.nome}
+                          </p>
                         </div>
 
-                        {unidPorFardo(p) > 1 && (
+                        {/* Linha 2: preço base em destaque */}
+                        <p className="text-base font-semibold tabular-nums text-primary">
+                          {brl(precoVenda(p.id))}
+                          <span className="text-xs font-normal text-muted-foreground">
+                            {emFardo ? " /fardo" : " /un"}
+                          </span>
+                        </p>
+
+                        {/* Linha 3: seleção de embalagem e/ou modo do retornável */}
+                        {upf > 1 && (
                           <Select
                             value={embalagens[p.id] ?? "un"}
                             onValueChange={(v) => {
-                              setEmbalagens((m) => ({ ...m, [p.id]: v as "un" | "fardo" }));
-                              setPrecos((s2) => {
-                                const next = { ...s2 };
-                                delete next[p.id];
-                                return next;
-                              });
+                              const fardo = v === "fardo";
+                              setEmbalagens((m) => ({ ...m, [p.id]: fardo ? "fardo" : "un" }));
+                              limparPreco();
+                              resetQtd(fardo ? upf : 1);
                             }}
                           >
-                            <SelectTrigger className="h-8 text-xs">
+                            <SelectTrigger className="h-9 text-xs">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="un">Unidade avulsa</SelectItem>
-                              <SelectItem value="fardo">
-                                Fardo fechado ({unidPorFardo(p)} un.)
-                              </SelectItem>
+                              <SelectItem value="fardo">Fardo fechado ({upf} un.)</SelectItem>
                             </SelectContent>
                           </Select>
                         )}
 
-                        {q > 0 && p.retornavel && (
+                        {p.retornavel && (
                           <Select
                             value={modos[p.id] ?? "refil"}
                             onValueChange={(v) => {
                               setModos((m) => ({ ...m, [p.id]: v as ModoVenda }));
                               // O preço acompanha o modo escolhido automaticamente.
-                              setPrecos((s2) => {
-                                const next = { ...s2 };
-                                delete next[p.id];
-                                return next;
-                              });
+                              limparPreco();
+                              resetQtd(emFardo ? upf : 1);
                             }}
                           >
-                            <SelectTrigger className="h-8 text-xs">
+                            <SelectTrigger className="h-9 text-xs">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -557,22 +545,40 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                             </SelectContent>
                           </Select>
                         )}
-                        {q > 0 && (
-                          <div className="flex items-center justify-between gap-2">
-                            <InputNumero
-                              id={`preco-${p.id}`}
-                              decimal
+
+                        {/* Linha 4: quantidade + total do item */}
+                        <div className="flex items-center justify-between gap-2 pt-1">
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="number"
                               min={0}
-                              className="h-9 w-32 rounded-lg"
-                              aria-label={`Preço de ${p.nome}`}
-                              valor={precoVenda(p.id)}
-                              onValor={(n) => setPrecos((s) => ({ ...s, [p.id]: String(n) }))}
+                              step={1}
+                              inputMode="numeric"
+                              className="h-9 w-16 text-center tabular-nums"
+                              aria-label={`Quantidade de ${p.nome}`}
+                              placeholder="0"
+                              value={qExibida > 0 ? String(qExibida) : ""}
+                              onChange={(e) => definirQtd(p.id, e.target.value)}
                             />
-                            <span className="text-sm font-medium tabular-nums">
-                              {brl(q * precoUnitario(p.id, q))}
+                            <span className="text-[11px] text-muted-foreground">
+                              {emFardo ? "fardos" : "un."}
                             </span>
+                            {q > 0 && (
+                              <InputNumero
+                                id={`preco-${p.id}`}
+                                decimal
+                                min={0}
+                                className="h-9 w-24 rounded-lg"
+                                aria-label={`Preço de ${p.nome}`}
+                                valor={precoVenda(p.id)}
+                                onValor={(n) => setPrecos((s) => ({ ...s, [p.id]: String(n) }))}
+                              />
+                            )}
                           </div>
-                        )}
+                          <span className="shrink-0 text-sm font-semibold tabular-nums">
+                            {brl(totalItem(p.id, q))}
+                          </span>
+                        </div>
                       </div>
                     );
                   })}
