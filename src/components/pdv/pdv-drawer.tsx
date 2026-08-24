@@ -176,7 +176,8 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
       : [];
   const itens: ItemPedido[] = [...itensFisicos, ...itemPacote];
 
-  const subtotal = itens.reduce((s, i) => s + i.qtd * i.precoUnit, 0);
+  const subtotal =
+    Math.round(itens.reduce((s, i) => s + i.qtd * i.precoUnit, 0) * 100) / 100;
   const descontoAplicado = Math.min(Math.max(0, desconto), subtotal);
   const total = Math.round((subtotal - descontoAplicado) * 100) / 100;
   // Só as trocas de refil geram devolução de vasilhame vazio.
