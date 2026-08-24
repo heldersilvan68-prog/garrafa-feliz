@@ -112,15 +112,17 @@ export const totalComPromocao = (
 
 /** Preço de venda praticado conforme o modo de venda de um retornável. */
 export const precoPorModo = (
-  p: Pick<Produto, "precoVenda" | "precoVendaCasco" | "descontoCompleta">,
+  p: Pick<Produto, "precoVenda" | "precoVendaCasco" | "descontoCompleta" | "custoCasco">,
   modo: "refil" | "casco" | "completa",
 ) => {
-  if (modo === "casco") return p.precoVendaCasco || 0;
+  // Sem preço de venda do casco cadastrado, usa o custo do casco como base
+  // para nunca exibir R$ 0,00 no PDV.
+  const casco = p.precoVendaCasco || p.custoCasco || 0;
+  if (modo === "casco") return Math.round(casco * 100) / 100;
   if (modo === "completa")
     return Math.max(
       0,
-      Math.round(((p.precoVenda || 0) + (p.precoVendaCasco || 0) - (p.descontoCompleta || 0)) * 100) /
-        100,
+      Math.round(((p.precoVenda || 0) + casco - (p.descontoCompleta || 0)) * 100) / 100,
     );
   return p.precoVenda || 0;
 };
