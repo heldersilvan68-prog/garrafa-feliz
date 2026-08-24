@@ -108,16 +108,30 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
   const precoVenda = (id: string) =>
     Math.max(0, Number(precos[id] ?? precoPadrao(id)) || 0);
 
-  /** Preço unitário final do item, já com fardo e promoção progressiva aplicados. */
-  const precoUnitario = (id: string, qtd: number) => {
+  /**
+   * Total exato do item (R$), cravado em centavos:
+   * fardo fechado = nº de fardos × preço do fardo (sem dividir por unidade);
+   * avulso = promoção progressiva (combos fechados) + unidades restantes.
+   */
+  const totalItem = (id: string, qtdUnidades: number) => {
     const p = produtos.find((x) => x.id === id);
-    if (!p || qtd <= 0) return 0;
-    const fardo = (embalagens[id] ?? "un") === "fardo";
+    if (!p || qtdUnidades <= 0) return 0;
     const preco = precoVenda(id);
-    if (fardo) return Math.round((preco / unidPorFardo(p)) * 100) / 100;
-    const bruto = totalComPromocao(qtd, preco, p.promoQtd || 0, p.promoPreco || 0);
-    return Math.round((bruto / qtd) * 100) / 100;
+    if ((embalagens[id] ?? "un") === "fardo") {
+      const fardos = Math.max(1, Math.round(qtdUnidades / unidPorFardo(p)));
+      return Math.round(fardos * preco * 100) / 100;
+    }
+    return Math.round(
+      totalComPromocao(qtdUnidades, preco, p.promoQtd || 0, p.promoPreco || 0) * 100,
+    ) / 100;
   };
+
+  /**
+   * Preço unitário armazenado no pedido — SEM arredondar, para que
+   * qtd × precoUnit devolva exatamente o total do item (evita R$ 39,96).
+   */
+  const precoUnitario = (id: string, qtd: number) =>
+    qtd > 0 ? totalItem(id, qtd) / qtd : 0;
 
   const filtrados = useMemo(() => {
     const q = busca.trim().toLowerCase();
