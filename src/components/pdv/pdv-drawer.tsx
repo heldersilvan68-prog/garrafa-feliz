@@ -80,6 +80,8 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
   const [pacoteQtd, setPacoteQtd] = useState("");
   const [pacoteValorUnit, setPacoteValorUnit] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Último pedido criado: abre a confirmação com opção de imprimir o comprovante.
+  const [pedidoCriado, setPedidoCriado] = useState<Pedido | null>(null);
 
   const cliente = clientes.find((c) => c.id === clienteId);
 
