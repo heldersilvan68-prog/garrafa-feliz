@@ -216,7 +216,7 @@
 }
 
 @media print {
-  body > *:not(#area-comprovante) {
+  body:has(#area-comprovante) > *:not(#area-comprovante) {
     display: none !important;
   }
 
