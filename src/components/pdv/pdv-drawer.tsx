@@ -328,6 +328,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
       toast.success(`Pedido #${pedido.numero} criado — ${brl(total)}`, {
         description: `${cliente?.nome ?? CONSUMIDOR_FINAL} · ${pagamento} · ${entregador}`,
       });
+      setPedidoCriado(pedido);
       limpar();
       setAberto(false);
     } catch (e) {
