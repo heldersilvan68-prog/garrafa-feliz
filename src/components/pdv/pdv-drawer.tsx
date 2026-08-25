@@ -480,19 +480,20 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                     return (
                       <div
                         key={p.id}
-                        className="flex flex-col gap-2 rounded-xl border border-border bg-card p-4"
+                        className="relative flex w-full min-w-0 flex-col gap-2 overflow-hidden rounded-xl border border-border bg-card p-4"
                       >
                         {/* Linha 1: foto + nome completo */}
-                        <div className="flex items-start gap-3">
+                        <div className="flex min-w-0 items-start gap-3">
                           <ProdutoFoto
                             url={p.imagemUrl}
                             nome={p.nome}
                             className="size-[50px] shrink-0 rounded-lg"
                           />
-                          <p className="flex-1 break-words text-sm font-semibold leading-snug">
+                          <p className="min-w-0 flex-1 break-words text-sm font-semibold leading-snug">
                             {p.nome}
                           </p>
                         </div>
+
 
                         {/* Linha 2: preço base em destaque */}
                         <p className="text-base font-semibold tabular-nums text-primary">
