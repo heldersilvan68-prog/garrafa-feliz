@@ -152,3 +152,89 @@
     color: var(--color-foreground);
   }
 }
+
+/* ===== Comprovante térmico 80mm ===== */
+#area-comprovante {
+  position: absolute;
+  left: -10000px;
+  top: 0;
+}
+
+.cupom {
+  width: 80mm;
+  padding: 2mm 3mm;
+  background: #fff;
+  color: #000;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.cupom hr {
+  border: 0;
+  border-top: 1px dashed #000;
+  margin: 4px 0;
+}
+
+.cupom-centro {
+  text-align: center;
+}
+
+.cupom-titulo {
+  display: block;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.cupom-linha {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.cupom-item {
+  margin-bottom: 2px;
+}
+
+.cupom-sub {
+  padding-left: 6px;
+  font-size: 10px;
+}
+
+.cupom-destaque {
+  text-align: center;
+  font-weight: 700;
+  border: 1px solid #000;
+  padding: 2px;
+}
+
+.cupom-total {
+  font-size: 14px;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+@media print {
+  body:has(#area-comprovante) > *:not(#area-comprovante) {
+    display: none !important;
+  }
+
+  #area-comprovante {
+    position: static;
+    left: auto;
+  }
+
+  @page {
+    size: 80mm auto;
+    margin: 0;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    color: #000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}

@@ -10,6 +10,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { ImprimirComprovante } from "@/components/pedidos/comprovante-pedido";
 import { Separator } from "@/components/ui/separator";
 import { brl } from "@/lib/erp";
 import { isoLocal, TIMEZONE } from "@/lib/periodo";
@@ -164,6 +165,10 @@ export function DetalhesPedidoDialog({
             </section>
           </div>
         </ScrollArea>
+
+        <div className="flex justify-end pt-2">
+          <ImprimirComprovante pedido={pedido} />
+        </div>
       </DialogContent>
     </Dialog>
   );
