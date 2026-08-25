@@ -461,7 +461,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
 
               <div className="flex flex-col gap-2">
                 <p className="text-sm font-medium">Produtos</p>
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid min-w-0 gap-3 sm:grid-cols-2">
                   {produtos.map((p) => {
                     const q = carrinho[p.id] ?? 0;
                     const upf = unidPorFardo(p);
