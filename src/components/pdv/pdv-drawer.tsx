@@ -461,7 +461,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
 
               <div className="flex flex-col gap-2">
                 <p className="text-sm font-medium">Produtos</p>
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid min-w-0 gap-3 sm:grid-cols-2">
                   {produtos.map((p) => {
                     const q = carrinho[p.id] ?? 0;
                     const upf = unidPorFardo(p);
@@ -480,19 +480,20 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                     return (
                       <div
                         key={p.id}
-                        className="flex flex-col gap-2 rounded-xl border border-border bg-card p-4"
+                        className="relative flex w-full min-w-0 flex-col gap-2 overflow-hidden rounded-xl border border-border bg-card p-4"
                       >
                         {/* Linha 1: foto + nome completo */}
-                        <div className="flex items-start gap-3">
+                        <div className="flex min-w-0 items-start gap-3">
                           <ProdutoFoto
                             url={p.imagemUrl}
                             nome={p.nome}
                             className="size-[50px] shrink-0 rounded-lg"
                           />
-                          <p className="flex-1 break-words text-sm font-semibold leading-snug">
+                          <p className="min-w-0 flex-1 break-words text-sm font-semibold leading-snug">
                             {p.nome}
                           </p>
                         </div>
+
 
                         {/* Linha 2: preço base em destaque */}
                         <p className="text-base font-semibold tabular-nums text-primary">
@@ -513,7 +514,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                               resetQtd(fardo ? upf : 1);
                             }}
                           >
-                            <SelectTrigger className="h-9 text-xs">
+                            <SelectTrigger className="h-9 w-full min-w-0 text-xs">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -533,7 +534,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                               resetQtd(emFardo ? upf : 1);
                             }}
                           >
-                            <SelectTrigger className="h-9 text-xs">
+                            <SelectTrigger className="h-9 w-full min-w-0 text-xs">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -546,34 +547,36 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                           </Select>
                         )}
 
-                        {/* Linha 4: quantidade + total do item */}
-                        <div className="flex items-center justify-between gap-2 pt-1">
-                          <div className="flex items-center gap-2">
+                        {/* Preço unitário editável (linha própria, dentro do card) */}
+                        {q > 0 && (
+                          <InputNumero
+                            id={`preco-${p.id}`}
+                            decimal
+                            min={0}
+                            className="h-9 w-full rounded-lg text-sm"
+                            aria-label={`Preço de ${p.nome}`}
+                            valor={precoVenda(p.id)}
+                            onValor={(n) => setPrecos((s) => ({ ...s, [p.id]: String(n) }))}
+                          />
+                        )}
+
+                        {/* Rodapé: quantidade + total do item */}
+                        <div className="flex min-w-0 items-center justify-between gap-2 pt-1">
+                          <div className="flex min-w-0 items-center gap-2">
                             <Input
                               type="number"
                               min={0}
                               step={1}
                               inputMode="numeric"
-                              className="h-9 w-16 text-center tabular-nums"
+                              className="h-9 w-16 shrink-0 text-center tabular-nums"
                               aria-label={`Quantidade de ${p.nome}`}
                               placeholder="0"
                               value={qExibida > 0 ? String(qExibida) : ""}
                               onChange={(e) => definirQtd(p.id, e.target.value)}
                             />
-                            <span className="text-[11px] text-muted-foreground">
+                            <span className="truncate text-[11px] text-muted-foreground">
                               {emFardo ? "fardos" : "un."}
                             </span>
-                            {q > 0 && (
-                              <InputNumero
-                                id={`preco-${p.id}`}
-                                decimal
-                                min={0}
-                                className="h-9 w-24 rounded-lg"
-                                aria-label={`Preço de ${p.nome}`}
-                                valor={precoVenda(p.id)}
-                                onValor={(n) => setPrecos((s) => ({ ...s, [p.id]: String(n) }))}
-                              />
-                            )}
                           </div>
                           <span className="shrink-0 text-sm font-semibold tabular-nums">
                             {brl(totalItem(p.id, q))}
