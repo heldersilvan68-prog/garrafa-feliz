@@ -164,6 +164,10 @@ export function DetalhesPedidoDialog({
             </section>
           </div>
         </ScrollArea>
+
+        <div className="flex justify-end pt-2">
+          <ImprimirComprovante pedido={pedido} />
+        </div>
       </DialogContent>
     </Dialog>
   );
