@@ -37,7 +37,8 @@ import { useConfiguracoes } from "@/context/configuracoes";
 import { bairroDe, hojeISO, rotuloCliente } from "@/lib/clientes";
 import { brl, precoPorModo, totalComPromocao, unidPorFardo } from "@/lib/erp";
 import { BALCAO } from "@/lib/entregadores";
-import { resumoItens, type FormaPagamento, type ItemPedido } from "@/lib/pedidos";
+import { resumoItens, type FormaPagamento, type ItemPedido, type Pedido } from "@/lib/pedidos";
+import { ImprimirComprovante } from "@/components/pedidos/comprovante-pedido";
 import { LABEL_MODO, type ModoVenda } from "@/lib/vasilhames";
 
 type Parcela = { forma: FormaPagamento; valor: string };
@@ -341,7 +342,8 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
   };
 
   return (
-    <Dialog
+    <>
+      <Dialog
       open={aberto}
       onOpenChange={(v) => {
         // Fechar por X, "Cancelar" ou clique fora zera o formulário por completo.
@@ -850,5 +852,25 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+      <Dialog open={!!pedidoCriado} onOpenChange={(v) => !v && setPedidoCriado(null)}>
+        <DialogContent className="rounded-3xl sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Venda registrada</DialogTitle>
+            <DialogDescription>
+              {pedidoCriado
+                ? `Pedido #${pedidoCriado.numero} · ${brl(pedidoCriado.total)} — ${pedidoCriado.clienteNome}`
+                : ""}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-row justify-end gap-2">
+            <DialogClose asChild>
+              <Button variant="ghost">Fechar</Button>
+            </DialogClose>
+            {pedidoCriado ? <ImprimirComprovante pedido={pedidoCriado} variant="default" /> : null}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
