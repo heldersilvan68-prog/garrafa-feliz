@@ -14,7 +14,7 @@ import { FiltroPeriodo } from "@/components/filtro-periodo";
 import { usePeriodo } from "@/hooks/use-periodo";
 import { useEstoque } from "@/context/estoque";
 import { usePedidos } from "@/context/pedidos";
-import { brl, custoUnidades, custoUnitario, rotuloEstoque, unidPorFardo } from "@/lib/erp";
+import { brl, custoUnidades, rotuloEstoque, unidPorFardo } from "@/lib/erp";
 import { dentroFaixa, rotuloFaixa } from "@/lib/periodo";
 import { baixarCSV } from "@/lib/relatorios";
 
@@ -39,7 +39,6 @@ export function AnaliseProdutos() {
             faturamento += i.qtd * i.precoUnit;
           }
         }
-        const custoUnit = custoUnitario(p);
         const lucro = faturamento - custoUnidades(p, qtd);
         const repor = Math.max(0, (p.estoqueMinimo || 0) - (p.estoqueCheio || 0));
         return {
