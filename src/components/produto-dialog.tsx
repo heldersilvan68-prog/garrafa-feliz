@@ -307,7 +307,7 @@ export function ProdutoDialog({
               />
             </Campo>
             <p className="text-xs text-muted-foreground sm:col-span-2">
-              Estoque atual equivale a <strong>{rotuloEstoque(form.estoqueCheio, upf)}</strong>.
+              Estoque atual equivale a <strong>{rotuloEstoque(form.estoqueCheio, upf, form.unidade)}</strong>.
             </p>
           </div>
 

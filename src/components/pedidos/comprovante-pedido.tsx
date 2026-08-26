@@ -7,8 +7,12 @@ import { TIMEZONE } from "@/lib/periodo";
 import { BALCAO } from "@/lib/entregadores";
 import { LABEL_MODO } from "@/lib/vasilhames";
 import { parcelasDe, type Pedido } from "@/lib/pedidos";
+import { useConfiguracoes } from "@/context/configuracoes";
+import { useClientes } from "@/context/clientes";
+import { mascaraTelefone } from "@/lib/clientes";
 
-const EMPRESA = "P.K Distribuidora";
+const EMPRESA_PADRAO = "P.K Distribuidora";
+const CIDADE_PADRAO = "Itaberaba - BA";
 
 const dataHora = (iso: string) =>
   new Date(iso).toLocaleString("pt-BR", {
@@ -22,17 +26,31 @@ const dataHora = (iso: string) =>
 
 /** Cupom 80mm renderizado fora da tela — visível apenas na impressão. */
 function Cupom({ pedido }: { pedido: Pedido }) {
+  const { config } = useConfiguracoes();
+  const { clientes } = useClientes();
   const parcelas = parcelasDe(pedido);
   const subtotal = pedido.total + (pedido.desconto ?? 0);
-  const entrega =
-    !pedido.entregador || pedido.entregador === BALCAO
-      ? "Retirada no Balcão"
-      : `Entregador: ${pedido.entregador}`;
+  const balcao = !pedido.entregador || pedido.entregador === BALCAO;
+  const cliente = pedido.clienteId ? clientes.find((c) => c.id === pedido.clienteId) : undefined;
+
+  const empresa = config.nomeFantasia?.trim() || EMPRESA_PADRAO;
+  const cidade = config.endereco?.trim() || CIDADE_PADRAO;
+  const fone = config.whatsapp?.trim() ? mascaraTelefone(config.whatsapp) : "";
+
+  // Endereço completo: prioriza o cadastro do cliente, com fallback no pedido.
+  const enderecoCompleto = [
+    cliente?.endereco?.trim() || pedido.endereco?.trim(),
+    cliente?.bairro?.trim() || pedido.bairro?.trim(),
+  ]
+    .filter(Boolean)
+    .join(", ");
 
   return (
     <div className="cupom">
       <div className="cupom-centro">
-        <strong className="cupom-titulo">{EMPRESA}</strong>
+        <strong className="cupom-titulo">{empresa}</strong>
+        <div>{cidade}</div>
+        {fone ? <div>Tel / WhatsApp: {fone}</div> : null}
         <div>Comprovante de Pedido</div>
         <div>Pedido nº {pedido.numero}</div>
         <div>{dataHora(pedido.criadoEm)}</div>
@@ -40,9 +58,20 @@ function Cupom({ pedido }: { pedido: Pedido }) {
 
       <hr />
 
-      <div>Cliente: {pedido.clienteNome || "Consumidor Final / Balcão"}</div>
-      <div>{entrega}</div>
-      {pedido.endereco ? <div>Endereço: {pedido.endereco}</div> : null}
+      <div className="cupom-quebra">
+        Cliente: {pedido.clienteNome || "Consumidor Final / Balcão"}
+      </div>
+      {balcao && !enderecoCompleto ? (
+        <div>Entrega: Retirada no Balcão</div>
+      ) : (
+        <>
+          {!balcao ? <div>Entregador: {pedido.entregador}</div> : null}
+          {enderecoCompleto ? (
+            <div className="cupom-quebra">Endereço: {enderecoCompleto}</div>
+          ) : null}
+        </>
+      )}
+
 
       <hr />
 
