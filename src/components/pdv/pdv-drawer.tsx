@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { InputNumero } from "@/components/ui/input-numero";
+import { InputMoeda } from "@/components/ui/input-moeda";
 import { Campo } from "@/components/ui/campo";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -500,13 +501,19 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                         </div>
 
 
-                        {/* Linha 2: preço base em destaque */}
-                        <p className="text-base font-semibold tabular-nums text-primary">
-                          {brl(precoVenda(p.id))}
-                          <span className="text-xs font-normal text-muted-foreground">
+                        {/* Linha 2: preço base editável (R$ 00,00) */}
+                        <div className="flex items-center gap-2">
+                          <InputMoeda
+                            id={`preco-${p.id}`}
+                            className="h-9 w-full rounded-lg text-sm font-semibold text-primary"
+                            aria-label={`Preço de ${p.nome}`}
+                            valor={precoVenda(p.id)}
+                            onValor={(n) => setPrecos((s) => ({ ...s, [p.id]: String(n) }))}
+                          />
+                          <span className="shrink-0 text-xs font-normal text-muted-foreground">
                             {emFardo ? " /fardo" : " /un"}
                           </span>
-                        </p>
+                        </div>
 
                         {/* Linha 3: seleção de embalagem e/ou modo do retornável */}
                         {upf > 1 && (
@@ -550,19 +557,6 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                               ))}
                             </SelectContent>
                           </Select>
-                        )}
-
-                        {/* Preço unitário editável (linha própria, dentro do card) */}
-                        {q > 0 && (
-                          <InputNumero
-                            id={`preco-${p.id}`}
-                            decimal
-                            min={0}
-                            className="h-9 w-full rounded-lg text-sm"
-                            aria-label={`Preço de ${p.nome}`}
-                            valor={precoVenda(p.id)}
-                            onValor={(n) => setPrecos((s) => ({ ...s, [p.id]: String(n) }))}
-                          />
                         )}
 
                         {/* Rodapé: quantidade + total do item */}
