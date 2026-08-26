@@ -69,15 +69,60 @@ export const emFardos = (unidades: number, porFardo: number) => {
   return { fardos: Math.floor(total / upf), soltas: total % upf, porFardo: upf };
 };
 
-/** Texto amigável do estoque: "10 fardos e 6 un." */
-export const rotuloEstoque = (unidades: number, porFardo: number) => {
+/**
+ * Rótulo da embalagem-pai conforme a unidade de medida cadastrada no produto
+ * (CX/Caixa → "cx", FD/Fardo → "fardo", PCT → "pct"...). Cai em "fardo".
+ */
+export const rotuloEmbalagem = (unidade?: string) => {
+  const u = (unidade ?? "").trim().toLowerCase();
+  if (!u) return { singular: "fardo", plural: "fardos" };
+  if (u.startsWith("cx") || u.startsWith("caix")) return { singular: "cx", plural: "cx" };
+  if (u.startsWith("fd") || u.startsWith("fard")) return { singular: "fardo", plural: "fardos" };
+  if (u.startsWith("pct") || u.startsWith("pac")) return { singular: "pct", plural: "pct" };
+  if (u.startsWith("un") || u === "l" || u.startsWith("lit"))
+    return { singular: "fardo", plural: "fardos" };
+  return { singular: u, plural: u };
+};
+
+/** Texto amigável do estoque: "10 fardos e 6 un." / "1 cx e 1 un." */
+export const rotuloEstoque = (unidades: number, porFardo: number, unidade?: string) => {
   const { fardos, soltas, porFardo: upf } = emFardos(unidades, porFardo);
   if (upf <= 1) return `${Math.max(0, Math.floor(unidades || 0))} un.`;
+  const rot = rotuloEmbalagem(unidade);
   const partes: string[] = [];
-  if (fardos > 0) partes.push(`${fardos} ${fardos === 1 ? "fardo" : "fardos"}`);
+  if (fardos > 0) partes.push(`${fardos} ${fardos === 1 ? rot.singular : rot.plural}`);
   if (soltas > 0 || fardos === 0) partes.push(`${soltas} un.`);
   return partes.join(" e ");
 };
+
+/** Custo unitário avulso, com fallback pelo custo do fardo rateado. */
+export const custoUnitario = (
+  p: Pick<Produto, "precoCusto" | "precoCustoFardo" | "unidadesPorFardo">,
+) => {
+  const upf = unidPorFardo(p);
+  if (p.precoCusto > 0) return p.precoCusto;
+  return upf > 1 && p.precoCustoFardo > 0
+    ? Math.round(((p.precoCustoFardo || 0) / upf) * 100) / 100
+    : 0;
+};
+
+/**
+ * Custo real de N unidades: fardos fechados pelo preço de custo do fardo +
+ * unidades avulsas pelo custo unitário (evita divisões arbitrárias).
+ */
+export const custoUnidades = (
+  p: Pick<Produto, "precoCusto" | "precoCustoFardo" | "unidadesPorFardo">,
+  unidades: number,
+) => {
+  const upf = unidPorFardo(p);
+  const unit = custoUnitario(p);
+  if (upf <= 1 || !(p.precoCustoFardo > 0)) {
+    return Math.round(Math.max(0, unidades) * unit * 100) / 100;
+  }
+  const { fardos, soltas } = emFardos(unidades, upf);
+  return Math.round((fardos * p.precoCustoFardo + soltas * unit) * 100) / 100;
+};
+
 
 /** Preço de venda sugerido: custo + (custo × margem / 100). */
 export const precoSugerido = (custo: number, margem: number) =>
