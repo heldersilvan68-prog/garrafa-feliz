@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { InputNumero } from "@/components/ui/input-numero";
+import { InputMoeda } from "@/components/ui/input-moeda";
 import { Campo } from "@/components/ui/campo";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
