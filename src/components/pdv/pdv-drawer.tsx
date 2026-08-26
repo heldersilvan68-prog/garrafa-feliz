@@ -558,19 +558,6 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                           </Select>
                         )}
 
-                        {/* Preço unitário editável (linha própria, dentro do card) */}
-                        {q > 0 && (
-                          <InputNumero
-                            id={`preco-${p.id}`}
-                            decimal
-                            min={0}
-                            className="h-9 w-full rounded-lg text-sm"
-                            aria-label={`Preço de ${p.nome}`}
-                            valor={precoVenda(p.id)}
-                            onValor={(n) => setPrecos((s) => ({ ...s, [p.id]: String(n) }))}
-                          />
-                        )}
-
                         {/* Rodapé: quantidade + total do item */}
                         <div className="flex min-w-0 items-center justify-between gap-2 pt-1">
                           <div className="flex min-w-0 items-center gap-2">
