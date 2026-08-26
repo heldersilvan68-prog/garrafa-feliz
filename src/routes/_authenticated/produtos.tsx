@@ -142,12 +142,12 @@ function Produtos() {
 
 {/* 2. Qtd. Disponível */}
 <TableCell className="text-center tabular-nums font-medium">
-  {rotuloEstoque(p.estoqueCheio || 0, unidPorFardo(p))}
+  {rotuloEstoque(p.estoqueCheio || 0, unidPorFardo(p), p.unidade)}
 </TableCell>
 
 {/* 3. Estoque Mínimo */}
 <TableCell className="text-center tabular-nums text-muted-foreground">
-  {rotuloEstoque(p.estoqueMinimo || 0, unidPorFardo(p))}
+  {rotuloEstoque(p.estoqueMinimo || 0, unidPorFardo(p), p.unidade)}
 </TableCell>
 
 {/* 4. Preço de Custo — por fardo quando o produto é vendido em fardo/caixa */}

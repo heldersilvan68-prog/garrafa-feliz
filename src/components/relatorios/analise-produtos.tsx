@@ -14,7 +14,7 @@ import { FiltroPeriodo } from "@/components/filtro-periodo";
 import { usePeriodo } from "@/hooks/use-periodo";
 import { useEstoque } from "@/context/estoque";
 import { usePedidos } from "@/context/pedidos";
-import { brl, rotuloEstoque, unidPorFardo } from "@/lib/erp";
+import { brl, custoUnidades, custoUnitario, rotuloEstoque, unidPorFardo } from "@/lib/erp";
 import { dentroFaixa, rotuloFaixa } from "@/lib/periodo";
 import { baixarCSV } from "@/lib/relatorios";
 
@@ -39,13 +39,14 @@ export function AnaliseProdutos() {
             faturamento += i.qtd * i.precoUnit;
           }
         }
-        const custoUnit = p.precoCusto || (upf > 1 ? (p.precoCustoFardo || 0) / upf : 0);
-        const lucro = faturamento - qtd * custoUnit;
+        const custoUnit = custoUnitario(p);
+        const lucro = faturamento - custoUnidades(p, qtd);
         const repor = Math.max(0, (p.estoqueMinimo || 0) - (p.estoqueCheio || 0));
         return {
           id: p.id,
           nome: p.nome,
           upf,
+          unidade: p.unidade,
           qtd,
           faturamento,
           lucro,
@@ -53,10 +54,10 @@ export function AnaliseProdutos() {
           estoque: p.estoqueCheio || 0,
           minimo: p.estoqueMinimo || 0,
           repor,
-          custoReposicao: repor * custoUnit,
+          custoReposicao: custoUnidades(p, repor),
           // Reposição por giro: repor exatamente o que foi vendido no período.
           reporGiro: qtd,
-          custoReposicaoGiro: qtd * custoUnit,
+          custoReposicaoGiro: custoUnidades(p, qtd),
         };
       })
       .sort((a, b) => b.qtd - a.qtd);
@@ -91,15 +92,15 @@ export function AnaliseProdutos() {
         l.nome,
         l.upf,
         l.qtd,
-        rotuloEstoque(l.qtd, l.upf),
+        rotuloEstoque(l.qtd, l.upf, l.unidade),
         l.faturamento.toFixed(2),
         l.lucro.toFixed(2),
         l.margem.toFixed(2),
         l.estoque,
         l.minimo,
-        l.repor,
+        rotuloEstoque(l.repor, l.upf, l.unidade),
         l.custoReposicao.toFixed(2),
-        l.reporGiro,
+        rotuloEstoque(l.reporGiro, l.upf, l.unidade),
         l.custoReposicaoGiro.toFixed(2),
       ]),
     );
@@ -177,7 +178,7 @@ export function AnaliseProdutos() {
                   <TableRow key={l.id}>
                     <TableCell className="font-medium">{l.nome}</TableCell>
                     <TableCell className="text-center tabular-nums">
-                      {rotuloEstoque(l.qtd, l.upf)}
+                      {rotuloEstoque(l.qtd, l.upf, l.unidade)}
                     </TableCell>
                     <TableCell className="text-right tabular-nums">{brl(l.faturamento)}</TableCell>
                     <TableCell className="text-right tabular-nums">{brl(l.lucro)}</TableCell>
@@ -190,12 +191,14 @@ export function AnaliseProdutos() {
                     <TableCell
                       className={`text-center tabular-nums ${l.repor > 0 ? "font-semibold text-warning" : ""}`}
                     >
-                      {l.repor}
+                      {rotuloEstoque(l.repor, l.upf, l.unidade)}
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
                       {brl(l.custoReposicao)}
                     </TableCell>
-                    <TableCell className="text-center tabular-nums">{l.reporGiro}</TableCell>
+                    <TableCell className="text-center tabular-nums">
+                      {rotuloEstoque(l.reporGiro, l.upf, l.unidade)}
+                    </TableCell>
                     <TableCell className="text-right tabular-nums">
                       {brl(l.custoReposicaoGiro)}
                     </TableCell>
