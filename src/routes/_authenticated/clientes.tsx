@@ -20,6 +20,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClienteDetalhes } from "@/components/cliente-detalhes";
 import { ClienteDialog } from "@/components/cliente-dialog";
+import { ImportarClientesCsv } from "@/components/clientes/importar-clientes-csv";
 import { useClientes } from "@/context/clientes";
 import { usePedidos } from "@/context/pedidos";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
@@ -161,11 +162,14 @@ function ClientesPage() {
             Consumo médio, previsão da próxima compra e lembretes de recompra.
           </p>
         </div>
-        <ClienteDialog>
-          <Button className="shadow-[var(--shadow-card)]">
-            <Plus /> Novo cliente
-          </Button>
-        </ClienteDialog>
+        <div className="flex flex-wrap items-center gap-2">
+          <ImportarClientesCsv />
+          <ClienteDialog>
+            <Button className="shadow-[var(--shadow-card)]">
+              <Plus /> Novo cliente
+            </Button>
+          </ClienteDialog>
+        </div>
       </header>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
