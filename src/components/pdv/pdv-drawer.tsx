@@ -113,29 +113,78 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
     Math.max(0, Number(precos[id] ?? precoPadrao(id)) || 0);
 
   /**
-   * Total exato do item (R$), cravado em centavos:
+   * Total exato da linha (R$), cravado em centavos:
    * fardo fechado = nº de fardos × preço do fardo (sem dividir por unidade);
    * avulso = promoção progressiva (combos fechados) + unidades restantes.
    */
-  const totalItem = (id: string, qtdUnidades: number) => {
-    const p = produtos.find((x) => x.id === id);
-    if (!p || qtdUnidades <= 0) return 0;
-    const preco = precoVenda(id);
-    if ((embalagens[id] ?? "un") === "fardo") {
-      const fardos = Math.max(1, Math.round(qtdUnidades / unidPorFardo(p)));
-      return Math.round(fardos * preco * 100) / 100;
+  const totalLinha = (l: Pick<Linha, "produtoId" | "qtd" | "embalagem" | "preco">) => {
+    const p = produtos.find((x) => x.id === l.produtoId);
+    if (!p || l.qtd <= 0) return 0;
+    if (l.embalagem === "fardo") {
+      const fardos = Math.max(1, Math.round(l.qtd / unidPorFardo(p)));
+      return Math.round(fardos * l.preco * 100) / 100;
     }
-    return Math.round(
-      totalComPromocao(qtdUnidades, preco, p.promoQtd || 0, p.promoPreco || 0) * 100,
-    ) / 100;
+    return (
+      Math.round(
+        totalComPromocao(l.qtd, l.preco, p.promoQtd || 0, p.promoPreco || 0) * 100,
+      ) / 100
+    );
   };
 
-  /**
-   * Preço unitário armazenado no pedido — SEM arredondar, para que
-   * qtd × precoUnit devolva exatamente o total do item (evita R$ 39,96).
-   */
-  const precoUnitario = (id: string, qtd: number) =>
-    qtd > 0 ? totalItem(id, qtd) / qtd : 0;
+  /** Prévia do total do card antes de adicionar (usa os seletores atuais). */
+  const totalPrevia = (id: string, qtdUnidades: number) =>
+    totalLinha({
+      produtoId: id,
+      qtd: qtdUnidades,
+      embalagem: (embalagens[id] ?? "un") as "un" | "fardo",
+      preco: precoVenda(id),
+    });
+
+  /** Adiciona a variação escolhida como uma nova linha do pedido. */
+  const adicionarLinha = (id: string) => {
+    const p = produtos.find((x) => x.id === id);
+    if (!p) return;
+    const passo = passoDe(id);
+    const bruto = Math.max(0, Math.floor(Number((qtds[id] ?? "").replace(",", ".")) || 0));
+    if (bruto <= 0) {
+      toast.error("Informe a quantidade antes de adicionar.");
+      return;
+    }
+    const embalagem = (embalagens[id] ?? "un") as "un" | "fardo";
+    const modo: ModoVenda = p.retornavel ? (modos[id] ?? "refil") : "refil";
+    const preco = precoVenda(id);
+    const qtd = bruto * passo;
+    setLinhas((ls) => {
+      // Mesma variação e mesmo preço somam na linha existente; o resto vira linha nova.
+      const i = ls.findIndex(
+        (l) =>
+          l.produtoId === id &&
+          l.modo === modo &&
+          l.embalagem === embalagem &&
+          Math.abs(l.preco - preco) < 0.005,
+      );
+      if (i >= 0)
+        return ls.map((l, idx) => (idx === i ? { ...l, qtd: l.qtd + qtd } : l));
+      return [
+        ...ls,
+        {
+          key: `${id}-${modo}-${embalagem}-${Date.now()}-${ls.length}`,
+          produtoId: id,
+          nome: p.nome,
+          modo,
+          embalagem,
+          qtd,
+          preco,
+          retornavel: p.retornavel,
+        },
+      ];
+    });
+    setQtds((s) => ({ ...s, [id]: "" }));
+    toast.success(
+      `${p.nome} adicionado${p.retornavel ? ` · ${LABEL_MODO[modo]}` : ""}`,
+    );
+  };
+
 
   const filtrados = useMemo(() => {
     const q = busca.trim().toLowerCase();
