@@ -17,6 +17,18 @@ type Ctx = {
   ajustarVasilhames: (id: string, delta: number) => Promise<void>;
   /** Ajusta o saldo de vales do cliente (positivo = comprou pacote, negativo = resgatou). */
   ajustarVales: (id: string, delta: number) => Promise<void>;
+  /** Importa clientes em lote (planilha CSV), preservando código e data de cadastro. */
+  importar: (lista: ClienteImportado[]) => Promise<number>;
+};
+
+/** Registro mínimo aceito na importação de clientes por CSV. */
+export type ClienteImportado = {
+  codigo?: string;
+  nome: string;
+  telefone?: string;
+  endereco?: string;
+  bairro?: string;
+  cadastradoEm?: string;
 };
 
 const ClientesContext = createContext<Ctx | null>(null);
@@ -121,6 +133,32 @@ export function ClientesProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
   }, "Não foi possível atualizar o saldo de vales");
 
+  const importarMut = useMutation({
+    mutationFn: async (lista: ClienteImportado[]) => {
+      if (!userId) throw new Error("Sessão expirada");
+      const hoje = new Date().toISOString().slice(0, 10);
+      const linhas = lista
+        .filter((c) => c.nome?.trim())
+        .map((c) => ({
+          user_id: userId,
+          code: c.codigo?.trim() || null,
+          nome: c.nome.trim(),
+          telefone: c.telefone?.trim() || "",
+          endereco: c.endereco?.trim() || "",
+          bairro: c.bairro?.trim() || null,
+          consumo_medio_dias: 7,
+          cadastrado_em: c.cadastradoEm?.trim() || hoje,
+          ultima_compra: c.cadastradoEm?.trim() || hoje,
+        }));
+      if (linhas.length === 0) return 0;
+      const { error } = await supabase.from("clients").insert(linhas);
+      if (error) throw error;
+      return linhas.length;
+    },
+    onSuccess: invalidar,
+    onError: (e: Error) => toast.error(`Falha na importação: ${e.message}`),
+  });
+
   return (
     <ClientesContext.Provider
       value={{
@@ -134,6 +172,7 @@ export function ClientesProvider({ children }: { children: ReactNode }) {
         ajustarVasilhames: (id, delta) =>
           vasilhamesMut.mutateAsync({ id, delta }).then(() => undefined),
         ajustarVales: (id, delta) => valesMut.mutateAsync({ id, delta }).then(() => undefined),
+        importar: (lista) => importarMut.mutateAsync(lista),
       }}
     >
       {children}
