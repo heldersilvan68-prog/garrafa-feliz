@@ -44,6 +44,22 @@ import { LABEL_MODO, type ModoVenda } from "@/lib/vasilhames";
 
 type Parcela = { forma: FormaPagamento; valor: string };
 
+/**
+ * Linha do pedido: cada variação (produto + modo de venda + embalagem + preço)
+ * é independente, permitindo o mesmo produto em "Venda completa" e "Troca de refil".
+ */
+type Linha = {
+  key: string;
+  produtoId: string;
+  nome: string;
+  modo: ModoVenda;
+  embalagem: "un" | "fardo";
+  qtd: number;
+  preco: number;
+  retornavel: boolean;
+};
+
+
 /** Cliente padrão das vendas de balcão sem cadastro. */
 const CONSUMIDOR_FINAL = "Consumidor Final / Balcão";
 
