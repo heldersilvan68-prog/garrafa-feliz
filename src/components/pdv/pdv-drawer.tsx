@@ -528,21 +528,25 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                 <p className="text-sm font-medium">Produtos</p>
                 <div className="grid min-w-0 gap-3 sm:grid-cols-2">
                   {produtos.map((p) => {
-                    const q = carrinho[p.id] ?? 0;
                     const upf = unidPorFardo(p);
                     const emFardo = (embalagens[p.id] ?? "un") === "fardo";
-                    // Quantidade exibida: fardos inteiros ou unidades.
-                    const qExibida = emFardo ? Math.round(q / upf) : q;
+                    const bruto = Math.max(
+                      0,
+                      Math.floor(Number((qtds[p.id] ?? "").replace(",", ".")) || 0),
+                    );
+                    const qUnidades = bruto * (emFardo ? upf : 1);
+                    // Quantidade já adicionada ao pedido (todas as variações).
+                    const noPedido = linhas
+                      .filter((l) => l.produtoId === p.id)
+                      .reduce((s, l) => s + l.qtd, 0);
                     const limparPreco = () =>
                       setPrecos((s2) => {
                         const next = { ...s2 };
                         delete next[p.id];
                         return next;
                       });
-                    // Ao trocar de modo/embalagem a quantidade volta para 1.
-                    const resetQtd = (passo: number) =>
-                      setCarrinho((c) => (c[p.id] ? { ...c, [p.id]: passo } : c));
                     return (
+
                       <div
                         key={p.id}
                         className="relative flex w-full min-w-0 flex-col gap-2 overflow-hidden rounded-xl border border-border bg-card p-4"
