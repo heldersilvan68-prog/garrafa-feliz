@@ -284,20 +284,11 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
   const vaziosValor = vaziosEditado ? vazios : String(qtdRetornavel);
   const troco = Math.max(0, (Number(trocoPara) || 0) - valorDinheiro);
 
-  /** Digitação direta: valor em fardos ou unidades conforme a embalagem escolhida. */
-  const definirQtd = (id: string, texto: string) =>
-    setCarrinho((c) => {
-      const bruto = Math.max(0, Math.floor(Number(texto.replace(",", ".")) || 0));
-      const n = bruto * passoDe(id);
-      const next = { ...c };
-      if (n <= 0) delete next[id];
-      else next[id] = n;
-      return next;
-    });
-
   const limpar = () => {
-    setCarrinho({});
+    setLinhas([]);
+    setQtds({});
     setPrecos({});
+
     setModos({});
     setEmbalagens({});
     setVazios("0");
