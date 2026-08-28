@@ -44,6 +44,22 @@ import { LABEL_MODO, type ModoVenda } from "@/lib/vasilhames";
 
 type Parcela = { forma: FormaPagamento; valor: string };
 
+/**
+ * Linha do pedido: cada variação (produto + modo de venda + embalagem + preço)
+ * é independente, permitindo o mesmo produto em "Venda completa" e "Troca de refil".
+ */
+type Linha = {
+  key: string;
+  produtoId: string;
+  nome: string;
+  modo: ModoVenda;
+  embalagem: "un" | "fardo";
+  qtd: number;
+  preco: number;
+  retornavel: boolean;
+};
+
+
 /** Cliente padrão das vendas de balcão sem cadastro. */
 const CONSUMIDOR_FINAL = "Consumidor Final / Balcão";
 
@@ -65,8 +81,11 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
   const [busca, setBusca] = useState("");
   const [clienteId, setClienteId] = useState("");
   const [endereco, setEndereco] = useState("");
-  const [carrinho, setCarrinho] = useState<Record<string, number>>({});
+  // Linhas do pedido (variações independentes) e quantidade pendente por card.
+  const [linhas, setLinhas] = useState<Linha[]>([]);
+  const [qtds, setQtds] = useState<Record<string, string>>({});
   const [precos, setPrecos] = useState<Record<string, string>>({});
+
   const [vazios, setVazios] = useState("0");
   const [vaziosEditado, setVaziosEditado] = useState(false);
   const [modos, setModos] = useState<Record<string, ModoVenda>>({});
@@ -198,19 +217,19 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
       .slice(0, 6);
   }, [busca, clientes]);
 
-  const itensFisicos: ItemPedido[] = produtos
-    .filter((p) => (carrinho[p.id] ?? 0) > 0)
-    .map((p) => ({
-      produtoId: p.id,
-      nome: p.nome,
-      qtd: carrinho[p.id]!,
-      // Preço negociado apenas nesta venda — não altera o cadastro do produto.
-      // Fardo fechado: o valor digitado é do fardo, convertido por unidade.
-      // Atacado: aplica combos fechados + unidades avulsas progressivamente.
-      precoUnit: precoUnitario(p.id, carrinho[p.id]!),
-      retornavel: p.retornavel,
-      modo: p.retornavel ? (modos[p.id] ?? "refil") : "refil",
-    }));
+  // Cada linha vira um item independente do pedido (produto + modo + embalagem).
+  const itensFisicos: ItemPedido[] = linhas.map((l) => ({
+    produtoId: l.produtoId,
+    nome: l.nome,
+    qtd: l.qtd,
+    // Preço negociado apenas nesta venda — não altera o cadastro do produto.
+    // Fardo fechado: o valor digitado é do fardo, convertido por unidade.
+    // Atacado: aplica combos fechados + unidades avulsas progressivamente.
+    precoUnit: l.qtd > 0 ? totalLinha(l) / l.qtd : 0,
+    retornavel: l.retornavel,
+    modo: l.modo,
+  }));
+
 
   const valesVendidos = Math.max(0, Math.floor(Number(pacoteQtd) || 0));
   const valorValeUnit = Math.max(0, Number(pacoteValorUnit) || 0);
@@ -265,20 +284,11 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
   const vaziosValor = vaziosEditado ? vazios : String(qtdRetornavel);
   const troco = Math.max(0, (Number(trocoPara) || 0) - valorDinheiro);
 
-  /** Digitação direta: valor em fardos ou unidades conforme a embalagem escolhida. */
-  const definirQtd = (id: string, texto: string) =>
-    setCarrinho((c) => {
-      const bruto = Math.max(0, Math.floor(Number(texto.replace(",", ".")) || 0));
-      const n = bruto * passoDe(id);
-      const next = { ...c };
-      if (n <= 0) delete next[id];
-      else next[id] = n;
-      return next;
-    });
-
   const limpar = () => {
-    setCarrinho({});
+    setLinhas([]);
+    setQtds({});
     setPrecos({});
+
     setModos({});
     setEmbalagens({});
     setVazios("0");
@@ -518,21 +528,25 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                 <p className="text-sm font-medium">Produtos</p>
                 <div className="grid min-w-0 gap-3 sm:grid-cols-2">
                   {produtos.map((p) => {
-                    const q = carrinho[p.id] ?? 0;
                     const upf = unidPorFardo(p);
                     const emFardo = (embalagens[p.id] ?? "un") === "fardo";
-                    // Quantidade exibida: fardos inteiros ou unidades.
-                    const qExibida = emFardo ? Math.round(q / upf) : q;
+                    const bruto = Math.max(
+                      0,
+                      Math.floor(Number((qtds[p.id] ?? "").replace(",", ".")) || 0),
+                    );
+                    const qUnidades = bruto * (emFardo ? upf : 1);
+                    // Quantidade já adicionada ao pedido (todas as variações).
+                    const noPedido = linhas
+                      .filter((l) => l.produtoId === p.id)
+                      .reduce((s, l) => s + l.qtd, 0);
                     const limparPreco = () =>
                       setPrecos((s2) => {
                         const next = { ...s2 };
                         delete next[p.id];
                         return next;
                       });
-                    // Ao trocar de modo/embalagem a quantidade volta para 1.
-                    const resetQtd = (passo: number) =>
-                      setCarrinho((c) => (c[p.id] ? { ...c, [p.id]: passo } : c));
                     return (
+
                       <div
                         key={p.id}
                         className="relative flex w-full min-w-0 flex-col gap-2 overflow-hidden rounded-xl border border-border bg-card p-4"
@@ -569,10 +583,11 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                           <Select
                             value={embalagens[p.id] ?? "un"}
                             onValueChange={(v) => {
-                              const fardo = v === "fardo";
-                              setEmbalagens((m) => ({ ...m, [p.id]: fardo ? "fardo" : "un" }));
+                              setEmbalagens((m) => ({
+                                ...m,
+                                [p.id]: v === "fardo" ? "fardo" : "un",
+                              }));
                               limparPreco();
-                              resetQtd(fardo ? upf : 1);
                             }}
                           >
                             <SelectTrigger className="h-9 w-full min-w-0 text-xs">
@@ -592,7 +607,6 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                               setModos((m) => ({ ...m, [p.id]: v as ModoVenda }));
                               // O preço acompanha o modo escolhido automaticamente.
                               limparPreco();
-                              resetQtd(emFardo ? upf : 1);
                             }}
                           >
                             <SelectTrigger className="h-9 w-full min-w-0 text-xs">
@@ -608,29 +622,50 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                           </Select>
                         )}
 
-                        {/* Rodapé: quantidade + total do item */}
-                        <div className="flex min-w-0 items-center justify-between gap-2 pt-1">
-                          <div className="flex min-w-0 items-center gap-2">
-                            <Input
-                              type="number"
-                              min={0}
-                              step={1}
-                              inputMode="numeric"
-                              className="h-9 w-16 shrink-0 text-center tabular-nums"
-                              aria-label={`Quantidade de ${p.nome}`}
-                              placeholder="0"
-                              value={qExibida > 0 ? String(qExibida) : ""}
-                              onChange={(e) => definirQtd(p.id, e.target.value)}
-                            />
-                            <span className="truncate text-[11px] text-muted-foreground">
-                              {emFardo ? "fardos" : "un."}
-                            </span>
-                          </div>
-                          <span className="shrink-0 text-sm font-semibold tabular-nums">
-                            {brl(totalItem(p.id, q))}
+                        {/* Rodapé: quantidade + adicionar (cada variação é uma linha) */}
+                        <div className="flex min-w-0 items-center gap-2 pt-1">
+                          <Input
+                            type="number"
+                            min={0}
+                            step={1}
+                            inputMode="numeric"
+                            className="h-9 w-16 shrink-0 text-center tabular-nums"
+                            aria-label={`Quantidade de ${p.nome}`}
+                            placeholder="0"
+                            value={qtds[p.id] ?? ""}
+                            onChange={(e) =>
+                              setQtds((s) => ({ ...s, [p.id]: e.target.value }))
+                            }
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                adicionarLinha(p.id);
+                              }
+                            }}
+                          />
+                          <span className="shrink-0 text-[11px] text-muted-foreground">
+                            {emFardo ? "fardos" : "un."}
                           </span>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="secondary"
+                            className="ml-auto h-9 shrink-0"
+                            onClick={() => adicionarLinha(p.id)}
+                          >
+                            <Plus className="size-4" />
+                            {qUnidades > 0 ? brl(totalPrevia(p.id, qUnidades)) : "Adicionar"}
+                          </Button>
                         </div>
+
+                        {noPedido > 0 && (
+                          <p className="text-[11px] text-muted-foreground">
+                            No pedido: <strong>{noPedido} un.</strong> em{" "}
+                            {linhas.filter((l) => l.produtoId === p.id).length} linha(s)
+                          </p>
+                        )}
                       </div>
+
                     );
                   })}
                 </div>
@@ -840,20 +875,58 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
               </div>
 
               <div className="rounded-lg border border-border bg-muted/40 p-3">
-                {itens.length === 0 ? (
+                {linhas.length === 0 && valesVendidos === 0 ? (
                   <p className="text-sm text-muted-foreground">Carrinho vazio.</p>
                 ) : (
-                  <ul className="flex flex-col gap-1">
-                    {itens.map((i) => (
-                      <li key={i.produtoId} className="flex items-center justify-between text-sm">
+                  <ul className="flex flex-col gap-1.5">
+                    {linhas.map((l) => {
+                      const upf = unidPorFardo(
+                        produtos.find((p) => p.id === l.produtoId) ?? ({} as never),
+                      );
+                      const qtdRotulo =
+                        l.embalagem === "fardo"
+                          ? `${Math.round(l.qtd / Math.max(1, upf))} fardo(s) · ${l.qtd} un.`
+                          : `${l.qtd} un.`;
+                      return (
+                        <li key={l.key} className="flex items-start gap-2 text-sm">
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate font-medium">{l.nome}</p>
+                            <p className="text-[11px] text-muted-foreground">
+                              {qtdRotulo}
+                              {l.retornavel ? ` · ${LABEL_MODO[l.modo]}` : ""} ·{" "}
+                              {brl(l.preco)}
+                              {l.embalagem === "fardo" ? "/fardo" : "/un"}
+                            </p>
+                          </div>
+                          <span className="shrink-0 tabular-nums">{brl(totalLinha(l))}</span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="size-7 shrink-0"
+                            aria-label={`Remover ${l.nome}`}
+                            onClick={() =>
+                              setLinhas((ls) => ls.filter((x) => x.key !== l.key))
+                            }
+                          >
+                            <Trash2 className="size-3.5" />
+                          </Button>
+                        </li>
+                      );
+                    })}
+                    {valesVendidos > 0 && (
+                      <li className="flex items-center justify-between text-sm">
                         <span className="truncate pr-2">
-                          {i.qtd}x {i.nome}
+                          {valesVendidos}x Pacote de Vales
                         </span>
-                        <span className="tabular-nums">{brl(i.qtd * i.precoUnit)}</span>
+                        <span className="tabular-nums">
+                          {brl(valesVendidos * valorValeUnit)}
+                        </span>
                       </li>
-                    ))}
+                    )}
                   </ul>
                 )}
+
                 <Separator className="my-2" />
                 {descontoAplicado > 0 && (
                   <div className="mb-1 flex items-center justify-between text-sm">

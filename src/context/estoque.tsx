@@ -303,17 +303,29 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
 
   // Vendas (Se for água completa ou casco vendido, REDUZ o patrimônio)
   const aplicarVenda = async (itens: ItemBaixa[], vaziosRecolhidos: number, sinal: 1 | -1) => {
+    const modoDe = (i: ItemBaixa): ModoVenda => {
+      const p = produtos.find((x) => x.id === i.produtoId);
+      return p?.retornavel ? (i.modo ?? "refil") : "refil";
+    };
     const refis = itens.filter(
-      (i) => (i.modo ?? "refil") === "refil" && produtos.find((p) => p.id === i.produtoId)?.retornavel,
+      (i) => modoDe(i) === "refil" && produtos.find((p) => p.id === i.produtoId)?.retornavel,
     );
     const totalRefil = refis.reduce((s, i) => s + i.qtd, 0);
+    // Vazios recolhidos são distribuídos entre as linhas de refil, sem sobra.
+    let vaziosRestantes = vaziosRecolhidos;
+    let refisRestantes = totalRefil;
+
+    // Um mesmo produto pode aparecer em várias linhas (modos diferentes):
+    // acumulamos os deltas e gravamos uma única vez por produto.
+    const acumulado = new Map<
+      string,
+      { cheio: number; vazio: number; patrimonio: number }
+    >();
 
     for (const item of itens) {
       const p = produtos.find((x) => x.id === item.produtoId);
       if (!p) continue;
-      const modo: ModoVenda = p.retornavel ? (item.modo ?? "refil") : "refil";
-      let cheio = p.estoqueCheio;
-      let vazio = p.estoqueVazio;
+      const modo = modoDe(item);
       let deltaCheio = 0;
       let deltaVazio = 0;
       let deltaPatrimonio = 0;
@@ -322,27 +334,29 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
         deltaVazio = -item.qtd * sinal;
         deltaPatrimonio = -item.qtd * sinal; // Venda de casco REDUZ patrimônio
       } else if (modo === "completa") {
+        // Casco + água: sai cheio do estoque e o vasilhame deixa o patrimônio.
         deltaCheio = -item.qtd * sinal;
-        deltaPatrimonio = -item.qtd * sinal; // Venda completa REDUZ patrimônio
+        deltaPatrimonio = -item.qtd * sinal;
       } else {
+        // Troca de refil: sai cheio, volta casco vazio, patrimônio intacto.
         deltaCheio = -item.qtd * sinal;
-        if (p.retornavel && totalRefil > 0 && vaziosRecolhidos > 0) {
-          deltaVazio = Math.round((item.qtd / totalRefil) * vaziosRecolhidos) * sinal;
+        if (p.retornavel && refisRestantes > 0 && vaziosRestantes > 0) {
+          const cota = Math.min(
+            vaziosRestantes,
+            Math.round((item.qtd / refisRestantes) * vaziosRestantes),
+          );
+          vaziosRestantes -= cota;
+          refisRestantes -= item.qtd;
+          deltaVazio = cota * sinal;
         }
-        deltaPatrimonio = 0; // Venda de refil NÃO altera o patrimônio
+        deltaPatrimonio = 0;
       }
 
-      cheio = Math.max(0, cheio + deltaCheio);
-      vazio = Math.max(0, vazio + deltaVazio);
-      await patch(p.id, {
-        estoque_cheio: cheio,
-        estoque_vazio: vazio,
-        // Só venda definitiva de casco mexe no patrimônio (refil mantém intacto).
-        ...(deltaPatrimonio !== 0
-          ? {
-              patrimonio_cascos: Math.max(0, (p.patrimonioCascos || 0) + deltaPatrimonio),
-            }
-          : {}),
+      const acc = acumulado.get(p.id) ?? { cheio: 0, vazio: 0, patrimonio: 0 };
+      acumulado.set(p.id, {
+        cheio: acc.cheio + deltaCheio,
+        vazio: acc.vazio + deltaVazio,
+        patrimonio: acc.patrimonio + deltaPatrimonio,
       });
 
       if (p.retornavel) {
@@ -360,7 +374,21 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
         });
       }
     }
+
+    for (const [produtoId, d] of acumulado) {
+      const p = produtos.find((x) => x.id === produtoId);
+      if (!p) continue;
+      await patch(produtoId, {
+        estoque_cheio: Math.max(0, p.estoqueCheio + d.cheio),
+        estoque_vazio: Math.max(0, p.estoqueVazio + d.vazio),
+        // Só venda definitiva de casco/completa mexe no patrimônio (refil mantém intacto).
+        ...(d.patrimonio !== 0
+          ? { patrimonio_cascos: Math.max(0, (p.patrimonioCascos || 0) + d.patrimonio) }
+          : {}),
+      });
+    }
   };
+
 
   const baixaMut = useMutacao<{ itens: ItemBaixa[]; vaziosRecolhidos: number }>(
     async ({ itens, vaziosRecolhidos }) => aplicarVenda(itens, vaziosRecolhidos, 1),
