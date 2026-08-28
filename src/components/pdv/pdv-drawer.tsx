@@ -81,8 +81,11 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
   const [busca, setBusca] = useState("");
   const [clienteId, setClienteId] = useState("");
   const [endereco, setEndereco] = useState("");
-  const [carrinho, setCarrinho] = useState<Record<string, number>>({});
+  // Linhas do pedido (variações independentes) e quantidade pendente por card.
+  const [linhas, setLinhas] = useState<Linha[]>([]);
+  const [qtds, setQtds] = useState<Record<string, string>>({});
   const [precos, setPrecos] = useState<Record<string, string>>({});
+
   const [vazios, setVazios] = useState("0");
   const [vaziosEditado, setVaziosEditado] = useState(false);
   const [modos, setModos] = useState<Record<string, ModoVenda>>({});
