@@ -875,20 +875,58 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
               </div>
 
               <div className="rounded-lg border border-border bg-muted/40 p-3">
-                {itens.length === 0 ? (
+                {linhas.length === 0 && valesVendidos === 0 ? (
                   <p className="text-sm text-muted-foreground">Carrinho vazio.</p>
                 ) : (
-                  <ul className="flex flex-col gap-1">
-                    {itens.map((i) => (
-                      <li key={i.produtoId} className="flex items-center justify-between text-sm">
+                  <ul className="flex flex-col gap-1.5">
+                    {linhas.map((l) => {
+                      const upf = unidPorFardo(
+                        produtos.find((p) => p.id === l.produtoId) ?? ({} as never),
+                      );
+                      const qtdRotulo =
+                        l.embalagem === "fardo"
+                          ? `${Math.round(l.qtd / Math.max(1, upf))} fardo(s) · ${l.qtd} un.`
+                          : `${l.qtd} un.`;
+                      return (
+                        <li key={l.key} className="flex items-start gap-2 text-sm">
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate font-medium">{l.nome}</p>
+                            <p className="text-[11px] text-muted-foreground">
+                              {qtdRotulo}
+                              {l.retornavel ? ` · ${LABEL_MODO[l.modo]}` : ""} ·{" "}
+                              {brl(l.preco)}
+                              {l.embalagem === "fardo" ? "/fardo" : "/un"}
+                            </p>
+                          </div>
+                          <span className="shrink-0 tabular-nums">{brl(totalLinha(l))}</span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="size-7 shrink-0"
+                            aria-label={`Remover ${l.nome}`}
+                            onClick={() =>
+                              setLinhas((ls) => ls.filter((x) => x.key !== l.key))
+                            }
+                          >
+                            <Trash2 className="size-3.5" />
+                          </Button>
+                        </li>
+                      );
+                    })}
+                    {valesVendidos > 0 && (
+                      <li className="flex items-center justify-between text-sm">
                         <span className="truncate pr-2">
-                          {i.qtd}x {i.nome}
+                          {valesVendidos}x Pacote de Vales
                         </span>
-                        <span className="tabular-nums">{brl(i.qtd * i.precoUnit)}</span>
+                        <span className="tabular-nums">
+                          {brl(valesVendidos * valorValeUnit)}
+                        </span>
                       </li>
-                    ))}
+                    )}
                   </ul>
                 )}
+
                 <Separator className="my-2" />
                 {descontoAplicado > 0 && (
                   <div className="mb-1 flex items-center justify-between text-sm">
