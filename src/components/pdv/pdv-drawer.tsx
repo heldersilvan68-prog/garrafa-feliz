@@ -217,19 +217,19 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
       .slice(0, 6);
   }, [busca, clientes]);
 
-  const itensFisicos: ItemPedido[] = produtos
-    .filter((p) => (carrinho[p.id] ?? 0) > 0)
-    .map((p) => ({
-      produtoId: p.id,
-      nome: p.nome,
-      qtd: carrinho[p.id]!,
-      // Preço negociado apenas nesta venda — não altera o cadastro do produto.
-      // Fardo fechado: o valor digitado é do fardo, convertido por unidade.
-      // Atacado: aplica combos fechados + unidades avulsas progressivamente.
-      precoUnit: precoUnitario(p.id, carrinho[p.id]!),
-      retornavel: p.retornavel,
-      modo: p.retornavel ? (modos[p.id] ?? "refil") : "refil",
-    }));
+  // Cada linha vira um item independente do pedido (produto + modo + embalagem).
+  const itensFisicos: ItemPedido[] = linhas.map((l) => ({
+    produtoId: l.produtoId,
+    nome: l.nome,
+    qtd: l.qtd,
+    // Preço negociado apenas nesta venda — não altera o cadastro do produto.
+    // Fardo fechado: o valor digitado é do fardo, convertido por unidade.
+    // Atacado: aplica combos fechados + unidades avulsas progressivamente.
+    precoUnit: l.qtd > 0 ? totalLinha(l) / l.qtd : 0,
+    retornavel: l.retornavel,
+    modo: l.modo,
+  }));
+
 
   const valesVendidos = Math.max(0, Math.floor(Number(pacoteQtd) || 0));
   const valorValeUnit = Math.max(0, Number(pacoteValorUnit) || 0);
