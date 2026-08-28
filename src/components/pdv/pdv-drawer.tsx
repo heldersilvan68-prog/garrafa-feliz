@@ -583,10 +583,11 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                           <Select
                             value={embalagens[p.id] ?? "un"}
                             onValueChange={(v) => {
-                              const fardo = v === "fardo";
-                              setEmbalagens((m) => ({ ...m, [p.id]: fardo ? "fardo" : "un" }));
+                              setEmbalagens((m) => ({
+                                ...m,
+                                [p.id]: v === "fardo" ? "fardo" : "un",
+                              }));
                               limparPreco();
-                              resetQtd(fardo ? upf : 1);
                             }}
                           >
                             <SelectTrigger className="h-9 w-full min-w-0 text-xs">
@@ -606,7 +607,6 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                               setModos((m) => ({ ...m, [p.id]: v as ModoVenda }));
                               // O preço acompanha o modo escolhido automaticamente.
                               limparPreco();
-                              resetQtd(emFardo ? upf : 1);
                             }}
                           >
                             <SelectTrigger className="h-9 w-full min-w-0 text-xs">
@@ -622,29 +622,50 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                           </Select>
                         )}
 
-                        {/* Rodapé: quantidade + total do item */}
-                        <div className="flex min-w-0 items-center justify-between gap-2 pt-1">
-                          <div className="flex min-w-0 items-center gap-2">
-                            <Input
-                              type="number"
-                              min={0}
-                              step={1}
-                              inputMode="numeric"
-                              className="h-9 w-16 shrink-0 text-center tabular-nums"
-                              aria-label={`Quantidade de ${p.nome}`}
-                              placeholder="0"
-                              value={qExibida > 0 ? String(qExibida) : ""}
-                              onChange={(e) => definirQtd(p.id, e.target.value)}
-                            />
-                            <span className="truncate text-[11px] text-muted-foreground">
-                              {emFardo ? "fardos" : "un."}
-                            </span>
-                          </div>
-                          <span className="shrink-0 text-sm font-semibold tabular-nums">
-                            {brl(totalItem(p.id, q))}
+                        {/* Rodapé: quantidade + adicionar (cada variação é uma linha) */}
+                        <div className="flex min-w-0 items-center gap-2 pt-1">
+                          <Input
+                            type="number"
+                            min={0}
+                            step={1}
+                            inputMode="numeric"
+                            className="h-9 w-16 shrink-0 text-center tabular-nums"
+                            aria-label={`Quantidade de ${p.nome}`}
+                            placeholder="0"
+                            value={qtds[p.id] ?? ""}
+                            onChange={(e) =>
+                              setQtds((s) => ({ ...s, [p.id]: e.target.value }))
+                            }
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                adicionarLinha(p.id);
+                              }
+                            }}
+                          />
+                          <span className="shrink-0 text-[11px] text-muted-foreground">
+                            {emFardo ? "fardos" : "un."}
                           </span>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="secondary"
+                            className="ml-auto h-9 shrink-0"
+                            onClick={() => adicionarLinha(p.id)}
+                          >
+                            <Plus className="size-4" />
+                            {qUnidades > 0 ? brl(totalPrevia(p.id, qUnidades)) : "Adicionar"}
+                          </Button>
                         </div>
+
+                        {noPedido > 0 && (
+                          <p className="text-[11px] text-muted-foreground">
+                            No pedido: <strong>{noPedido} un.</strong> em{" "}
+                            {linhas.filter((l) => l.produtoId === p.id).length} linha(s)
+                          </p>
+                        )}
                       </div>
+
                     );
                   })}
                 </div>
