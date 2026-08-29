@@ -132,19 +132,14 @@ function ClientesPage() {
   ];
 
   const lista = useMemo(() => {
-    const q = busca.trim().toLowerCase();
-    return clientes
-      .filter(
-        (c) => !q || c.nome.toLowerCase().includes(q) || (c.codigo ?? "").toLowerCase().includes(q),
-      )
+    return ordenarPorCodigo(filtrarClientes(clientes, busca))
       .filter((c) => {
         const s = statusRecompra(c);
         if (aba === "todos") return true;
         if (aba === "lembrar") return s === "hoje" || s === "atrasado";
         if (aba === "atrasado") return s === "atrasado";
         return s === "ok" || s === "amanha" || s === "em-breve";
-      })
-      .sort((a, b) => diasRestantes(a) - diasRestantes(b));
+      });
   }, [clientes, busca, aba]);
 
   // Estritamente: previsão igual à data de hoje (fuso local) ou em atraso.
@@ -298,7 +293,7 @@ function ClientesPage() {
           <Input
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
-            placeholder="Buscar por nome ou código..."
+            placeholder="Buscar por código, nome ou telefone..."
             className="pl-9"
           />
         </div>

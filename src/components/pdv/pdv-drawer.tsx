@@ -35,7 +35,7 @@ import { usePedidos } from "@/context/pedidos";
 import { useEntregadores } from "@/context/entregadores";
 import { useConfiguracoes } from "@/context/configuracoes";
 
-import { bairroDe, hojeISO, rotuloCliente } from "@/lib/clientes";
+import { bairroDe, filtrarClientes, hojeISO, ordenarPorCodigo, rotuloCliente } from "@/lib/clientes";
 import { brl, precoPorModo, totalComPromocao, unidPorFardo } from "@/lib/erp";
 import { BALCAO } from "@/lib/entregadores";
 import { resumoItens, type FormaPagamento, type ItemPedido, type Pedido } from "@/lib/pedidos";
@@ -206,15 +206,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
 
 
   const filtrados = useMemo(() => {
-    const q = busca.trim().toLowerCase();
-    if (!q) return clientes.slice(0, 6);
-    return clientes
-      .filter((c) =>
-        [c.nome, c.codigo ?? "", c.telefone, c.endereco, bairroDe(c)].some((v) =>
-          v.toLowerCase().includes(q),
-        ),
-      )
-      .slice(0, 6);
+    return ordenarPorCodigo(filtrarClientes(clientes, busca)).slice(0, 8);
   }, [busca, clientes]);
 
   // Cada linha vira um item independente do pedido (produto + modo + embalagem).

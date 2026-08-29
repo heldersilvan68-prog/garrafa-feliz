@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { paraCliente, type ClienteRow, type CompraRow } from "@/lib/mapeadores";
-import type { Cliente } from "@/lib/clientes";
+import { ordenarPorCodigo, type Cliente } from "@/lib/clientes";
 
 type Ctx = {
   clientes: Cliente[];
@@ -47,7 +47,10 @@ export function ClientesProvider({ children }: { children: ReactNode }) {
       ]);
       if (error) throw error;
       if (erroCompras) throw erroCompras;
-      return (linhas as ClienteRow[]).map((l) => paraCliente(l, (compras ?? []) as CompraRow[]));
+      // Ordem global: código numérico crescente (1, 2, 3... 10, 11).
+      return ordenarPorCodigo(
+        (linhas as ClienteRow[]).map((l) => paraCliente(l, (compras ?? []) as CompraRow[])),
+      );
     },
   });
 

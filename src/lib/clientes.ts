@@ -27,6 +27,31 @@ export type Cliente = {
 /** Rótulo com código + nome, ex.: "02 - Maria Aparecida". */
 export const rotuloCliente = (c: Cliente) => (c.codigo ? `${c.codigo} - ${c.nome}` : c.nome);
 
+/** Código do cliente como número (para ordenação numérica: 2 antes de 10). */
+export const codigoNumero = (c: Cliente) => {
+  const n = Number(String(c.codigo ?? "").replace(/\D/g, ""));
+  return Number.isFinite(n) && String(c.codigo ?? "").trim() !== "" ? n : Number.MAX_SAFE_INTEGER;
+};
+
+/** Ordena clientes por código numérico crescente (1, 2, 3... 10, 11), depois por nome. */
+export const ordenarPorCodigo = (lista: Cliente[]) =>
+  [...lista].sort(
+    (a, b) => codigoNumero(a) - codigoNumero(b) || a.nome.localeCompare(b.nome, "pt-BR"),
+  );
+
+/** Busca inteligente: código, nome e telefone (dígitos), mantendo a ordem original. */
+export const filtrarClientes = (lista: Cliente[], termo: string) => {
+  const q = termo.toLowerCase().trim();
+  if (!q) return lista;
+  const digitos = q.replace(/\D/g, "");
+  return lista.filter(
+    (c) =>
+      String(c.codigo ?? "").toLowerCase().includes(q) ||
+      c.nome?.toLowerCase().includes(q) ||
+      (!!digitos && c.telefone?.replace(/\D/g, "").includes(digitos)),
+  );
+};
+
 /** Próximo código sequencial disponível (01, 02, 03...). */
 export const proximoCodigo = (clientes: Cliente[]) => {
   const maior = clientes.reduce((m, c) => {
