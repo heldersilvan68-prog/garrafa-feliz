@@ -30,6 +30,8 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { usePedidos } from "@/context/pedidos";
 import { DemonstrativoDialog } from "@/components/clientes/demonstrativo-dialog";
+import { HistoricoVales } from "@/components/clientes/historico-vales";
+
 import { BaixaFiadoDialog } from "@/components/pedidos/baixa-fiado-dialog";
 import {
   comprasNoPeriodo,
