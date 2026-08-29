@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { paraCliente, type ClienteRow, type CompraRow } from "@/lib/mapeadores";
-import type { Cliente } from "@/lib/clientes";
+import { ordenarPorCodigo, type Cliente } from "@/lib/clientes";
 
 type Ctx = {
   clientes: Cliente[];
