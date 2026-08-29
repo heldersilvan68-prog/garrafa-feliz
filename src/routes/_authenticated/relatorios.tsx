@@ -208,6 +208,15 @@ function RelatoriosPage() {
     });
   }, [validos, produtos]);
 
+  // Lançamentos de vales (pacotes vendidos e resgates) dentro do período.
+  const vales = useMemo(() => {
+    const lista = lancamentosVale(validos);
+    return { lista, totais: totaisVale(lista) };
+  }, [validos]);
+  const valesCompras = vales.lista.filter((l) => l.tipo === "compra");
+  const valesResgates = vales.lista.filter((l) => l.tipo === "resgate");
+
+
   return (
     <div className="flex flex-col gap-6 print:gap-4">
       <header className="flex flex-wrap items-end justify-between gap-3">
