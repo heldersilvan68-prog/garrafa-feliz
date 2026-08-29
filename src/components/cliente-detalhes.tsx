@@ -296,6 +296,9 @@ export function ClienteDetalhes({
             </Card>
           </div>
 
+          <HistoricoVales cliente={cliente} />
+
+
           {mostrarInsights && (
             <>
               <Separator />
