@@ -752,7 +752,173 @@ function RelatoriosPage() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="vales" className="mt-4 flex flex-col gap-4">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <Kpi
+              label="Galões vendidos em pacotes"
+              valor={String(vales.totais.compras.galoes)}
+              hint={`${valesCompras.length} pacote(s) · ${rotuloFaixa(faixa)}`}
+            />
+            <Kpi
+              label="Faturamento em vales"
+              valor={brl(vales.totais.compras.valor)}
+              hint={`Média por galão: ${brl(vales.totais.ticketMedio)}`}
+            />
+            <Kpi
+              label="Galões resgatados"
+              valor={String(vales.totais.resgates.galoes)}
+              hint={`${valesResgates.length} resgate(s) no período`}
+            />
+            <Kpi
+              label="Valor resgatado"
+              valor={brl(vales.totais.resgates.valor)}
+              hint={`Saldo do período: ${vales.totais.saldoGaloes} galão(ões)`}
+            />
+          </div>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
+              <div>
+                <CardTitle className="text-base">Pacotes de vales vendidos</CardTitle>
+                <CardDescription>
+                  {vales.totais.compras.galoes} galões · {brl(vales.totais.compras.valor)}
+                </CardDescription>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="print:hidden"
+                onClick={() =>
+                  baixarCSV(
+                    "vales-vendidos",
+                    ["Data", "Pedido", "Cliente", "Galões", "Valor por galão", "Valor total"],
+                    valesCompras.map((l) => [
+                      dataBR(l.data.slice(0, 10)),
+                      l.numero,
+                      l.clienteNome,
+                      l.galoes,
+                      l.valorUnit.toFixed(2),
+                      l.valor.toFixed(2),
+                    ]),
+                  )
+                }
+              >
+                <FileSpreadsheet className="size-4" /> CSV
+              </Button>
+            </CardHeader>
+            <CardContent className="overflow-x-auto">
+              {valesCompras.length === 0 ? (
+                <p className="py-6 text-center text-sm text-muted-foreground">
+                  Nenhum pacote de vales vendido no período.
+                </p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Data</TableHead>
+                      <TableHead>Pedido</TableHead>
+                      <TableHead>Cliente</TableHead>
+                      <TableHead className="text-right">Galões</TableHead>
+                      <TableHead className="text-right">Valor / galão</TableHead>
+                      <TableHead className="text-right">Valor total</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {valesCompras.map((l) => (
+                      <TableRow key={l.id}>
+                        <TableCell className="whitespace-nowrap text-muted-foreground">
+                          {dataBR(l.data.slice(0, 10))}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">#{l.numero}</TableCell>
+                        <TableCell className="font-medium">{l.clienteNome}</TableCell>
+                        <TableCell className="text-right tabular-nums">{l.galoes}</TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {brl(l.valorUnit)}
+                        </TableCell>
+                        <TableCell className="text-right font-semibold tabular-nums">
+                          {brl(l.valor)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
+              <div>
+                <CardTitle className="text-base">Vales resgatados</CardTitle>
+                <CardDescription>
+                  {vales.totais.resgates.galoes} galões · {brl(vales.totais.resgates.valor)}
+                </CardDescription>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="print:hidden"
+                onClick={() =>
+                  baixarCSV(
+                    "vales-resgatados",
+                    ["Data", "Pedido", "Cliente", "Galões", "Valor por galão", "Valor total"],
+                    valesResgates.map((l) => [
+                      dataBR(l.data.slice(0, 10)),
+                      l.numero,
+                      l.clienteNome,
+                      l.galoes,
+                      l.valorUnit.toFixed(2),
+                      l.valor.toFixed(2),
+                    ]),
+                  )
+                }
+              >
+                <FileSpreadsheet className="size-4" /> CSV
+              </Button>
+            </CardHeader>
+            <CardContent className="overflow-x-auto">
+              {valesResgates.length === 0 ? (
+                <p className="py-6 text-center text-sm text-muted-foreground">
+                  Nenhum vale resgatado no período.
+                </p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Data</TableHead>
+                      <TableHead>Pedido</TableHead>
+                      <TableHead>Cliente</TableHead>
+                      <TableHead className="text-right">Galões</TableHead>
+                      <TableHead className="text-right">Valor / galão</TableHead>
+                      <TableHead className="text-right">Valor total</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {valesResgates.map((l) => (
+                      <TableRow key={l.id}>
+                        <TableCell className="whitespace-nowrap text-muted-foreground">
+                          {dataBR(l.data.slice(0, 10))}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">#{l.numero}</TableCell>
+                        <TableCell className="font-medium">{l.clienteNome}</TableCell>
+                        <TableCell className="text-right tabular-nums">{l.galoes}</TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {brl(l.valorUnit)}
+                        </TableCell>
+                        <TableCell className="text-right font-semibold tabular-nums">
+                          {brl(l.valor)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="financeiro" className="mt-4 flex flex-col gap-4">
+
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <Kpi label="Receitas (vendas)" valor={brl(resumo.vendas)} />
             <Kpi
