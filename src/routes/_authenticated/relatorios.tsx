@@ -280,6 +280,8 @@ function RelatoriosPage() {
           <TabsTrigger value="financeiro">Financeiro</TabsTrigger>
           <TabsTrigger value="produtos">Produtos & Reposição</TabsTrigger>
           <TabsTrigger value="clientes">Clientes</TabsTrigger>
+          <TabsTrigger value="vales">Vales</TabsTrigger>
+
         </TabsList>
 
         <TabsContent value="vendas" className="mt-4 flex flex-col gap-4">
