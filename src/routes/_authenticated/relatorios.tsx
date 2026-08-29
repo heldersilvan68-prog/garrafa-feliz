@@ -38,6 +38,8 @@ import { dentroFaixa, rotuloFaixa } from "@/lib/periodo";
 import { FiltroPeriodo } from "@/components/filtro-periodo";
 import { usePeriodo } from "@/hooks/use-periodo";
 import { useResumo } from "@/hooks/use-resumo";
+import { lancamentosVale, totaisVale } from "@/lib/vales";
+
 import { AnaliseProdutos } from "@/components/relatorios/analise-produtos";
 
 export const Route = createFileRoute("/_authenticated/relatorios")({
