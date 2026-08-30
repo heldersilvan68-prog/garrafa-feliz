@@ -27,8 +27,10 @@ import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 
 import {
   diasRestantes,
+  filtrarClientes,
   formatarData,
   hojeISO,
+  ordenarPorCodigo,
   linkWhatsApp,
   proximaCompra,
   rotuloCliente,
