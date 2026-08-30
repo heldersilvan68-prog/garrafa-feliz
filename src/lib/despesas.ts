@@ -12,6 +12,9 @@ export const CATEGORIAS_DESPESA = [
 
 export type CategoriaDespesa = string;
 
+/** Categoria automática das taxas de maquininha lançadas pelas vendas em cartão. */
+export const CATEGORIA_TAXA_CARTAO = "Taxas de Cartão / Maquininha";
+
 export const FORMAS_DESPESA = [
   "PIX",
   "Dinheiro do Caixa",
@@ -43,6 +46,7 @@ export const CORES_CATEGORIA: Record<string, string> = {
   "Salários/Comissões": "var(--color-accent)",
   "Compra de Vasilhames": "var(--color-muted-foreground)",
   Outros: "var(--color-secondary-foreground)",
+  [CATEGORIA_TAXA_CARTAO]: "var(--color-accent)",
 };
 
 export const dataBR = (iso: string) => {
