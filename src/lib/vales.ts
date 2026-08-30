@@ -92,3 +92,61 @@ export function totaisVale(lancamentos: LancamentoVale[]) {
     ticketMedio: compras.galoes > 0 ? compras.valor / compras.galoes : 0,
   };
 }
+
+/** Linha do painel "Vales na rua": um cliente com saldo de vales em aberto. */
+export type ValeEmAberto = {
+  clienteId: string;
+  codigo?: string;
+  nome: string;
+  telefone: string;
+  saldo: number;
+  /** Valor médio pago por galão (histórico de pacotes do cliente). */
+  valorUnit: number;
+  /** Valor em R$ já recebido e ainda não entregue em produto. */
+  valorRetido: number;
+  ultimaCompra?: string;
+  ultimoResgate?: string;
+};
+
+/**
+ * Vales em aberto por cliente (saldo > 0), com o valor equivalente retido no caixa.
+ * O valor por galão vem da média dos pacotes que o próprio cliente comprou.
+ */
+export function valesEmAberto(
+  clientes: { id: string; codigo?: string; nome: string; telefone: string; valesSaldo?: number }[],
+  lancamentos: LancamentoVale[],
+): ValeEmAberto[] {
+  const media = (() => {
+    const t = totaisVale(lancamentos);
+    return t.ticketMedio;
+  })();
+
+  return clientes
+    .filter((c) => Math.round(c.valesSaldo ?? 0) > 0)
+    .map((c) => {
+      const doCliente = lancamentos.filter((l) => l.clienteId === c.id);
+      const compras = doCliente.filter((l) => l.tipo === "compra");
+      const galoes = compras.reduce((s, l) => s + l.galoes, 0);
+      const valor = compras.reduce((s, l) => s + l.valor, 0);
+      const valorUnit = galoes > 0 ? valor / galoes : media;
+      const saldo = Math.round(c.valesSaldo ?? 0);
+      return {
+        clienteId: c.id,
+        codigo: c.codigo,
+        nome: c.nome,
+        telefone: c.telefone,
+        saldo,
+        valorUnit,
+        valorRetido: saldo * valorUnit,
+        ultimaCompra: compras[0]?.data,
+        ultimoResgate: doCliente.find((l) => l.tipo === "resgate")?.data,
+      };
+    });
+}
+
+/** Totais do painel de vales em aberto. */
+export const totaisEmAberto = (linhas: ValeEmAberto[]) => ({
+  clientes: linhas.length,
+  galoes: linhas.reduce((s, l) => s + l.saldo, 0),
+  valor: linhas.reduce((s, l) => s + l.valorRetido, 0),
+});
