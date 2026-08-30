@@ -1,7 +1,7 @@
 import type { Produto } from "@/lib/erp";
 import type { Cliente } from "@/lib/clientes";
 import type { Despesa } from "@/lib/despesas";
-import { CORES_CATEGORIA } from "@/lib/despesas";
+import { CATEGORIA_TAXA_CARTAO, CORES_CATEGORIA } from "@/lib/despesas";
 import { fiadoEmAberto, valorFaturado, valorPorForma, type Pedido } from "@/lib/pedidos";
 import {
   INICIO_TUDO,
@@ -24,6 +24,10 @@ export type ResumoPeriodo = {
   /** Despesas ainda pendentes (provisões "a vencer") lançadas no período. */
   despesasPrevistas: number;
   lucroLiquido: number;
+  /** Taxas de maquininha (cartão) pagas no período. */
+  taxasCartao: number;
+  /** Receita líquida: faturamento real menos as taxas de cartão. */
+  receitaLiquida: number;
 
   margemBruta: number;
   pedidos: number;
@@ -108,7 +112,15 @@ export function calcularResumo(
     .filter((d) => d.status === "Pendente" && naFaixa(d.data, faixa))
     .reduce((s, d) => s + d.valor, 0);
 
+  // Taxas de maquininha lançadas automaticamente pelas vendas em cartão.
+  const taxasCartao = pagas
+    .filter((d) => naFaixa(d.data, faixa) && d.categoria === CATEGORIA_TAXA_CARTAO)
+    .reduce((s, d) => s + d.valor, 0);
+  const receitaLiquida = vendas - taxasCartao;
+
+  // CMV: custo de TODA mercadoria que saiu no período, inclusive as saídas por vale.
   const lucroBruto = vendas - custoProduto;
+  // Despesas do período já incluem as taxas de cartão (categoria automática).
   const lucroLiquido = lucroBruto - despesasPeriodo;
 
   const fiado = doPeriodo
@@ -199,6 +211,8 @@ export function calcularResumo(
     despesasPrevistas,
 
     lucroLiquido,
+    taxasCartao,
+    receitaLiquida,
     margemBruta: vendas > 0 ? (lucroBruto / vendas) * 100 : 0,
     pedidos: doPeriodo.length,
     entregasHoje: ativos.filter((p) => p.status === "concluido" && diaDoPedido(p) === hojeIso)
