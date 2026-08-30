@@ -825,6 +825,13 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                     Restante: <strong className="tabular-nums">{brl(Math.max(0, restante))}</strong>
                   </span>
                 </div>
+                {taxaCartao > 0 && (
+                  <p className="rounded-md bg-muted/60 px-2 py-1.5 text-xs text-muted-foreground">
+                    Taxa da maquininha: <strong>{brl(taxaCartao)}</strong> · receita líquida{" "}
+                    <strong>{brl(total - taxaCartao)}</strong> — lançada como despesa
+                    automaticamente.
+                  </p>
+                )}
                 <div className="flex flex-wrap items-center gap-2">
                   <Button
                     type="button"
