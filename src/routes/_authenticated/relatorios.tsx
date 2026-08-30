@@ -39,6 +39,7 @@ import { FiltroPeriodo } from "@/components/filtro-periodo";
 import { usePeriodo } from "@/hooks/use-periodo";
 import { useResumo } from "@/hooks/use-resumo";
 import { lancamentosVale, totaisVale } from "@/lib/vales";
+import { ValesNaRua } from "@/components/relatorios/vales-na-rua";
 
 import { AnaliseProdutos } from "@/components/relatorios/analise-produtos";
 
@@ -755,6 +756,7 @@ function RelatoriosPage() {
         </TabsContent>
 
         <TabsContent value="vales" className="mt-4 flex flex-col gap-4">
+          <ValesNaRua />
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <Kpi
               label="Galões vendidos em pacotes"

@@ -34,6 +34,8 @@ import { useEstoque } from "@/context/estoque";
 import { usePedidos } from "@/context/pedidos";
 import { useEntregadores } from "@/context/entregadores";
 import { useConfiguracoes } from "@/context/configuracoes";
+import { useDespesas } from "@/context/despesas";
+import { CATEGORIA_TAXA_CARTAO } from "@/lib/despesas";
 
 import { bairroDe, filtrarClientes, hojeISO, ordenarPorCodigo, rotuloCliente } from "@/lib/clientes";
 import { brl, precoPorModo, totalComPromocao, unidPorFardo } from "@/lib/erp";
@@ -70,7 +72,8 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
   const { criar } = usePedidos();
   const { caixaAberto } = useCaixa();
   const { opcoes } = useEntregadores();
-  const { metodosAtivos } = useConfiguracoes();
+  const { metodosAtivos, taxaDe } = useConfiguracoes();
+  const { adicionarDespesa } = useDespesas();
   // Formas de pagamento vêm das Configurações (globais) e atualizam na hora.
   // "Vale" é sempre oferecido: é resgate de crédito já pago pelo cliente.
   const formasDisponiveis = [
@@ -264,6 +267,13 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
       ? itensFisicos.filter((i) => i.retornavel).reduce((s, i) => s + i.qtd, 0) || unidadesFisicas
       : 0;
   const saldoVales = cliente?.valesSaldo ?? 0;
+  // Taxa de maquininha: percentual configurado sobre cada parcela em cartão.
+  const taxaCartao =
+    Math.round(
+      parcelas
+        .filter((x) => x.forma === "Débito" || x.forma === "Crédito")
+        .reduce((s, x) => s + ((Number(x.valor) || 0) * taxaDe(x.forma)) / 100, 0) * 100,
+    ) / 100;
   const valorDinheiro = parcelas
     .filter((x) => x.forma === "Dinheiro")
     .reduce((s, x) => s + (Number(x.valor) || 0), 0);
@@ -378,6 +388,19 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
         // Cascos que saíram e não voltaram ficam na conta do cliente.
         const naRua = Math.max(0, qtdRetornavel - nVazios);
         if (naRua > 0) void ajustarVasilhames(cliente.id, naRua);
+      }
+
+      // Taxa da maquininha entra como despesa financeira do dia da venda.
+      if (taxaCartao > 0) {
+        adicionarDespesa({
+          descricao: `Taxa de cartão — Pedido #${pedido.numero}`,
+          categoria: CATEGORIA_TAXA_CARTAO,
+          valor: taxaCartao,
+          data: hojeISO(),
+          forma: "Cartão",
+          status: "Pago",
+          observacoes: `Descontada automaticamente da venda de ${brl(total)}.`,
+        });
       }
 
       toast.success(`Pedido #${pedido.numero} criado — ${brl(total)}`, {
@@ -802,6 +825,13 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                     Restante: <strong className="tabular-nums">{brl(Math.max(0, restante))}</strong>
                   </span>
                 </div>
+                {taxaCartao > 0 && (
+                  <p className="rounded-md bg-muted/60 px-2 py-1.5 text-xs text-muted-foreground">
+                    Taxa da maquininha: <strong>{brl(taxaCartao)}</strong> · receita líquida{" "}
+                    <strong>{brl(total - taxaCartao)}</strong> — lançada como despesa
+                    automaticamente.
+                  </p>
+                )}
                 <div className="flex flex-wrap items-center gap-2">
                   <Button
                     type="button"

@@ -58,9 +58,15 @@ function Financeiro() {
 
   const linhasDre = [
     { rotulo: "Receita bruta de vendas", valor: resumo.vendas, tom: "" },
+    { rotulo: "(-) Taxas de Cartão / Maquininha", valor: -resumo.taxasCartao, tom: "" },
+    { rotulo: "(=) Receita líquida a receber", valor: resumo.receitaLiquida, tom: "font-semibold" },
     { rotulo: "(-) Custo do produto vendido", valor: -resumo.custoProduto, tom: "" },
     { rotulo: "(=) Lucro bruto", valor: resumo.lucroBruto, tom: "font-semibold" },
-    { rotulo: "(-) Despesas operacionais", valor: -resumo.despesas, tom: "" },
+    {
+      rotulo: "(-) Despesas operacionais (inclui taxas)",
+      valor: -resumo.despesas,
+      tom: "",
+    },
     { rotulo: "(=) Lucro líquido", valor: resumo.lucroLiquido, tom: "font-semibold" },
   ];
 
