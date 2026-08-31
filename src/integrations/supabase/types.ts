@@ -900,9 +900,13 @@ export type Database = {
         Row: {
           client_id: string | null
           created_at: string
+          custo_unitario: number
           delta_cheio: number
           delta_patrimonio: number
           delta_vazio: number
+          expense_id: string | null
+          forma_pagamento: string | null
+          fornecedor: string | null
           id: string
           motivo: string | null
           observacao: string | null
@@ -912,13 +916,18 @@ export type Database = {
           tipo: Database["public"]["Enums"]["returnable_movement_type"]
           user_id: string
           usuario: string | null
+          valor_total: number
         }
         Insert: {
           client_id?: string | null
           created_at?: string
+          custo_unitario?: number
           delta_cheio?: number
           delta_patrimonio?: number
           delta_vazio?: number
+          expense_id?: string | null
+          forma_pagamento?: string | null
+          fornecedor?: string | null
           id?: string
           motivo?: string | null
           observacao?: string | null
@@ -928,13 +937,18 @@ export type Database = {
           tipo: Database["public"]["Enums"]["returnable_movement_type"]
           user_id: string
           usuario?: string | null
+          valor_total?: number
         }
         Update: {
           client_id?: string | null
           created_at?: string
+          custo_unitario?: number
           delta_cheio?: number
           delta_patrimonio?: number
           delta_vazio?: number
+          expense_id?: string | null
+          forma_pagamento?: string | null
+          fornecedor?: string | null
           id?: string
           motivo?: string | null
           observacao?: string | null
@@ -944,6 +958,7 @@ export type Database = {
           tipo?: Database["public"]["Enums"]["returnable_movement_type"]
           user_id?: string
           usuario?: string | null
+          valor_total?: number
         }
         Relationships: [
           {
@@ -951,6 +966,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "returnable_movements_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
             referencedColumns: ["id"]
           },
           {
