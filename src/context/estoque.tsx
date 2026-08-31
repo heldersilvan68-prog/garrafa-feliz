@@ -96,6 +96,11 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
     deltaCheio?: number;
     deltaVazio?: number;
     deltaPatrimonio?: number;
+    custoUnitario?: number;
+    valorTotal?: number;
+    fornecedor?: string;
+    formaPagamento?: string;
+    despesaId?: string;
   }) => {
     if (!userId) return;
     await supabase.from("returnable_movements").insert({
@@ -109,7 +114,77 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
       delta_cheio: dados.deltaCheio ?? 0,
       delta_vazio: dados.deltaVazio ?? 0,
       delta_patrimonio: dados.deltaPatrimonio ?? 0,
+      custo_unitario: dados.custoUnitario ?? 0,
+      valor_total: dados.valorTotal ?? 0,
+      fornecedor: dados.fornecedor ?? null,
+      forma_pagamento: dados.formaPagamento ?? null,
+      expense_id: dados.despesaId ?? null,
     });
+  };
+
+  /**
+   * Lança a compra de mercadoria no financeiro:
+   * à vista → despesa paga no dia; a prazo → título em Contas a Pagar.
+   * Devolve o id da despesa criada para o log da movimentação.
+   */
+  const lancarCompra = async (
+    produto: Produto,
+    qtd: number,
+    compra: CompraEntrada,
+  ): Promise<string | undefined> => {
+    if (!userId || !(compra.valorTotal > 0)) return undefined;
+    const prazo = aPrazo(compra.forma);
+
+    // Garante a categoria automática de compras de mercadoria.
+    const { data: cats } = await supabase
+      .from("expense_categories")
+      .select("id,nome")
+      .eq("nome", CATEGORIA_COMPRA_MERCADORIA)
+      .limit(1);
+    let categoriaId = cats?.[0]?.id ?? null;
+    if (!categoriaId) {
+      const { data: nova } = await supabase
+        .from("expense_categories")
+        .insert({
+          user_id: userId,
+          nome: CATEGORIA_COMPRA_MERCADORIA,
+          cor: "var(--color-primary)",
+        })
+        .select("id")
+        .single();
+      categoriaId = nova?.id ?? null;
+    }
+
+    const forma = prazo
+      ? "Boleto"
+      : compra.forma === "Dinheiro"
+        ? "Dinheiro do Caixa"
+        : compra.forma;
+
+    const { data: despesa, error } = await supabase
+      .from("expenses")
+      .insert({
+        user_id: userId,
+        descricao: `Compra de mercadoria · ${qtd} un. ${produto.nome}`,
+        categoria: CATEGORIA_COMPRA_MERCADORIA,
+        category_id: categoriaId,
+        valor: compra.valorTotal,
+        data: prazo ? (compra.vencimento || compra.data) : compra.data,
+        forma,
+        status: prazo ? "Pendente" : "Pago",
+        observacoes: [
+          compra.fornecedor ? `Fornecedor: ${compra.fornecedor}` : null,
+          `Custo unitário: ${compra.custoUnitario}`,
+          `Entrada em ${compra.data}`,
+        ]
+          .filter(Boolean)
+          .join(" · "),
+      })
+      .select("id")
+      .single();
+    if (error) throw error;
+    queryClient.invalidateQueries({ queryKey: ["despesas"] });
+    return despesa?.id;
   };
 
   const salvarMut = useMutacao<Produto>(async (p) => {
