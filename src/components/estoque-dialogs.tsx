@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,18 +20,22 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useEstoque } from "@/context/estoque";
+import { Campo } from "@/components/ui/campo";
+import { InputMoeda } from "@/components/ui/input-moeda";
+import { brl, custoUnitario } from "@/lib/erp";
+import { hojeISO } from "@/lib/caixa";
+import { aPrazo, FORMAS_COMPRA } from "@/lib/vasilhames";
+import { CATEGORIA_COMPRA_MERCADORIA } from "@/lib/despesas";
 
 function MovimentoDialog({
-  modo,
   children,
   produtoId,
 }: {
-  modo: "entrada" | "vazios";
   children: ReactNode;
   produtoId?: string;
 }) {
-  const { produtos, entradaEstoque, moverVazios } = useEstoque();
-  const lista = modo === "vazios" ? produtos.filter((p) => p.retornavel) : produtos;
+  const { produtos, moverVazios } = useEstoque();
+  const lista = produtos.filter((p) => p.retornavel);
   const [aberto, setAberto] = useState(false);
   const [id, setId] = useState(produtoId ?? lista[0]?.id ?? "");
   const [qtd, setQtd] = useState("10");
@@ -42,13 +46,8 @@ function MovimentoDialog({
       toast.error("Informe um produto e uma quantidade válida.");
       return;
     }
-    if (modo === "entrada") {
-      entradaEstoque(id, n);
-      toast.success(`Entrada de ${n} un. registrada no estoque cheio.`);
-    } else {
-      moverVazios(id, n);
-      toast.success(`${n} vasilhame(s) vazios enviados para a envasadora.`);
-    }
+    moverVazios(id, n);
+    toast.success(`${n} vasilhame(s) vazios enviados para a envasadora.`);
     setAberto(false);
   };
 
@@ -57,19 +56,14 @@ function MovimentoDialog({
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>
-            {modo === "entrada" ? "Entrada de Estoque Cheio" : "Enviar Vazios para Envasadora"}
-          </DialogTitle>
+          <DialogTitle>Enviar Vazios para Envasadora</DialogTitle>
           <DialogDescription>
-            {modo === "entrada"
-              ? "Registre a chegada de mercadoria cheia no depósito."
-              : "Retira os vasilhames vazios do depósito para envio ao envase na fonte."}
+            Retira os vasilhames vazios do depósito para envio ao envase na fonte.
           </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4 py-2">
-          <div className="grid gap-2">
-            <Label>Produto</Label>
+          <Campo label="Produto">
             <Select value={id} onValueChange={setId}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecione o produto" />
@@ -77,15 +71,13 @@ function MovimentoDialog({
               <SelectContent>
                 {lista.map((p) => (
                   <SelectItem key={p.id} value={p.id}>
-                    {p.nome}
-                    {modo === "vazios" ? ` · ${p.estoqueVazio} vazios` : ""}
+                    {p.nome} · {p.estoqueVazio} vazios
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="qtd">Quantidade</Label>
+          </Campo>
+          <Campo label="Quantidade" htmlFor="qtd">
             <Input
               id="qtd"
               type="number"
@@ -93,7 +85,7 @@ function MovimentoDialog({
               value={qtd}
               onChange={(e) => setQtd(e.target.value)}
             />
-          </div>
+          </Campo>
         </div>
 
         <DialogFooter>
@@ -107,12 +99,203 @@ function MovimentoDialog({
   );
 }
 
-export function EntradaEstoqueDialog(props: { children: ReactNode; produtoId?: string }) {
-  return <MovimentoDialog modo="entrada" {...props} />;
+/**
+ * Entrada de estoque cheio com gestão financeira da compra:
+ * à vista lança despesa paga no dia; a prazo gera título em Contas a Pagar.
+ */
+export function EntradaEstoqueDialog({
+  children,
+  produtoId,
+}: {
+  children: ReactNode;
+  produtoId?: string;
+}) {
+  const { produtos, movimentos, entradaEstoque } = useEstoque();
+  const [aberto, setAberto] = useState(false);
+  const [id, setId] = useState(produtoId ?? produtos[0]?.id ?? "");
+  const [qtd, setQtd] = useState("10");
+  const [custo, setCusto] = useState(0);
+  const [totalManual, setTotalManual] = useState<number | null>(null);
+  const [data, setData] = useState(hojeISO());
+  const [fornecedor, setFornecedor] = useState("");
+  const [forma, setForma] = useState<string>("PIX");
+  const [vencimento, setVencimento] = useState(hojeISO());
+
+  const produto = produtos.find((p) => p.id === id);
+  const quantidade = Math.max(0, Math.floor(Number(qtd) || 0));
+  const prazo = aPrazo(forma);
+  const total =
+    totalManual !== null
+      ? totalManual
+      : Math.round(quantidade * custo * 100) / 100;
+
+  // Preenche o custo unitário com o cadastro do produto ao abrir/trocar produto.
+  useEffect(() => {
+    if (!produto) return;
+    setCusto(custoUnitario(produto));
+    setTotalManual(null);
+  }, [produto?.id]);
+
+  const fornecedores = useMemo(
+    () =>
+      [...new Set(movimentos.map((m) => m.fornecedor).filter((f): f is string => !!f))].sort(),
+    [movimentos],
+  );
+
+  const confirmar = () => {
+    if (!id || quantidade <= 0) {
+      toast.error("Informe um produto e uma quantidade válida.");
+      return;
+    }
+    entradaEstoque(id, quantidade, {
+      custoUnitario: custo,
+      valorTotal: total,
+      data,
+      fornecedor: fornecedor.trim() || undefined,
+      forma,
+      vencimento: prazo ? vencimento : undefined,
+    });
+    toast.success(
+      total > 0
+        ? prazo
+          ? `Entrada de ${quantidade} un. registrada e título de ${brl(total)} lançado em Contas a Pagar.`
+          : `Entrada de ${quantidade} un. registrada e despesa de ${brl(total)} lançada no financeiro.`
+        : `Entrada de ${quantidade} un. registrada no estoque cheio.`,
+    );
+    setAberto(false);
+    setTotalManual(null);
+  };
+
+  return (
+    <Dialog open={aberto} onOpenChange={setAberto}>
+      <DialogTrigger asChild>{children}</DialogTrigger>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Entrada de Estoque Cheio</DialogTitle>
+          <DialogDescription>
+            Registre a chegada de mercadoria e o lançamento financeiro da compra.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="grid gap-4 py-2 sm:grid-cols-2">
+          <Campo label="Produto" className="sm:col-span-2">
+            <Select
+              value={id}
+              onValueChange={(v) => {
+                setId(v);
+                setTotalManual(null);
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o produto" />
+              </SelectTrigger>
+              <SelectContent>
+                {produtos.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Campo>
+
+          <Campo label="Quantidade comprada" htmlFor="qtdEntrada">
+            <Input
+              id="qtdEntrada"
+              type="number"
+              min={1}
+              value={qtd}
+              onChange={(e) => {
+                setQtd(e.target.value);
+                setTotalManual(null);
+              }}
+            />
+          </Campo>
+
+          <Campo label="Custo unitário (R$)">
+            <InputMoeda
+              valor={custo}
+              onValor={(n) => {
+                setCusto(n);
+                setTotalManual(null);
+              }}
+            />
+          </Campo>
+
+          <Campo label="Valor total da compra (R$)" dica="Calculado automaticamente (editável).">
+            <InputMoeda valor={total} onValor={(n) => setTotalManual(n)} />
+          </Campo>
+
+          <Campo label="Data da entrada" htmlFor="dataEntrada">
+            <Input
+              id="dataEntrada"
+              type="date"
+              value={data}
+              onChange={(e) => setData(e.target.value)}
+            />
+          </Campo>
+
+          <Campo label="Fornecedor (opcional)" htmlFor="fornecedor" className="sm:col-span-2">
+            <Input
+              id="fornecedor"
+              list="lista-fornecedores"
+              placeholder="Nome do fornecedor / distribuidora"
+              value={fornecedor}
+              onChange={(e) => setFornecedor(e.target.value)}
+            />
+          </Campo>
+          <datalist id="lista-fornecedores">
+            {fornecedores.map((f) => (
+              <option key={f} value={f} />
+            ))}
+          </datalist>
+
+          <Campo label="Forma de pagamento">
+            <Select value={forma} onValueChange={setForma}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione" />
+              </SelectTrigger>
+              <SelectContent>
+                {FORMAS_COMPRA.map((f) => (
+                  <SelectItem key={f} value={f}>
+                    {f}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Campo>
+
+          {prazo && (
+            <Campo label="Vencimento do boleto" htmlFor="vencimento">
+              <Input
+                id="vencimento"
+                type="date"
+                value={vencimento}
+                onChange={(e) => setVencimento(e.target.value)}
+              />
+            </Campo>
+          )}
+
+          <p className="text-xs text-muted-foreground sm:col-span-2">
+            {prazo
+              ? `O estoque sobe agora e ${brl(total)} entra em Contas a Pagar com vencimento em ${vencimento.split("-").reverse().join("/")}.`
+              : `O estoque sobe agora e ${brl(total)} é lançado como despesa paga na categoria "${CATEGORIA_COMPRA_MERCADORIA}".`}
+          </p>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setAberto(false)}>
+            Cancelar
+          </Button>
+          <Button onClick={confirmar}>Confirmar entrada</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 export function MoverVaziosDialog(props: { children: ReactNode; produtoId?: string }) {
-  return <MovimentoDialog modo="vazios" {...props} />;
+  return <MovimentoDialog {...props} />;
 }
 
 export function AporteVasilhameDialog({ children }: { children: ReactNode }) {
