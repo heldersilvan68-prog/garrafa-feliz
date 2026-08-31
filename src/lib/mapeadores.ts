@@ -158,6 +158,11 @@ export const paraMovimentoVasilhame = (r: VasilhameRow): MovimentoVasilhame => (
   deltaCheio: r.delta_cheio ?? 0,
   deltaVazio: r.delta_vazio ?? 0,
   deltaPatrimonio: r.delta_patrimonio ?? 0,
+  custoUnitario: num(r.custo_unitario),
+  valorTotal: num(r.valor_total),
+  fornecedor: r.fornecedor ?? undefined,
+  formaPagamento: r.forma_pagamento ?? undefined,
+  despesaId: r.expense_id ?? undefined,
   em: r.created_at,
 });
 

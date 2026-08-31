@@ -15,11 +15,15 @@ export type CategoriaDespesa = string;
 /** Categoria automática das taxas de maquininha lançadas pelas vendas em cartão. */
 export const CATEGORIA_TAXA_CARTAO = "Taxas de Cartão / Maquininha";
 
+/** Categoria automática das compras de mercadoria (entradas de estoque). */
+export const CATEGORIA_COMPRA_MERCADORIA = "Compra de Mercadoria / Fornecedores";
+
 export const FORMAS_DESPESA = [
   "PIX",
   "Dinheiro do Caixa",
   "Transferência Bancária",
   "Cartão",
+  "Boleto",
 ] as const;
 
 export type FormaDespesa = (typeof FORMAS_DESPESA)[number];
@@ -47,6 +51,7 @@ export const CORES_CATEGORIA: Record<string, string> = {
   "Compra de Vasilhames": "var(--color-muted-foreground)",
   Outros: "var(--color-secondary-foreground)",
   [CATEGORIA_TAXA_CARTAO]: "var(--color-accent)",
+  [CATEGORIA_COMPRA_MERCADORIA]: "var(--color-primary)",
 };
 
 export const dataBR = (iso: string) => {
