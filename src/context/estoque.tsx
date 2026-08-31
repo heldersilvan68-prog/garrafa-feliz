@@ -9,13 +9,24 @@ import type { ModoVenda, MotivoAvaria, MovimentoVasilhame, TipoMovVasilhame } fr
 
 export type ItemBaixa = { produtoId: string; qtd: number; modo?: ModoVenda; retornavel?: boolean };
 
+/** Dados financeiros opcionais de uma entrada de mercadoria (compra). */
+export type CompraEntrada = {
+  custoUnitario: number;
+  valorTotal: number;
+  data: string;
+  fornecedor?: string;
+  forma: string;
+  /** Vencimento do boleto/título quando a compra é a prazo. */
+  vencimento?: string;
+};
+
 type Ctx = {
   produtos: Produto[];
   movimentos: MovimentoVasilhame[];
   carregando: boolean;
   salvar: (p: Produto) => void;
   remover: (id: string) => void;
-  entradaEstoque: (id: string, qtd: number) => void;
+  entradaEstoque: (id: string, qtd: number, compra?: CompraEntrada) => void;
   moverVazios: (id: string, qtd: number) => void;
   comprarVasilhames: (id: string, qtd: number) => Promise<void>;
   retornoSemEnvase: (id: string, qtd: number) => Promise<void>;
