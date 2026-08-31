@@ -239,20 +239,32 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
   };
 
   // Chegada de mercadoria cheia/recarregada vinda da fonte (O patrimônio NÃO muda)
-  const entradaMut = useMutacao<{ id: string; qtd: number }>(async ({ id, qtd }) => {
-    const p = produtos.find((x) => x.id === id);
-    if (!p) return;
-    await patch(id, { estoque_cheio: Math.max(0, p.estoqueCheio + qtd) });
-    await logar({
-      produtoId: id,
-      tipo: "entrada",
-      qtd,
-      motivo: `Chegada de carga envasada · ${p.nome}`,
-      deltaCheio: qtd,
-      deltaVazio: 0,
-      deltaPatrimonio: 0, // Patrimônio inalterado
-    });
-  }, "Não foi possível registrar a chegada da carga");
+  const entradaMut = useMutacao<{ id: string; qtd: number; compra?: CompraEntrada }>(
+    async ({ id, qtd, compra }) => {
+      const p = produtos.find((x) => x.id === id);
+      if (!p) return;
+      // O estoque sobe sempre, à vista ou a prazo.
+      await patch(id, { estoque_cheio: Math.max(0, p.estoqueCheio + qtd) });
+      const despesaId = compra ? await lancarCompra(p, qtd, compra) : undefined;
+      await logar({
+        produtoId: id,
+        tipo: "entrada",
+        qtd,
+        motivo: compra
+          ? `Compra de mercadoria · ${p.nome}${compra.fornecedor ? ` · ${compra.fornecedor}` : ""}`
+          : `Chegada de carga envasada · ${p.nome}`,
+        deltaCheio: qtd,
+        deltaVazio: 0,
+        deltaPatrimonio: 0, // Patrimônio inalterado
+        custoUnitario: compra?.custoUnitario,
+        valorTotal: compra?.valorTotal,
+        fornecedor: compra?.fornecedor,
+        formaPagamento: compra?.forma,
+        despesaId,
+      });
+    },
+    "Não foi possível registrar a chegada da carga",
+  );
 
   // Envio de vasilhames vazios para a envasadora (O patrimônio NÃO muda)
   const vaziosMut = useMutacao<{ id: string; qtd: number }>(async ({ id, qtd }) => {
