@@ -51,6 +51,7 @@ export const CORES_CATEGORIA: Record<string, string> = {
   "Compra de Vasilhames": "var(--color-muted-foreground)",
   Outros: "var(--color-secondary-foreground)",
   [CATEGORIA_TAXA_CARTAO]: "var(--color-accent)",
+  [CATEGORIA_COMPRA_MERCADORIA]: "var(--color-primary)",
 };
 
 export const dataBR = (iso: string) => {
