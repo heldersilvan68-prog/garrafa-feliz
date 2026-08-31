@@ -5,7 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { paraMovimentoVasilhame, paraProduto, type ProdutoRow, type VasilhameRow } from "@/lib/mapeadores";
 import type { Produto } from "@/lib/erp";
-import type { ModoVenda, MotivoAvaria, MovimentoVasilhame, TipoMovVasilhame } from "@/lib/vasilhames";
+import { aPrazo, type ModoVenda, type MotivoAvaria, type MovimentoVasilhame, type TipoMovVasilhame } from "@/lib/vasilhames";
+import { CATEGORIA_COMPRA_MERCADORIA } from "@/lib/despesas";
 
 export type ItemBaixa = { produtoId: string; qtd: number; modo?: ModoVenda; retornavel?: boolean };
 
@@ -513,7 +514,7 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
         carregando: isLoading,
         salvar: (p) => salvarMut.mutate(p),
         remover: (id) => removerMut.mutate(id),
-        entradaEstoque: (id, qtd) => entradaMut.mutate({ id, qtd }),
+        entradaEstoque: (id, qtd, compra) => entradaMut.mutate({ id, qtd, compra }),
         moverVazios: (id, qtd) => vaziosMut.mutate({ id, qtd }),
         comprarVasilhames: (id, qtd) => comprarMut.mutateAsync({ id, qtd }).then(() => undefined),
         retornoSemEnvase: (id, qtd) => retornoMut.mutateAsync({ id, qtd }).then(() => undefined),
