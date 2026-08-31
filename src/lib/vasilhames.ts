@@ -38,8 +38,28 @@ export type MovimentoVasilhame = {
   deltaCheio: number;
   deltaVazio: number;
   deltaPatrimonio: number;
+  /** Dados financeiros da compra (quando a entrada veio de uma nota/fornecedor). */
+  custoUnitario?: number;
+  valorTotal?: number;
+  fornecedor?: string;
+  formaPagamento?: string;
+  /** Despesa/título gerado no financeiro. */
+  despesaId?: string;
   em: string;
 };
+
+/** Formas de pagamento de uma compra de mercadoria. */
+export const FORMAS_COMPRA = [
+  "PIX",
+  "Dinheiro",
+  "Cartão",
+  "Transferência Bancária",
+  "Boleto / A Prazo",
+] as const;
+
+export type FormaCompra = (typeof FORMAS_COMPRA)[number];
+
+export const aPrazo = (forma: string) => forma === "Boleto / A Prazo";
 
 export const MOTIVOS_AVARIA = [
   "Quebra no Transporte/Carga",
