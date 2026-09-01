@@ -22,7 +22,7 @@ import {
 import { useEstoque } from "@/context/estoque";
 import { Campo } from "@/components/ui/campo";
 import { InputMoeda } from "@/components/ui/input-moeda";
-import { brl, custoUnitario } from "@/lib/erp";
+import { brl, getDadosMedidaProduto } from "@/lib/erp";
 import { hojeISO } from "@/lib/caixa";
 import { aPrazo, FORMAS_COMPRA } from "@/lib/vasilhames";
 import { CATEGORIA_COMPRA_MERCADORIA } from "@/lib/despesas";
