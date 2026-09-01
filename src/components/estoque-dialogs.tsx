@@ -22,7 +22,7 @@ import {
 import { useEstoque } from "@/context/estoque";
 import { Campo } from "@/components/ui/campo";
 import { InputMoeda } from "@/components/ui/input-moeda";
-import { brl, custoUnitario } from "@/lib/erp";
+import { brl, getDadosMedidaProduto } from "@/lib/erp";
 import { hojeISO } from "@/lib/caixa";
 import { aPrazo, FORMAS_COMPRA } from "@/lib/vasilhames";
 import { CATEGORIA_COMPRA_MERCADORIA } from "@/lib/despesas";
@@ -122,17 +122,22 @@ export function EntradaEstoqueDialog({
   const [vencimento, setVencimento] = useState(hojeISO());
 
   const produto = produtos.find((p) => p.id === id);
+  // Regra global de unidade de medida: define custo padrão e conversão.
+  const medida = produto ? getDadosMedidaProduto(produto) : null;
+  const fator = medida?.fator ?? 1;
+  const rotuloUn = medida?.principal === "fardo" ? medida.rotulo.singular : "un.";
   const quantidade = Math.max(0, Math.floor(Number(qtd) || 0));
+  const unidadesInternas = quantidade * fator;
   const prazo = aPrazo(forma);
   const total =
     totalManual !== null
       ? totalManual
       : Math.round(quantidade * custo * 100) / 100;
 
-  // Preenche o custo unitário com o cadastro do produto ao abrir/trocar produto.
+  // Preenche o custo padrão conforme a unidade de medida cadastrada no produto.
   useEffect(() => {
     if (!produto) return;
-    setCusto(custoUnitario(produto));
+    setCusto(getDadosMedidaProduto(produto).custoPadrao);
     setTotalManual(null);
   }, [produto?.id]);
 
@@ -147,8 +152,8 @@ export function EntradaEstoqueDialog({
       toast.error("Informe um produto e uma quantidade válida.");
       return;
     }
-    entradaEstoque(id, quantidade, {
-      custoUnitario: custo,
+    entradaEstoque(id, unidadesInternas, {
+      custoUnitario: fator > 1 ? Math.round((custo / fator) * 100) / 100 : custo,
       valorTotal: total,
       data,
       fornecedor: fornecedor.trim() || undefined,
@@ -158,9 +163,9 @@ export function EntradaEstoqueDialog({
     toast.success(
       total > 0
         ? prazo
-          ? `Entrada de ${quantidade} un. registrada e título de ${brl(total)} lançado em Contas a Pagar.`
-          : `Entrada de ${quantidade} un. registrada e despesa de ${brl(total)} lançada no financeiro.`
-        : `Entrada de ${quantidade} un. registrada no estoque cheio.`,
+          ? `Entrada de ${unidadesInternas} un. registrada e título de ${brl(total)} lançado em Contas a Pagar.`
+          : `Entrada de ${unidadesInternas} un. registrada e despesa de ${brl(total)} lançada no financeiro.`
+        : `Entrada de ${unidadesInternas} un. registrada no estoque cheio.`,
     );
     setAberto(false);
     setTotalManual(null);
