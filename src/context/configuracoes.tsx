@@ -21,10 +21,15 @@ export type Empresa = {
   whatsapp: string;
 };
 
-export type Configuracoes = Empresa & { metaVendasMensal: number };
+export type Configuracoes = Empresa & {
+  metaVendasMensal: number;
+  /** Horário limite para fechar o caixa (HH:mm). Vazio = sem alerta. */
+  horarioLimiteCaixa: string;
+};
 
 export const CONFIG_PADRAO: Configuracoes = {
   metaVendasMensal: 0,
+  horarioLimiteCaixa: "18:00",
   nomeFantasia: "",
   razaoSocial: "",
   cnpj: "",
@@ -86,6 +91,7 @@ export function ConfiguracoesProvider({ children }: { children: ReactNode }) {
         config: s
           ? {
               metaVendasMensal: Number(s.meta_vendas_mensal ?? 0),
+              horarioLimiteCaixa: s.horario_limite_caixa ?? "18:00",
               nomeFantasia: s.nome_fantasia ?? "",
               razaoSocial: s.razao_social ?? "",
               cnpj: s.cnpj ?? "",
@@ -127,6 +133,7 @@ export function ConfiguracoesProvider({ children }: { children: ReactNode }) {
         {
           user_id: userId,
           meta_vendas_mensal: novo.metaVendasMensal,
+          horario_limite_caixa: novo.horarioLimiteCaixa || null,
           nome_fantasia: novo.nomeFantasia,
           razao_social: novo.razaoSocial,
           cnpj: novo.cnpj,
