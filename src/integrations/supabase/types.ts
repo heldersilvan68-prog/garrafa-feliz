@@ -19,6 +19,7 @@ export type Database = {
           cnpj: string
           created_at: string
           endereco: string
+          horario_limite_caixa: string | null
           meta_vendas_mensal: number
           nome_fantasia: string
           razao_social: string
@@ -30,6 +31,7 @@ export type Database = {
           cnpj?: string
           created_at?: string
           endereco?: string
+          horario_limite_caixa?: string | null
           meta_vendas_mensal?: number
           nome_fantasia?: string
           razao_social?: string
@@ -41,6 +43,7 @@ export type Database = {
           cnpj?: string
           created_at?: string
           endereco?: string
+          horario_limite_caixa?: string | null
           meta_vendas_mensal?: number
           nome_fantasia?: string
           razao_social?: string
