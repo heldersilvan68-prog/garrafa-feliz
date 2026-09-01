@@ -39,15 +39,30 @@ export const ordenarPorCodigo = (lista: Cliente[]) =>
     (a, b) => codigoNumero(a) - codigoNumero(b) || a.nome.localeCompare(b.nome, "pt-BR"),
   );
 
-/** Busca inteligente: código, nome e telefone (dígitos), mantendo a ordem original. */
+/**
+ * Busca inteligente de clientes:
+ * - Termo só com dígitos ("69") → retorna apenas o cliente com código exatamente igual.
+ * - Termo com letras/símbolos → busca ampla por nome e telefone.
+ */
 export const filtrarClientes = (lista: Cliente[], termo: string) => {
-  const q = termo.toLowerCase().trim();
+  const q = termo.trim();
   if (!q) return lista;
+
+  if (/^\d+$/.test(q)) {
+    const numero = Number(q);
+    return lista.filter((c) => {
+      const codigo = String(c.codigo ?? "").trim();
+      if (!codigo) return false;
+      const codigoNum = Number(codigo.replace(/\D/g, ""));
+      return codigo === q || (Number.isFinite(codigoNum) && codigoNum === numero);
+    });
+  }
+
+  const qMin = q.toLowerCase();
   const digitos = q.replace(/\D/g, "");
   return lista.filter(
     (c) =>
-      String(c.codigo ?? "").toLowerCase().includes(q) ||
-      c.nome?.toLowerCase().includes(q) ||
+      c.nome?.toLowerCase().includes(qMin) ||
       (!!digitos && c.telefone?.replace(/\D/g, "").includes(digitos)),
   );
 };
