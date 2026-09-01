@@ -33,16 +33,14 @@ export function InputMoeda({ valor, onValor, className, ...rest }: Props) {
   }, [valor, editando]);
 
   return (
-    <div className="relative flex items-center">
-      <span className="pointer-events-none absolute left-2.5 text-sm font-medium text-muted-foreground">
-        R$
-      </span>
+    <div className="flex min-w-0 items-center gap-1">
+      <span className="shrink-0 select-none text-sm font-medium text-muted-foreground">R$</span>
       <Input
         {...rest}
         ref={ref}
         type="text"
         inputMode="decimal"
-        className={`pl-9 tabular-nums ${className ?? ""}`}
+        className={`min-w-0 flex-1 tabular-nums ${className ?? ""}`}
         value={editando ? texto : formatar(valor)}
         onFocus={(e) => {
           setEditando(true);

@@ -292,7 +292,10 @@ function MetaVendas() {
   const { config, salvarConfig } = useConfiguracoes();
   const [meta, setMeta] = useState(String(config.metaVendasMensal || ""));
 
+  const [limite, setLimite] = useState(config.horarioLimiteCaixa || "");
+
   useEffect(() => setMeta(String(config.metaVendasMensal || "")), [config.metaVendasMensal]);
+  useEffect(() => setLimite(config.horarioLimiteCaixa || ""), [config.horarioLimiteCaixa]);
 
   return (
     <Card className="shadow-[var(--shadow-card)]">
@@ -319,9 +322,25 @@ function MetaVendas() {
         <p className="text-xs text-muted-foreground">
           Meta atual: <strong>{brl(config.metaVendasMensal)}</strong>
         </p>
+        <Campo label="Horário limite de fechamento do caixa" htmlFor="limite-caixa">
+          <Input
+            id="limite-caixa"
+            type="time"
+            value={limite}
+            onChange={(e) => setLimite(e.target.value)}
+          />
+        </Campo>
+        <p className="text-xs text-muted-foreground">
+          Após esse horário, um alerta aparece no topo do sistema enquanto o caixa estiver aberto.
+        </p>
         <Button
           className="self-start"
-          onClick={() => void salvarConfig({ metaVendasMensal: Number(meta) || 0 })}
+          onClick={() =>
+            void salvarConfig({
+              metaVendasMensal: Number(meta) || 0,
+              horarioLimiteCaixa: limite,
+            })
+          }
         >
           <Save /> Salvar meta
         </Button>
