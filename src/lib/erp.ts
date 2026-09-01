@@ -84,6 +84,84 @@ export const rotuloEmbalagem = (unidade?: string) => {
   return { singular: u, plural: u };
 };
 
+/* ---------- Regra global de unidade de medida (fonte única) ---------- */
+
+export type MedidaPrincipal = "fardo" | "un";
+
+/**
+ * Unidade principal cadastrada no produto: embalagem-pai (CX/FD/PCT/Pacote)
+ * ou unidade avulsa (UN/L/KG/Garrafão). Padrão: unidade avulsa.
+ */
+export const medidaPrincipal = (unidade?: string): MedidaPrincipal => {
+  const u = (unidade ?? "").trim().toLowerCase();
+  if (!u) return "un";
+  if (
+    u.startsWith("cx") ||
+    u.startsWith("caix") ||
+    u.startsWith("fd") ||
+    u.startsWith("fard") ||
+    u.startsWith("pct") ||
+    u.startsWith("pac")
+  )
+    return "fardo";
+  return "un";
+};
+
+export type DadosMedidaProduto = {
+  /** Unidade principal de compra/venda do produto. */
+  principal: MedidaPrincipal;
+  /** Rótulos amigáveis da unidade principal ("cx", "fardo", "un."...). */
+  rotulo: { singular: string; plural: string };
+  /** Custo padrão na unidade principal (R$). */
+  custoPadrao: number;
+  /** Preço de venda padrão na unidade principal (R$). */
+  vendaPadrao: number;
+  /** Quantas unidades internas de estoque cada unidade principal representa. */
+  fator: number;
+};
+
+/**
+ * REGRA SISTÊMICA: leitura centralizada de preços, custos e conversão do
+ * produto conforme a unidade de medida cadastrada. Todos os módulos (PDV,
+ * entrada de estoque, pedidos, financeiro e relatórios) devem consumir daqui.
+ */
+export const getDadosMedidaProduto = (
+  p: Pick<
+    Produto,
+    | "unidade"
+    | "precoCusto"
+    | "precoVenda"
+    | "precoCustoFardo"
+    | "precoFardo"
+    | "unidadesPorFardo"
+  >,
+): DadosMedidaProduto => {
+  const upf = unidPorFardo(p);
+  const principal = medidaPrincipal(p.unidade) === "fardo" && upf > 1 ? "fardo" : "un";
+  if (principal === "fardo") {
+    return {
+      principal,
+      rotulo: rotuloEmbalagem(p.unidade),
+      custoPadrao:
+        (p.precoCustoFardo || 0) > 0
+          ? p.precoCustoFardo
+          : Math.round((p.precoCusto || 0) * upf * 100) / 100,
+      vendaPadrao:
+        (p.precoFardo || 0) > 0
+          ? p.precoFardo
+          : Math.round((p.precoVenda || 0) * upf * 100) / 100,
+      fator: upf,
+    };
+  }
+  return {
+    principal,
+    rotulo: { singular: "un.", plural: "un." },
+    custoPadrao: custoUnitario(p),
+    vendaPadrao: p.precoVenda || 0,
+    fator: 1,
+  };
+};
+
 /** Texto amigável do estoque: "10 fardos e 6 un." / "1 cx e 1 un." */
 export const rotuloEstoque = (unidades: number, porFardo: number, unidade?: string) => {
   const { fardos, soltas, porFardo: upf } = emFardos(unidades, porFardo);
