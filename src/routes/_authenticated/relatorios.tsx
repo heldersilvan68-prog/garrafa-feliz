@@ -31,7 +31,13 @@ import { LABEL_MODO, type ModoVenda } from "@/lib/vasilhames";
 
 import { brl } from "@/lib/erp";
 import { dataBR } from "@/lib/despesas";
-import { STATUS_PEDIDO_LABEL, type FormaPagamento, type StatusPedido } from "@/lib/pedidos";
+import {
+  STATUS_PEDIDO_LABEL,
+  valorFaturado,
+  valorPorForma,
+  type FormaPagamento,
+  type StatusPedido,
+} from "@/lib/pedidos";
 import { useConfiguracoes } from "@/context/configuracoes";
 import { baixarCSV, imprimir, maisVendidos } from "@/lib/relatorios";
 import { dentroFaixa, rotuloFaixa } from "@/lib/periodo";
@@ -105,17 +111,19 @@ function RelatoriosPage() {
   );
 
   const validos = filtrados.filter((p) => p.status !== "cancelado");
-  const faturado = validos.reduce((s, p) => s + p.total, 0);
+  // Faturamento real: resgates em Vale Crédito não faturam de novo (o dinheiro
+  // entrou no dia da compra do pacote). Mesma base usada no Dashboard.
+  const faturado = validos.reduce((s, p) => s + valorFaturado(p), 0);
   const ticket = validos.length > 0 ? faturado / validos.length : 0;
   const cancelados = filtrados.filter((p) => p.status === "cancelado");
 
   // Formas e taxas vêm das Configurações (contexto global).
   const porForma = formasFiltro.map((f) => {
-    const valor = validos.filter((p) => p.pagamento === f).reduce((s, p) => s + p.total, 0);
+    const valor = validos.reduce((s, p) => s + valorPorForma(p, f), 0);
     const taxa = taxaDe(f);
     return {
       forma: f,
-      qtd: validos.filter((p) => p.pagamento === f).length,
+      qtd: validos.filter((p) => valorPorForma(p, f) > 0).length,
       valor,
       taxa,
       taxaValor: (valor * taxa) / 100,
@@ -187,6 +195,9 @@ function RelatoriosPage() {
       let faturamento = 0;
       let custo = 0;
       for (const p of validos) {
+        // Parte do pedido que gera faturamento novo (exclui Vale Crédito);
+        // o custo (CMV) continua contabilizado integralmente na saída.
+        const fator = p.total > 0 ? valorFaturado(p) / p.total : 0;
         for (const i of p.itens) {
           if (!i.retornavel || (i.modo ?? "refil") !== id) continue;
           const prod = produtos.find((x) => x.id === i.produtoId);
@@ -194,7 +205,7 @@ function RelatoriosPage() {
           const casco = prod?.custoCasco ?? 0;
           const unitario = id === "refil" ? envase : id === "casco" ? casco : envase + casco;
           qtd += i.qtd;
-          faturamento += i.qtd * i.precoUnit;
+          faturamento += i.qtd * i.precoUnit * fator;
           custo += i.qtd * unitario;
         }
       }
