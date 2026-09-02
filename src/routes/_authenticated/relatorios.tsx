@@ -105,17 +105,19 @@ function RelatoriosPage() {
   );
 
   const validos = filtrados.filter((p) => p.status !== "cancelado");
-  const faturado = validos.reduce((s, p) => s + p.total, 0);
+  // Faturamento real: resgates em Vale Crédito não faturam de novo (o dinheiro
+  // entrou no dia da compra do pacote). Mesma base usada no Dashboard.
+  const faturado = validos.reduce((s, p) => s + valorFaturado(p), 0);
   const ticket = validos.length > 0 ? faturado / validos.length : 0;
   const cancelados = filtrados.filter((p) => p.status === "cancelado");
 
   // Formas e taxas vêm das Configurações (contexto global).
   const porForma = formasFiltro.map((f) => {
-    const valor = validos.filter((p) => p.pagamento === f).reduce((s, p) => s + p.total, 0);
+    const valor = validos.reduce((s, p) => s + valorPorForma(p, f), 0);
     const taxa = taxaDe(f);
     return {
       forma: f,
-      qtd: validos.filter((p) => p.pagamento === f).length,
+      qtd: validos.filter((p) => valorPorForma(p, f) > 0).length,
       valor,
       taxa,
       taxaValor: (valor * taxa) / 100,
