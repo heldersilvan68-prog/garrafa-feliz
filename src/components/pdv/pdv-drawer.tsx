@@ -141,8 +141,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
   const precoPadrao = (id: string) => {
     const p = produtos.find((x) => x.id === id);
     if (!p) return 0;
-    if (embalagemDe(id) === "fardo")
-      return p.precoFardo > 0 ? p.precoFardo : p.precoVenda * unidPorFardo(p);
+    if (embalagemDe(id) === "fardo") return getDadosMedidaProduto(p).vendaPadrao;
     if (p.retornavel) return precoPorModo(p, modos[id] ?? "refil");
     return p.precoVenda;
   };
