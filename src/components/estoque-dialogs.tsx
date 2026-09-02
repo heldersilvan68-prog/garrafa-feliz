@@ -204,7 +204,11 @@ export function EntradaEstoqueDialog({
             </Select>
           </Campo>
 
-          <Campo label="Quantidade comprada" htmlFor="qtdEntrada">
+          <Campo
+            label={`Quantidade comprada (${rotuloUn})`}
+            htmlFor="qtdEntrada"
+            dica={fator > 1 ? `Cada ${rotuloUn} = ${fator} un. no estoque.` : undefined}
+          >
             <Input
               id="qtdEntrada"
               type="number"
@@ -217,7 +221,7 @@ export function EntradaEstoqueDialog({
             />
           </Campo>
 
-          <Campo label="Custo unitário (R$)">
+          <Campo label={`Custo por ${rotuloUn} (R$)`}>
             <InputMoeda
               valor={custo}
               onValor={(n) => {
