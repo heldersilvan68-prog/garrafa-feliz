@@ -38,7 +38,13 @@ import { useDespesas } from "@/context/despesas";
 import { CATEGORIA_TAXA_CARTAO } from "@/lib/despesas";
 
 import { bairroDe, filtrarClientes, hojeISO, ordenarPorCodigo, rotuloCliente } from "@/lib/clientes";
-import { brl, precoPorModo, totalComPromocao, unidPorFardo } from "@/lib/erp";
+import {
+  brl,
+  getDadosMedidaProduto,
+  precoPorModo,
+  totalComPromocao,
+  unidPorFardo,
+} from "@/lib/erp";
 import { BALCAO } from "@/lib/entregadores";
 import { resumoItens, type FormaPagamento, type ItemPedido, type Pedido } from "@/lib/pedidos";
 import { ImprimirComprovante } from "@/components/pedidos/comprovante-pedido";
@@ -109,11 +115,22 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
 
   const cliente = clientes.find((c) => c.id === clienteId);
 
+  /**
+   * Embalagem em uso: escolha do usuário ou, por padrão, a unidade principal
+   * cadastrada no produto (regra global de unidade de medida).
+   */
+  const embalagemDe = (id: string): "un" | "fardo" => {
+    const escolha = embalagens[id];
+    if (escolha) return escolha;
+    const p = produtos.find((x) => x.id === id);
+    return p ? getDadosMedidaProduto(p).principal : "un";
+  };
+
   /** Passo de incremento no carrinho: 1 unidade ou o fardo inteiro. */
   const passoDe = (id: string) => {
     const p = produtos.find((x) => x.id === id);
     if (!p) return 1;
-    return (embalagens[id] ?? "un") === "fardo" ? unidPorFardo(p) : 1;
+    return embalagemDe(id) === "fardo" ? unidPorFardo(p) : 1;
   };
 
   /**
@@ -124,8 +141,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
   const precoPadrao = (id: string) => {
     const p = produtos.find((x) => x.id === id);
     if (!p) return 0;
-    if ((embalagens[id] ?? "un") === "fardo")
-      return p.precoFardo > 0 ? p.precoFardo : p.precoVenda * unidPorFardo(p);
+    if (embalagemDe(id) === "fardo") return getDadosMedidaProduto(p).vendaPadrao;
     if (p.retornavel) return precoPorModo(p, modos[id] ?? "refil");
     return p.precoVenda;
   };
@@ -158,7 +174,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
     totalLinha({
       produtoId: id,
       qtd: qtdUnidades,
-      embalagem: (embalagens[id] ?? "un") as "un" | "fardo",
+      embalagem: embalagemDe(id),
       preco: precoVenda(id),
     });
 
@@ -172,7 +188,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
       toast.error("Informe a quantidade antes de adicionar.");
       return;
     }
-    const embalagem = (embalagens[id] ?? "un") as "un" | "fardo";
+    const embalagem = embalagemDe(id);
     const modo: ModoVenda = p.retornavel ? (modos[id] ?? "refil") : "refil";
     const preco = precoVenda(id);
     const qtd = bruto * passo;
@@ -544,7 +560,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                 <div className="grid min-w-0 gap-3 sm:grid-cols-2">
                   {produtos.map((p) => {
                     const upf = unidPorFardo(p);
-                    const emFardo = (embalagens[p.id] ?? "un") === "fardo";
+                    const emFardo = embalagemDe(p.id) === "fardo";
                     const bruto = Math.max(
                       0,
                       Math.floor(Number((qtds[p.id] ?? "").replace(",", ".")) || 0),
@@ -596,7 +612,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                         {/* Linha 3: seleção de embalagem e/ou modo do retornável */}
                         {upf > 1 && (
                           <Select
-                            value={embalagens[p.id] ?? "un"}
+                            value={embalagemDe(p.id)}
                             onValueChange={(v) => {
                               setEmbalagens((m) => ({
                                 ...m,
