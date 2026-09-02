@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/table";
 import { useCaixa } from "@/context/caixa";
 import { usePedidos } from "@/context/pedidos";
+import { useDespesas } from "@/context/despesas";
 import { useEstoque } from "@/context/estoque";
 import { brl } from "@/lib/erp";
 import {
@@ -397,11 +398,39 @@ function FecharCaixaDialog({
 function CaixaPage() {
   const { caixaAberto, caixas } = useCaixa();
   const { pedidos } = usePedidos();
+  const { despesas } = useDespesas();
   const dia = hojeISO();
   const doDia = useMemo(() => pedidosDoDia(pedidos, dia), [pedidos, dia]);
   const totais = totaisPorPagamento(doDia);
   const esperado = caixaAberto ? dinheiroEsperado(caixaAberto, doDia) : 0;
   const fechados = caixas.filter((c) => c.fechadoEm);
+  const cartaoTotal = totais["Débito"] + totais["Crédito"];
+
+  // Todas as saídas do dia, independente da forma de pagamento.
+  const saidasDoDia = useMemo(
+    () => despesas.filter((d) => d.data === dia),
+    [despesas, dia],
+  );
+  const totalSaidas = saidasDoDia.reduce((s, d) => s + d.valor, 0);
+  const saidasPix = saidasDoDia
+    .filter((d) => d.forma === "PIX")
+    .reduce((s, d) => s + d.valor, 0);
+  const pixEsperadoConta = totais.PIX - saidasPix;
+
+  // Agrupa despesas divididas (mesma descrição no dia) para mostrar cada forma.
+  const gruposSaidas = useMemo(() => {
+    const mapa = new Map<string, { descricao: string; partes: { valor: number; forma: string }[] }>();
+    for (const d of saidasDoDia) {
+      const chave = d.descricao.trim().toLowerCase();
+      const atual = mapa.get(chave) ?? { descricao: d.descricao, partes: [] };
+      atual.partes.push({ valor: d.valor, forma: d.forma });
+      mapa.set(chave, atual);
+    }
+    return [...mapa.values()];
+  }, [saidasDoDia]);
+
+  const semMovimentos =
+    (!caixaAberto || caixaAberto.movimentos.length === 0) && gruposSaidas.length === 0;
 
   return (
     <div className="flex flex-col gap-6">
@@ -421,7 +450,7 @@ function CaixaPage() {
             <FecharCaixaDialog
               esperado={esperado}
               esperadoPix={totais.PIX}
-              esperadoCartao={totais.Débito + totais.Crédito}
+              esperadoCartao={cartaoTotal}
             />
           </div>
         ) : (
@@ -443,6 +472,7 @@ function CaixaPage() {
             <ValorLinha label="PIX" valor={brl(totais.PIX)} />
             <ValorLinha label="Cartão de débito" valor={brl(totais["Débito"])} />
             <ValorLinha label="Cartão de crédito" valor={brl(totais["Crédito"])} />
+            <ValorLinha label="Cartão Total" valor={brl(cartaoTotal)} destaque="forte" />
             <ValorLinha label="Fiado / caderneta" valor={brl(totais.Fiado)} destaque="negativo" />
             <Separator />
             <ValorLinha
@@ -457,25 +487,27 @@ function CaixaPage() {
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
               <Banknote className="size-4 text-primary" />
-              Gaveta (dinheiro)
+              Conferência Geral
             </CardTitle>
-            <CardDescription>Movimentações do caixa atual</CardDescription>
+            <CardDescription>Resumo completo do caixa de hoje</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-2">
             <ValorLinha label="Troco inicial" valor={brl(caixaAberto?.trocoInicial ?? 0)} />
             <ValorLinha label="Vendas em dinheiro" valor={brl(caixaAberto ? totais.Dinheiro : 0)} />
+            <ValorLinha label="Vendas em PIX" valor={brl(totais.PIX)} />
             <ValorLinha
               label="Suprimentos"
               valor={brl(caixaAberto ? somaMovimentos(caixaAberto.movimentos, "suprimento") : 0)}
               destaque="positivo"
             />
             <ValorLinha
-              label="Sangrias"
-              valor={`- ${brl(caixaAberto ? somaMovimentos(caixaAberto.movimentos, "sangria") : 0)}`}
+              label="Saídas / Despesas"
+              valor={`- ${brl(totalSaidas)}`}
               destaque="negativo"
             />
             <Separator />
-            <ValorLinha label="Dinheiro esperado" valor={brl(esperado)} destaque="forte" />
+            <ValorLinha label="Dinheiro esperado (Gaveta)" valor={brl(esperado)} destaque="forte" />
+            <ValorLinha label="PIX esperado (Conta)" valor={brl(pixEsperadoConta)} destaque="forte" />
           </CardContent>
         </Card>
 
@@ -485,16 +517,16 @@ function CaixaPage() {
               <Calculator className="size-4 text-primary" />
               Movimentos
             </CardTitle>
-            <CardDescription>Sangrias e suprimentos de hoje</CardDescription>
+            <CardDescription>Sangrias, suprimentos e todas as saídas de hoje</CardDescription>
           </CardHeader>
           <CardContent>
-            {!caixaAberto || caixaAberto.movimentos.length === 0 ? (
+            {semMovimentos ? (
               <p className="py-6 text-center text-sm text-muted-foreground">
                 Nenhum movimento registrado.
               </p>
             ) : (
               <ul className="flex flex-col gap-3">
-                {caixaAberto.movimentos.map((m) => (
+                {(caixaAberto?.movimentos ?? []).map((m) => (
                   <li key={m.id} className="flex items-start justify-between gap-3 text-sm">
                     <span className="min-w-0">
                       <span className="block truncate font-medium">
@@ -518,11 +550,28 @@ function CaixaPage() {
                     </span>
                   </li>
                 ))}
+                {gruposSaidas.map((g) => (
+                  <li
+                    key={`saida-${g.descricao}`}
+                    className="flex items-start justify-between gap-3 text-sm"
+                  >
+                    <span className="min-w-0">
+                      <span className="block truncate font-medium">Despesa: {g.descricao}</span>
+                      <span className="block text-xs text-muted-foreground">
+                        {g.partes.map((p) => `${brl(p.valor)} [${p.forma}]`).join(" / ")}
+                      </span>
+                    </span>
+                    <span className="shrink-0 font-semibold tabular-nums text-destructive">
+                      - {brl(g.partes.reduce((s, p) => s + p.valor, 0))}
+                    </span>
+                  </li>
+                ))}
               </ul>
             )}
           </CardContent>
         </Card>
       </div>
+
 
       <Card>
         <CardHeader className="pb-3">
