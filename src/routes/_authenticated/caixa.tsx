@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/table";
 import { useCaixa } from "@/context/caixa";
 import { usePedidos } from "@/context/pedidos";
+import { useDespesas } from "@/context/despesas";
 import { useEstoque } from "@/context/estoque";
 import { brl } from "@/lib/erp";
 import {
