@@ -195,6 +195,9 @@ function RelatoriosPage() {
       let faturamento = 0;
       let custo = 0;
       for (const p of validos) {
+        // Parte do pedido que gera faturamento novo (exclui Vale Crédito);
+        // o custo (CMV) continua contabilizado integralmente na saída.
+        const fator = p.total > 0 ? valorFaturado(p) / p.total : 0;
         for (const i of p.itens) {
           if (!i.retornavel || (i.modo ?? "refil") !== id) continue;
           const prod = produtos.find((x) => x.id === i.produtoId);
@@ -202,7 +205,7 @@ function RelatoriosPage() {
           const casco = prod?.custoCasco ?? 0;
           const unitario = id === "refil" ? envase : id === "casco" ? casco : envase + casco;
           qtd += i.qtd;
-          faturamento += i.qtd * i.precoUnit;
+          faturamento += i.qtd * i.precoUnit * fator;
           custo += i.qtd * unitario;
         }
       }
