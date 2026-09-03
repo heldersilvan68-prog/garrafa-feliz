@@ -21,10 +21,42 @@ export type Empresa = {
   whatsapp: string;
 };
 
+export type LarguraPapel = "80mm" | "58mm" | "A4";
+export type TamanhoFonte = "pequeno" | "medio" | "grande";
+export type ModoImpressora = "termica" | "navegador";
+
+/** Preferências do cupom / comprovante impresso. */
+export type ConfigImpressao = {
+  largura: LarguraPapel;
+  altaDensidade: boolean;
+  tamanhoFonte: TamanhoFonte;
+  modoImpressora: ModoImpressora;
+  mostrarLogo: boolean;
+  mostrarEnderecoEmpresa: boolean;
+  mostrarCliente: boolean;
+  mostrarObservacoes: boolean;
+  mostrarRodape: boolean;
+  mostrarAssinatura: boolean;
+};
+
+export const IMPRESSAO_PADRAO: ConfigImpressao = {
+  largura: "80mm",
+  altaDensidade: true,
+  tamanhoFonte: "medio",
+  modoImpressora: "termica",
+  mostrarLogo: true,
+  mostrarEnderecoEmpresa: true,
+  mostrarCliente: true,
+  mostrarObservacoes: true,
+  mostrarRodape: true,
+  mostrarAssinatura: true,
+};
+
 export type Configuracoes = Empresa & {
   metaVendasMensal: number;
   /** Horário limite para fechar o caixa (HH:mm). Vazio = sem alerta. */
   horarioLimiteCaixa: string;
+  impressao: ConfigImpressao;
 };
 
 export const CONFIG_PADRAO: Configuracoes = {
@@ -35,7 +67,9 @@ export const CONFIG_PADRAO: Configuracoes = {
   cnpj: "",
   endereco: "",
   whatsapp: "",
+  impressao: IMPRESSAO_PADRAO,
 };
+
 
 export const TIPOS_PAGAMENTO = ["Dinheiro", "PIX", "Cartão", "Fiado"] as const;
 
@@ -97,6 +131,11 @@ export function ConfiguracoesProvider({ children }: { children: ReactNode }) {
               cnpj: s.cnpj ?? "",
               endereco: s.endereco ?? "",
               whatsapp: s.whatsapp ?? "",
+              impressao: {
+                ...IMPRESSAO_PADRAO,
+                ...((s.impressao as unknown as Partial<ConfigImpressao> | null) ?? {}),
+              },
+
             }
           : CONFIG_PADRAO,
         formas: (formas.data ?? []).map((f) => ({
@@ -139,6 +178,8 @@ export function ConfiguracoesProvider({ children }: { children: ReactNode }) {
           cnpj: novo.cnpj,
           endereco: novo.endereco,
           whatsapp: novo.whatsapp,
+          impressao: (novo.impressao ?? IMPRESSAO_PADRAO) as unknown as never,
+
         },
         { onConflict: "user_id" },
       );

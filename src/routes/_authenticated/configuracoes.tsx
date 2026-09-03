@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Campo } from "@/components/ui/campo";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfirmarExclusao } from "@/components/confirmar-exclusao";
+import { ConfigImpressaoCard } from "@/components/configuracoes/config-impressao";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -458,7 +459,9 @@ function ConfiguracoesPage() {
           <TabsTrigger value="pagamentos">Pagamentos e taxas</TabsTrigger>
           <TabsTrigger value="metas">Metas de vendas</TabsTrigger>
           <TabsTrigger value="empresa">Dados da empresa</TabsTrigger>
+          <TabsTrigger value="impressao">Impressão</TabsTrigger>
         </TabsList>
+
 
         <TabsContent value="categorias" className="mt-4 grid gap-4 lg:grid-cols-2">
           <ListaCadastros
@@ -505,7 +508,12 @@ function ConfiguracoesPage() {
         <TabsContent value="empresa" className="mt-4">
           <DadosEmpresa />
         </TabsContent>
+
+        <TabsContent value="impressao" className="mt-4">
+          <ConfigImpressaoCard />
+        </TabsContent>
       </Tabs>
+
     </div>
   );
 }
