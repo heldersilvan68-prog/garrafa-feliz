@@ -133,7 +133,7 @@ export function ConfiguracoesProvider({ children }: { children: ReactNode }) {
               whatsapp: s.whatsapp ?? "",
               impressao: {
                 ...IMPRESSAO_PADRAO,
-                ...((s.impressao as Partial<ConfigImpressao> | null) ?? {}),
+                ...((s.impressao as unknown as Partial<ConfigImpressao> | null) ?? {}),
               },
 
             }
@@ -178,7 +178,7 @@ export function ConfiguracoesProvider({ children }: { children: ReactNode }) {
           cnpj: novo.cnpj,
           endereco: novo.endereco,
           whatsapp: novo.whatsapp,
-          impressao: novo.impressao ?? IMPRESSAO_PADRAO,
+          impressao: (novo.impressao ?? IMPRESSAO_PADRAO) as unknown as never,
 
         },
         { onConflict: "user_id" },
