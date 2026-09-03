@@ -162,13 +162,48 @@
 
 .cupom {
   width: 80mm;
-  padding: 2mm 3mm;
+  padding: 3mm 4mm;
   background: #fff;
-  color: #000;
+  color: #000000;
   font-family: "Courier New", Courier, monospace;
-  font-size: 11px;
-  line-height: 1.35;
+  font-size: 12px;
+  line-height: 1.3;
+  box-sizing: border-box;
 }
+
+/* Alta densidade: preto puro + negrito para impressoras térmicas */
+.cupom-forte,
+.cupom-forte * {
+  color: #000000 !important;
+  font-weight: 700;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.cupom-forte .cupom-titulo,
+.cupom-forte .cupom-total,
+.cupom-forte .cupom-negrito,
+.cupom-forte .cupom-destaque {
+  font-weight: 800;
+}
+
+.cupom-navegador {
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.cupom-negrito {
+  font-weight: 700;
+}
+
+.cupom-assinatura {
+  margin-top: 10px;
+}
+
+.cupom-linha-assinatura {
+  border-top: 1px solid #000;
+  margin: 14px 4mm 2px;
+}
+
 
 .cupom hr {
   border: 0;
