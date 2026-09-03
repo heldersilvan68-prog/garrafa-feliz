@@ -131,6 +131,11 @@ export function ConfiguracoesProvider({ children }: { children: ReactNode }) {
               cnpj: s.cnpj ?? "",
               endereco: s.endereco ?? "",
               whatsapp: s.whatsapp ?? "",
+              impressao: {
+                ...IMPRESSAO_PADRAO,
+                ...((s.impressao as Partial<ConfigImpressao> | null) ?? {}),
+              },
+
             }
           : CONFIG_PADRAO,
         formas: (formas.data ?? []).map((f) => ({
