@@ -266,10 +266,30 @@
     left: auto;
   }
 
-  @page {
-    size: 80mm auto;
-    margin: 0;
+  /* @page é definido dinamicamente pelo cupom conforme a largura configurada */
+
+  .cupom,
+  .cupom * {
+    color: #000000 !important;
+    background: #fff !important;
+    text-shadow: none !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
+
+  .cupom hr {
+    border-top: 1px dashed #000 !important;
+  }
+
+  .cupom-item,
+  .cupom-linha,
+  .cupom-destaque,
+  .cupom-assinatura,
+  .cupom-total {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
 
   html,
   body {
