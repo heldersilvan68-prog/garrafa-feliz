@@ -507,7 +507,12 @@ function ConfiguracoesPage() {
         <TabsContent value="empresa" className="mt-4">
           <DadosEmpresa />
         </TabsContent>
+
+        <TabsContent value="impressao" className="mt-4">
+          <ConfigImpressaoCard />
+        </TabsContent>
       </Tabs>
+
     </div>
   );
 }
