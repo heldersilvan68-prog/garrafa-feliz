@@ -178,6 +178,8 @@ export function ConfiguracoesProvider({ children }: { children: ReactNode }) {
           cnpj: novo.cnpj,
           endereco: novo.endereco,
           whatsapp: novo.whatsapp,
+          impressao: novo.impressao ?? IMPRESSAO_PADRAO,
+
         },
         { onConflict: "user_id" },
       );
