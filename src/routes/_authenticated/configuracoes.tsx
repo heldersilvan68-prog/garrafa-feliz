@@ -458,7 +458,9 @@ function ConfiguracoesPage() {
           <TabsTrigger value="pagamentos">Pagamentos e taxas</TabsTrigger>
           <TabsTrigger value="metas">Metas de vendas</TabsTrigger>
           <TabsTrigger value="empresa">Dados da empresa</TabsTrigger>
+          <TabsTrigger value="impressao">Impressão</TabsTrigger>
         </TabsList>
+
 
         <TabsContent value="categorias" className="mt-4 grid gap-4 lg:grid-cols-2">
           <ListaCadastros
