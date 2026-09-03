@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Campo } from "@/components/ui/campo";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfirmarExclusao } from "@/components/confirmar-exclusao";
+import { ConfigImpressaoCard } from "@/components/configuracoes/config-impressao";
 import { Input } from "@/components/ui/input";
 import {
   Select,
