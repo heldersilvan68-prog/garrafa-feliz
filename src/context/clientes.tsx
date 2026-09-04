@@ -84,7 +84,10 @@ export function ClientesProvider({ children }: { children: ReactNode }) {
     const existe = clientes.some((x) => x.id === c.id);
     const { error } = existe
       ? await supabase.from("clients").update(linha).eq("id", c.id)
-      : await supabase.from("clients").insert(linha);
+      : await supabase
+          .from("clients")
+          // Data do cadastro sempre no fuso operacional (America/Bahia).
+          .insert({ ...linha, cadastrado_em: c.cadastradoEm?.trim() || isoLocal(new Date()) });
     if (error) throw error;
   }, "Não foi possível salvar o cliente");
 
