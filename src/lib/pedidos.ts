@@ -77,6 +77,21 @@ export type Pedido = {
 export const fiadoEmAberto = (p: Pedido) =>
   (p.pagamento === "Fiado" || p.valorFiado > 0) && !p.pago && p.status !== "cancelado";
 
+/** Valor ainda em aberto de um pedido fiado. */
+export const valorEmAberto = (p: Pedido) =>
+  fiadoEmAberto(p) ? (p.valorFiado > 0 ? p.valorFiado : p.total) : 0;
+
+/**
+ * Saldo devedor real do cliente: soma de todos os pedidos fiado em aberto.
+ * Usado para manter o campo "Devido total" do cadastro sempre sincronizado.
+ */
+export const saldoFiadoCliente = (pedidos: Pedido[], clienteId: string) =>
+  Math.round(
+    pedidos
+      .filter((p) => p.clienteId === clienteId)
+      .reduce((s, p) => s + valorEmAberto(p), 0) * 100,
+  ) / 100;
+
 /** Parcelas efetivas do pedido (fallback para pedidos antigos sem detalhamento). */
 export const parcelasDe = (p: Pedido): PagamentoPedido[] =>
   p.pagamentos.length > 0 ? p.pagamentos : [{ forma: p.pagamento, valor: p.total }];
