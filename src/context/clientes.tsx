@@ -13,6 +13,8 @@ type Ctx = {
   remover: (id: string) => void;
   registrarCompra: (id: string, descricao: string, valor: number, data: string) => void;
   ajustarDivida: (id: string, delta: number) => void;
+  /** Define o saldo devedor exato do cliente (sincronização com os fiados em aberto). */
+  definirDivida: (id: string, valor: number) => void;
   /** Ajusta os cascos que o cliente tem na rua (positivo = levou, negativo = devolveu). */
   ajustarVasilhames: (id: string, delta: number) => Promise<void>;
   /** Ajusta o saldo de vales do cliente (positivo = comprou pacote, negativo = resgatou). */
