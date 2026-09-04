@@ -518,7 +518,15 @@ function CaixaPage() {
           <CardContent className="flex flex-col gap-2">
             <ValorLinha label="Troco inicial" valor={brl(caixaAberto?.trocoInicial ?? 0)} />
             <ValorLinha label="Vendas em dinheiro" valor={brl(caixaAberto ? totais.Dinheiro : 0)} />
-            <ValorLinha label="Vendas em PIX" valor={brl(totais.PIX)} />
+            <ValorLinha
+              label="Vendas em PIX"
+              valor={brl(vendasPix)}
+              hint={
+                recebimentosPix > 0
+                  ? `Inclui ${brl(recebimentosPix)} de baixa de fiado em PIX`
+                  : undefined
+              }
+            />
             <ValorLinha
               label="Suprimentos"
               valor={brl(caixaAberto ? suprimentos : 0)}
