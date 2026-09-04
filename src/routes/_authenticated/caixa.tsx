@@ -417,7 +417,13 @@ function CaixaPage() {
   const saidasDinheiro = saidasDoDia
     .filter((d) => d.forma === "Dinheiro do Caixa")
     .reduce((s, d) => s + d.valor, 0);
-  const pixEsperadoConta = totais.PIX - saidasPix;
+
+  // Recebimentos/baixas de fiado em PIX no dia (mesma regra do Dashboard).
+  const recebimentosPix = (caixaAberto?.movimentos ?? [])
+    .filter((m) => m.tipo === "recebimento" && /\(pix\)/i.test(m.motivo))
+    .reduce((s, m) => s + m.valor, 0);
+  const vendasPix = totais.PIX + recebimentosPix;
+  const pixEsperadoConta = vendasPix - saidasPix;
 
   // Sangrias avulsas: as geradas por despesas já aparecem na lista de saídas.
   const movimentosVisiveis = useMemo(
