@@ -80,14 +80,19 @@ function ValorLinha({
   label,
   valor,
   destaque,
+  hint,
 }: {
   label: string;
   valor: string;
   destaque?: "positivo" | "negativo" | "forte";
+  hint?: string;
 }) {
   return (
     <div className="flex items-center justify-between gap-3 text-sm">
-      <span className="text-muted-foreground">{label}</span>
+      <span className="text-muted-foreground">
+        {label}
+        {hint && <span className="block text-xs text-muted-foreground/80">{hint}</span>}
+      </span>
       <span
         className={
           destaque === "positivo"
