@@ -402,20 +402,38 @@ function CaixaPage() {
   const dia = hojeISO();
   const doDia = useMemo(() => pedidosDoDia(pedidos, dia), [pedidos, dia]);
   const totais = totaisPorPagamento(doDia);
-  const esperado = caixaAberto ? dinheiroEsperado(caixaAberto, doDia) : 0;
   const fechados = caixas.filter((c) => c.fechadoEm);
   const cartaoTotal = totais["Débito"] + totais["Crédito"];
 
-  // Todas as saídas do dia, independente da forma de pagamento.
+  // Saídas reais do dia (taxas de cartão são retenções da adquirente, não saída de caixa).
   const saidasDoDia = useMemo(
-    () => despesas.filter((d) => d.data === dia),
+    () => despesas.filter((d) => d.data === dia && d.categoria !== CATEGORIA_TAXA_CARTAO),
     [despesas, dia],
   );
   const totalSaidas = saidasDoDia.reduce((s, d) => s + d.valor, 0);
   const saidasPix = saidasDoDia
     .filter((d) => d.forma === "PIX")
     .reduce((s, d) => s + d.valor, 0);
+  const saidasDinheiro = saidasDoDia
+    .filter((d) => d.forma === "Dinheiro")
+    .reduce((s, d) => s + d.valor, 0);
   const pixEsperadoConta = totais.PIX - saidasPix;
+
+  // Sangrias avulsas: as geradas por despesas já aparecem na lista de saídas.
+  const movimentosVisiveis = useMemo(
+    () =>
+      (caixaAberto?.movimentos ?? []).filter(
+        (m) => !(m.tipo === "sangria" && m.motivo.trim().toLowerCase().startsWith("despesa:")),
+      ),
+    [caixaAberto],
+  );
+  const suprimentos = caixaAberto
+    ? somaMovimentos(caixaAberto.movimentos, "suprimento")
+    : 0;
+  const sangriasAvulsas = somaMovimentos(movimentosVisiveis, "sangria");
+  const esperado = caixaAberto
+    ? caixaAberto.trocoInicial + totais.Dinheiro + suprimentos - saidasDinheiro - sangriasAvulsas
+    : 0;
 
   // Agrupa despesas divididas (mesma descrição no dia) para mostrar cada forma.
   const gruposSaidas = useMemo(() => {
@@ -429,8 +447,8 @@ function CaixaPage() {
     return [...mapa.values()];
   }, [saidasDoDia]);
 
-  const semMovimentos =
-    (!caixaAberto || caixaAberto.movimentos.length === 0) && gruposSaidas.length === 0;
+  const semMovimentos = movimentosVisiveis.length === 0 && gruposSaidas.length === 0;
+
 
   return (
     <div className="flex flex-col gap-6">
