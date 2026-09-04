@@ -44,6 +44,7 @@ import { usePedidos } from "@/context/pedidos";
 import { useDespesas } from "@/context/despesas";
 import { useEstoque } from "@/context/estoque";
 import { brl } from "@/lib/erp";
+import { CATEGORIA_TAXA_CARTAO } from "@/lib/despesas";
 import {
   dinheiroEsperado,
   hojeISO,
@@ -515,7 +516,7 @@ function CaixaPage() {
             <ValorLinha label="Vendas em PIX" valor={brl(totais.PIX)} />
             <ValorLinha
               label="Suprimentos"
-              valor={brl(caixaAberto ? somaMovimentos(caixaAberto.movimentos, "suprimento") : 0)}
+              valor={brl(caixaAberto ? suprimentos : 0)}
               destaque="positivo"
             />
             <ValorLinha
@@ -544,7 +545,7 @@ function CaixaPage() {
               </p>
             ) : (
               <ul className="flex flex-col gap-3">
-                {(caixaAberto?.movimentos ?? []).map((m) => (
+                {movimentosVisiveis.map((m) => (
                   <li key={m.id} className="flex items-start justify-between gap-3 text-sm">
                     <span className="min-w-0">
                       <span className="block truncate font-medium">
