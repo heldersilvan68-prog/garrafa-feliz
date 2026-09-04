@@ -120,6 +120,14 @@ export function ClientesProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
   }, "Não foi possível atualizar a caderneta");
 
+  const definirDividaMut = useMutacao<{ id: string; valor: number }>(async ({ id, valor }) => {
+    const { error } = await supabase
+      .from("clients")
+      .update({ divida: Math.max(0, Math.round(valor * 100) / 100) })
+      .eq("id", id);
+    if (error) throw error;
+  }, "Não foi possível atualizar a caderneta");
+
   const vasilhamesMut = useMutacao<{ id: string; delta: number }>(async ({ id, delta }) => {
     const atual = clientes.find((c) => c.id === id)?.vasilhamesRua ?? 0;
     const { error } = await supabase
