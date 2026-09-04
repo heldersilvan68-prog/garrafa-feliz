@@ -415,7 +415,7 @@ function CaixaPage() {
     .filter((d) => d.forma === "PIX")
     .reduce((s, d) => s + d.valor, 0);
   const saidasDinheiro = saidasDoDia
-    .filter((d) => d.forma === "Dinheiro")
+    .filter((d) => d.forma === "Dinheiro do Caixa")
     .reduce((s, d) => s + d.valor, 0);
   const pixEsperadoConta = totais.PIX - saidasPix;
 
