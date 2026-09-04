@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { paraCliente, type ClienteRow, type CompraRow } from "@/lib/mapeadores";
 import { ordenarPorCodigo, type Cliente } from "@/lib/clientes";
+import { isoLocal } from "@/lib/periodo";
 
 type Ctx = {
   clientes: Cliente[];
