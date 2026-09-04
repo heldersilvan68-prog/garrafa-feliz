@@ -473,7 +473,7 @@ function CaixaPage() {
             <MovimentoDialog tipo="sangria" />
             <FecharCaixaDialog
               esperado={esperado}
-              esperadoPix={totais.PIX}
+              esperadoPix={vendasPix}
               esperadoCartao={cartaoTotal}
             />
           </div>
