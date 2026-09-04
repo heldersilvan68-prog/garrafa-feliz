@@ -46,7 +46,6 @@ import { useEstoque } from "@/context/estoque";
 import { brl } from "@/lib/erp";
 import { CATEGORIA_TAXA_CARTAO } from "@/lib/despesas";
 import {
-  dinheiroEsperado,
   hojeISO,
   horaCurta,
   pedidosDoDia,
