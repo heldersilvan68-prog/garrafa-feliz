@@ -156,10 +156,11 @@ function RelatoriosPage() {
   const abaixoMinimo = produtos.filter((p) => p.estoqueCheio <= p.estoqueMinimo);
   const vaziosRecolhidos = validos.reduce((s, p) => s + p.vaziosRecolhidos, 0);
 
-  // Novos clientes cadastrados dentro do período filtrado.
-  const novosClientes = clientes.filter(
-    (c) => c.cadastradoEm && dentroFaixa(c.cadastradoEm, faixa),
-  );
+  // Novos clientes: data real de criação do cadastro (created_at) em America/Bahia.
+  const novosClientes = clientes.filter((c) => {
+    const dia = c.criadoEm ?? c.cadastradoEm;
+    return !!dia && dentroFaixa(dia, faixa);
+  });
 
   // Fiado gerado dentro do período (pedidos válidos com valor fiado).
   const fiadoPeriodo = validos.reduce((s, p) => s + (p.valorFiado ?? 0), 0);
