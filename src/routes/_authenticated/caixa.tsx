@@ -80,14 +80,19 @@ function ValorLinha({
   label,
   valor,
   destaque,
+  hint,
 }: {
   label: string;
   valor: string;
   destaque?: "positivo" | "negativo" | "forte";
+  hint?: string;
 }) {
   return (
     <div className="flex items-center justify-between gap-3 text-sm">
-      <span className="text-muted-foreground">{label}</span>
+      <span className="text-muted-foreground">
+        {label}
+        {hint && <span className="block text-xs text-muted-foreground/80">{hint}</span>}
+      </span>
       <span
         className={
           destaque === "positivo"
@@ -417,7 +422,13 @@ function CaixaPage() {
   const saidasDinheiro = saidasDoDia
     .filter((d) => d.forma === "Dinheiro do Caixa")
     .reduce((s, d) => s + d.valor, 0);
-  const pixEsperadoConta = totais.PIX - saidasPix;
+
+  // Recebimentos/baixas de fiado em PIX no dia (mesma regra do Dashboard).
+  const recebimentosPix = (caixaAberto?.movimentos ?? [])
+    .filter((m) => m.tipo === "recebimento" && /\(pix\)/i.test(m.motivo))
+    .reduce((s, m) => s + m.valor, 0);
+  const vendasPix = totais.PIX + recebimentosPix;
+  const pixEsperadoConta = vendasPix - saidasPix;
 
   // Sangrias avulsas: as geradas por despesas já aparecem na lista de saídas.
   const movimentosVisiveis = useMemo(
@@ -467,7 +478,7 @@ function CaixaPage() {
             <MovimentoDialog tipo="sangria" />
             <FecharCaixaDialog
               esperado={esperado}
-              esperadoPix={totais.PIX}
+              esperadoPix={vendasPix}
               esperadoCartao={cartaoTotal}
             />
           </div>
@@ -512,7 +523,15 @@ function CaixaPage() {
           <CardContent className="flex flex-col gap-2">
             <ValorLinha label="Troco inicial" valor={brl(caixaAberto?.trocoInicial ?? 0)} />
             <ValorLinha label="Vendas em dinheiro" valor={brl(caixaAberto ? totais.Dinheiro : 0)} />
-            <ValorLinha label="Vendas em PIX" valor={brl(totais.PIX)} />
+            <ValorLinha
+              label="Vendas em PIX"
+              valor={brl(vendasPix)}
+              hint={
+                recebimentosPix > 0
+                  ? `Inclui ${brl(recebimentosPix)} de baixa de fiado em PIX`
+                  : undefined
+              }
+            />
             <ValorLinha
               label="Suprimentos"
               valor={brl(caixaAberto ? suprimentos : 0)}

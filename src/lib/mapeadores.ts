@@ -88,6 +88,8 @@ export const paraCliente = (r: ClienteRow, compras: CompraRow[]): Cliente => {
     bairro: r.bairro ?? undefined,
     documento: r.documento ?? undefined,
     cadastradoEm: r.cadastrado_em ?? undefined,
+    // Data real do cadastro no fuso operacional (America/Bahia).
+    criadoEm: r.created_at ? isoLocal(r.created_at) : (r.cadastrado_em ?? undefined),
     divida: num(r.divida),
     vasilhamesRua: r.vasilhames_rua ?? 0,
     valesSaldo: r.vales_saldo ?? 0,

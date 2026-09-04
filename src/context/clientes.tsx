@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { paraCliente, type ClienteRow, type CompraRow } from "@/lib/mapeadores";
 import { ordenarPorCodigo, type Cliente } from "@/lib/clientes";
+import { isoLocal } from "@/lib/periodo";
 
 type Ctx = {
   clientes: Cliente[];
@@ -13,6 +14,8 @@ type Ctx = {
   remover: (id: string) => void;
   registrarCompra: (id: string, descricao: string, valor: number, data: string) => void;
   ajustarDivida: (id: string, delta: number) => void;
+  /** Define o saldo devedor exato do cliente (sincronização com os fiados em aberto). */
+  definirDivida: (id: string, valor: number) => void;
   /** Ajusta os cascos que o cliente tem na rua (positivo = levou, negativo = devolveu). */
   ajustarVasilhames: (id: string, delta: number) => Promise<void>;
   /** Ajusta o saldo de vales do cliente (positivo = comprou pacote, negativo = resgatou). */
@@ -82,7 +85,10 @@ export function ClientesProvider({ children }: { children: ReactNode }) {
     const existe = clientes.some((x) => x.id === c.id);
     const { error } = existe
       ? await supabase.from("clients").update(linha).eq("id", c.id)
-      : await supabase.from("clients").insert(linha);
+      : await supabase
+          .from("clients")
+          // Data do cadastro sempre no fuso operacional (America/Bahia).
+          .insert({ ...linha, cadastrado_em: c.cadastradoEm?.trim() || isoLocal(new Date()) });
     if (error) throw error;
   }, "Não foi possível salvar o cliente");
 
@@ -118,6 +124,14 @@ export function ClientesProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
   }, "Não foi possível atualizar a caderneta");
 
+  const definirDividaMut = useMutacao<{ id: string; valor: number }>(async ({ id, valor }) => {
+    const { error } = await supabase
+      .from("clients")
+      .update({ divida: Math.max(0, Math.round(valor * 100) / 100) })
+      .eq("id", id);
+    if (error) throw error;
+  }, "Não foi possível atualizar a caderneta");
+
   const vasilhamesMut = useMutacao<{ id: string; delta: number }>(async ({ id, delta }) => {
     const atual = clientes.find((c) => c.id === id)?.vasilhamesRua ?? 0;
     const { error } = await supabase
@@ -139,7 +153,7 @@ export function ClientesProvider({ children }: { children: ReactNode }) {
   const importarMut = useMutation({
     mutationFn: async (lista: ClienteImportado[]) => {
       if (!userId) throw new Error("Sessão expirada");
-      const hoje = new Date().toISOString().slice(0, 10);
+      const hoje = isoLocal(new Date());
       const linhas = lista
         .filter((c) => c.nome?.trim())
         .map((c) => ({
@@ -172,6 +186,7 @@ export function ClientesProvider({ children }: { children: ReactNode }) {
         registrarCompra: (id, descricao, valor, data) =>
           compraMut.mutate({ id, descricao, valor, data }),
         ajustarDivida: (id, delta) => dividaMut.mutate({ id, delta }),
+        definirDivida: (id, valor) => definirDividaMut.mutate({ id, valor }),
         ajustarVasilhames: (id, delta) =>
           vasilhamesMut.mutateAsync({ id, delta }).then(() => undefined),
         ajustarVales: (id, delta) => valesMut.mutateAsync({ id, delta }).then(() => undefined),

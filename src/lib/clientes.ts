@@ -16,6 +16,8 @@ export type Cliente = {
   bairro?: string;
   documento?: string; // CNPJ/CPF
   cadastradoEm?: string; // ISO yyyy-mm-dd
+  /** Data real de criação do cadastro (created_at) já convertida para America/Bahia. */
+  criadoEm?: string; // ISO yyyy-mm-dd
   divida?: number; // saldo em aberto (fiado / caderneta)
   vasilhamesRua?: number; // cascos emprestados pendentes de devolução
   valesSaldo?: number; // galões já pagos em pacote de vales e ainda não retirados
