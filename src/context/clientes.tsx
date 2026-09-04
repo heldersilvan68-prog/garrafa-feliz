@@ -153,7 +153,7 @@ export function ClientesProvider({ children }: { children: ReactNode }) {
   const importarMut = useMutation({
     mutationFn: async (lista: ClienteImportado[]) => {
       if (!userId) throw new Error("Sessão expirada");
-      const hoje = new Date().toISOString().slice(0, 10);
+      const hoje = isoLocal(new Date());
       const linhas = lista
         .filter((c) => c.nome?.trim())
         .map((c) => ({
