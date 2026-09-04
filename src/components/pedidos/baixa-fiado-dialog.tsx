@@ -55,8 +55,19 @@ export function BaixaFiadoDialog({ children, pedido, cliente, saldo, onConcluido
 
     if (pedido) {
       // Só encerra o pedido quando o valor recebido cobre o fiado em aberto.
-      if (valorNum >= totalPedido - 0.009) darBaixa(pedido.id, forma);
-      if (pedido.clienteId) ajustarDivida(pedido.clienteId, -valorNum);
+      const quitou = valorNum >= totalPedido - 0.009;
+      if (quitou) darBaixa(pedido.id, forma);
+      if (pedido.clienteId) {
+        if (quitou) {
+          // Recalcula o "Devido total" a partir dos fiados que continuam em aberto.
+          const restante = pedidos
+            .filter((p) => p.clienteId === pedido.clienteId && p.id !== pedido.id)
+            .reduce((s, p) => s + valorEmAberto(p), 0);
+          definirDivida(pedido.clienteId, restante);
+        } else {
+          ajustarDivida(pedido.clienteId, -valorNum);
+        }
+      }
     } else if (cliente) {
       ajustarDivida(cliente.id, -valorNum);
     }
