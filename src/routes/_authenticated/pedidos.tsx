@@ -32,6 +32,7 @@ import {
   STATUS_PEDIDO_LABEL,
   acaoStatusLabel,
   fiadoEmAberto,
+  parcelasDe,
   proximoStatus,
   reciboWhatsApp,
   resumoItens,
@@ -63,7 +64,14 @@ export const Route = createFileRoute("/_authenticated/pedidos")({
   component: PedidosPage,
 });
 
-type Filtro = "todos" | StatusPedido;
+type Filtro = "todos" | StatusPedido | "por-forma";
+type FiltroForma = "especie" | "pix" | "cartao";
+
+const FORMAS_GRUPO: Record<FiltroForma, string[]> = {
+  especie: ["Dinheiro"],
+  pix: ["PIX"],
+  cartao: ["Débito", "Crédito"],
+};
 
 const STATUS_BADGE: Record<StatusPedido, "default" | "secondary" | "destructive" | "outline"> = {
   pendente: "secondary",
@@ -196,6 +204,7 @@ function PedidoCard({ pedido }: { pedido: Pedido }) {
 function PedidosPage() {
   const { pedidos } = usePedidos();
   const [filtro, setFiltro] = useState<Filtro>("todos");
+  const [filtroForma, setFiltroForma] = useState<FiltroForma>("especie");
   const periodo = usePeriodo("hoje");
 
   const doPeriodo = useMemo(
@@ -203,13 +212,25 @@ function PedidosPage() {
     [pedidos, periodo.faixa],
   );
 
-  const lista = useMemo(
-    () => (filtro === "todos" ? doPeriodo : doPeriodo.filter((p) => p.status === filtro)),
-    [filtro, doPeriodo],
-  );
+  const porForma = (forma: FiltroForma) =>
+    doPeriodo.filter(
+      (p) =>
+        p.status !== "cancelado" &&
+        parcelasDe(p).some((x) => FORMAS_GRUPO[forma].includes(x.forma)),
+    );
 
-  const contar = (s: Filtro) =>
-    s === "todos" ? doPeriodo.length : doPeriodo.filter((p) => p.status === s).length;
+  const lista = useMemo(() => {
+    if (filtro === "todos") return doPeriodo;
+    if (filtro === "por-forma") return porForma(filtroForma);
+    return doPeriodo.filter((p) => p.status === filtro);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtro, filtroForma, doPeriodo]);
+
+  const contar = (s: Filtro) => {
+    if (s === "todos") return doPeriodo.length;
+    if (s === "por-forma") return porForma(filtroForma).length;
+    return doPeriodo.filter((p) => p.status === s).length;
+  };
 
   const faturamento = doPeriodo
     .filter((p) => p.status !== "cancelado")
@@ -221,6 +242,13 @@ function PedidosPage() {
     { valor: "em-rota", label: "Em rota" },
     { valor: "concluido", label: "Concluídos" },
     { valor: "cancelado", label: "Cancelados" },
+    { valor: "por-forma", label: "Pedidos por forma" },
+  ];
+
+  const subFormas: { valor: FiltroForma; label: string }[] = [
+    { valor: "especie", label: "Espécie" },
+    { valor: "pix", label: "PIX" },
+    { valor: "cartao", label: "Cartão" },
   ];
 
   return (
@@ -252,6 +280,21 @@ function PedidosPage() {
           ))}
         </TabsList>
       </Tabs>
+
+      {filtro === "por-forma" && (
+        <div className="flex flex-wrap gap-2">
+          {subFormas.map((s) => (
+            <Button
+              key={s.valor}
+              size="sm"
+              variant={filtroForma === s.valor ? "default" : "outline"}
+              onClick={() => setFiltroForma(s.valor)}
+            >
+              {s.label} ({porForma(s.valor).length})
+            </Button>
+          ))}
+        </div>
+      )}
 
       {lista.length === 0 ? (
         <Card>
