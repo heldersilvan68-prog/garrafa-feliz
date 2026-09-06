@@ -17,7 +17,12 @@ import { useCaixa } from "@/context/caixa";
 import { useClientes } from "@/context/clientes";
 import { usePedidos } from "@/context/pedidos";
 import { brl } from "@/lib/erp";
-import { FORMAS_RECEBIMENTO, type FormaPagamento, type Pedido } from "@/lib/pedidos";
+import {
+  FORMAS_RECEBIMENTO,
+  valorEmAberto,
+  type FormaPagamento,
+  type Pedido,
+} from "@/lib/pedidos";
 
 type Props = {
   children: ReactNode;
@@ -30,9 +35,9 @@ type Props = {
 };
 
 export function BaixaFiadoDialog({ children, pedido, cliente, saldo, onConcluido }: Props) {
-  const { darBaixa } = usePedidos();
+  const { darBaixa, pedidos } = usePedidos();
   const { registrarMovimento, caixaAberto } = useCaixa();
-  const { ajustarDivida } = useClientes();
+  const { ajustarDivida, definirDivida } = useClientes();
 
   const totalPedido = pedido ? (pedido.valorFiado > 0 ? pedido.valorFiado : pedido.total) : 0;
   const valorPadrao = pedido ? totalPedido : Math.max(0, saldo ?? 0);
