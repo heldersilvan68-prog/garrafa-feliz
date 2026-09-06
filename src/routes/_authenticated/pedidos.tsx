@@ -203,6 +203,7 @@ function PedidoCard({ pedido }: { pedido: Pedido }) {
 function PedidosPage() {
   const { pedidos } = usePedidos();
   const [filtro, setFiltro] = useState<Filtro>("todos");
+  const [filtroForma, setFiltroForma] = useState<FiltroForma>("especie");
   const periodo = usePeriodo("hoje");
 
   const doPeriodo = useMemo(
@@ -210,13 +211,25 @@ function PedidosPage() {
     [pedidos, periodo.faixa],
   );
 
-  const lista = useMemo(
-    () => (filtro === "todos" ? doPeriodo : doPeriodo.filter((p) => p.status === filtro)),
-    [filtro, doPeriodo],
-  );
+  const porForma = (forma: FiltroForma) =>
+    doPeriodo.filter(
+      (p) =>
+        p.status !== "cancelado" &&
+        parcelasDe(p).some((x) => FORMAS_GRUPO[forma].includes(x.forma)),
+    );
 
-  const contar = (s: Filtro) =>
-    s === "todos" ? doPeriodo.length : doPeriodo.filter((p) => p.status === s).length;
+  const lista = useMemo(() => {
+    if (filtro === "todos") return doPeriodo;
+    if (filtro === "por-forma") return porForma(filtroForma);
+    return doPeriodo.filter((p) => p.status === filtro);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtro, filtroForma, doPeriodo]);
+
+  const contar = (s: Filtro) => {
+    if (s === "todos") return doPeriodo.length;
+    if (s === "por-forma") return porForma(filtroForma).length;
+    return doPeriodo.filter((p) => p.status === s).length;
+  };
 
   const faturamento = doPeriodo
     .filter((p) => p.status !== "cancelado")
