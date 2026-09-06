@@ -241,6 +241,13 @@ function PedidosPage() {
     { valor: "em-rota", label: "Em rota" },
     { valor: "concluido", label: "Concluídos" },
     { valor: "cancelado", label: "Cancelados" },
+    { valor: "por-forma", label: "Pedidos por forma" },
+  ];
+
+  const subFormas: { valor: FiltroForma; label: string }[] = [
+    { valor: "especie", label: "Espécie" },
+    { valor: "pix", label: "PIX" },
+    { valor: "cartao", label: "Cartão" },
   ];
 
   return (
