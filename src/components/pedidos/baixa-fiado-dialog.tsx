@@ -35,9 +35,9 @@ type Props = {
 };
 
 export function BaixaFiadoDialog({ children, pedido, cliente, saldo, onConcluido }: Props) {
-  const { darBaixa } = usePedidos();
+  const { darBaixa, pedidos } = usePedidos();
   const { registrarMovimento, caixaAberto } = useCaixa();
-  const { ajustarDivida } = useClientes();
+  const { ajustarDivida, definirDivida } = useClientes();
 
   const totalPedido = pedido ? (pedido.valorFiado > 0 ? pedido.valorFiado : pedido.total) : 0;
   const valorPadrao = pedido ? totalPedido : Math.max(0, saldo ?? 0);
