@@ -30,10 +30,12 @@ import { brl } from "@/lib/erp";
 import {
   FORMAS_PAGAMENTO,
   parcelasDe,
+  valorEmAberto,
   type FormaPagamento,
   type ItemPedido,
   type Pedido,
 } from "@/lib/pedidos";
+import { useClientes } from "@/context/clientes";
 
 type Parcela = { forma: FormaPagamento; valor: string };
 
