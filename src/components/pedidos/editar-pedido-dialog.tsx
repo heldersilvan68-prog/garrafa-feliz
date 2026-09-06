@@ -141,6 +141,15 @@ export function EditarPedidoDialog({
       vaziosRecolhidos: Math.max(0, Number(vazios) || 0),
       entregador,
     });
+
+    // Sincroniza o "Devido total" do cliente com os fiados que continuam em aberto.
+    if (pedido.clienteId) {
+      const outros = pedidos
+        .filter((p) => p.clienteId === pedido.clienteId && p.id !== pedido.id)
+        .reduce((s, p) => s + valorEmAberto(p), 0);
+      definirDivida(pedido.clienteId, outros + valorFiado);
+    }
+
     toast.success(`Pedido #${pedido.numero} atualizado — ${brl(total)}`);
     setAberto(false);
   };
