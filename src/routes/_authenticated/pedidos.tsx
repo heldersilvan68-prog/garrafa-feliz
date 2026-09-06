@@ -63,7 +63,14 @@ export const Route = createFileRoute("/_authenticated/pedidos")({
   component: PedidosPage,
 });
 
-type Filtro = "todos" | StatusPedido;
+type Filtro = "todos" | StatusPedido | "por-forma";
+type FiltroForma = "especie" | "pix" | "cartao";
+
+const FORMAS_GRUPO: Record<FiltroForma, string[]> = {
+  especie: ["Dinheiro"],
+  pix: ["PIX"],
+  cartao: ["Débito", "Crédito"],
+};
 
 const STATUS_BADGE: Record<StatusPedido, "default" | "secondary" | "destructive" | "outline"> = {
   pendente: "secondary",
