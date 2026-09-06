@@ -280,6 +280,21 @@ function PedidosPage() {
         </TabsList>
       </Tabs>
 
+      {filtro === "por-forma" && (
+        <div className="flex flex-wrap gap-2">
+          {subFormas.map((s) => (
+            <Button
+              key={s.valor}
+              size="sm"
+              variant={filtroForma === s.valor ? "default" : "outline"}
+              onClick={() => setFiltroForma(s.valor)}
+            >
+              {s.label} ({porForma(s.valor).length})
+            </Button>
+          ))}
+        </div>
+      )}
+
       {lista.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
