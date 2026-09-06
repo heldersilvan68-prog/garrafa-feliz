@@ -17,7 +17,12 @@ import { useCaixa } from "@/context/caixa";
 import { useClientes } from "@/context/clientes";
 import { usePedidos } from "@/context/pedidos";
 import { brl } from "@/lib/erp";
-import { FORMAS_RECEBIMENTO, type FormaPagamento, type Pedido } from "@/lib/pedidos";
+import {
+  FORMAS_RECEBIMENTO,
+  valorEmAberto,
+  type FormaPagamento,
+  type Pedido,
+} from "@/lib/pedidos";
 
 type Props = {
   children: ReactNode;
