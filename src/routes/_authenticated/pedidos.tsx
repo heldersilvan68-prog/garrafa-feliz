@@ -32,6 +32,7 @@ import {
   STATUS_PEDIDO_LABEL,
   acaoStatusLabel,
   fiadoEmAberto,
+  parcelasDe,
   proximoStatus,
   reciboWhatsApp,
   resumoItens,
