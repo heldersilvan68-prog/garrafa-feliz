@@ -47,7 +47,8 @@ export function EditarPedidoDialog({
   children: ReactNode;
 }) {
   const { produtos } = useEstoque();
-  const { atualizar } = usePedidos();
+  const { atualizar, pedidos } = usePedidos();
+  const { definirDivida } = useClientes();
   const { opcoes } = useEntregadores();
 
   const [aberto, setAberto] = useState(false);
