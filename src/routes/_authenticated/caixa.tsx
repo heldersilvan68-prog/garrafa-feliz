@@ -487,6 +487,10 @@ function CaixaPage() {
         )}
       </header>
 
+      <SaldosCards />
+
+
+
       <div className="grid gap-4 lg:grid-cols-3">
         <Card>
           <CardHeader className="pb-3">
