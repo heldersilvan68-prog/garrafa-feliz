@@ -19,6 +19,9 @@ export type CompraEntrada = {
   forma: string;
   /** Vencimento do boleto/título quando a compra é a prazo. */
   vencimento?: string;
+  /** Descrição/categoria alternativa (ex.: custo de envase). */
+  descricao?: string;
+  categoria?: string;
 };
 
 type Ctx = {
