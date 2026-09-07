@@ -55,6 +55,7 @@ export const CORES_CATEGORIA: Record<string, string> = {
   Outros: "var(--color-secondary-foreground)",
   [CATEGORIA_TAXA_CARTAO]: "var(--color-accent)",
   [CATEGORIA_COMPRA_MERCADORIA]: "var(--color-primary)",
+  [CATEGORIA_ENVASE]: "var(--color-primary)",
 };
 
 export const dataBR = (iso: string) => {
