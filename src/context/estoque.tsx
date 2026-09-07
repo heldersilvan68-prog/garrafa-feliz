@@ -139,11 +139,12 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
     if (!userId || !(compra.valorTotal > 0)) return undefined;
     const prazo = aPrazo(compra.forma);
 
-    // Garante a categoria automática de compras de mercadoria.
+    const nomeCategoria = compra.categoria ?? CATEGORIA_COMPRA_MERCADORIA;
+    // Garante a categoria automática do lançamento.
     const { data: cats } = await supabase
       .from("expense_categories")
       .select("id,nome")
-      .eq("nome", CATEGORIA_COMPRA_MERCADORIA)
+      .eq("nome", nomeCategoria)
       .limit(1);
     let categoriaId = cats?.[0]?.id ?? null;
     if (!categoriaId) {
@@ -151,7 +152,7 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
         .from("expense_categories")
         .insert({
           user_id: userId,
-          nome: CATEGORIA_COMPRA_MERCADORIA,
+          nome: nomeCategoria,
           cor: "var(--color-primary)",
         })
         .select("id")
@@ -169,8 +170,8 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
       .from("expenses")
       .insert({
         user_id: userId,
-        descricao: `Compra de mercadoria · ${qtd} un. ${produto.nome}`,
-        categoria: CATEGORIA_COMPRA_MERCADORIA,
+        descricao: compra.descricao ?? `Compra de mercadoria · ${qtd} un. ${produto.nome}`,
+        categoria: nomeCategoria,
         category_id: categoriaId,
         valor: compra.valorTotal,
         data: prazo ? (compra.vencimento || compra.data) : compra.data,
