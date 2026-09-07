@@ -25,7 +25,7 @@ import { InputMoeda } from "@/components/ui/input-moeda";
 import { brl, getDadosMedidaProduto } from "@/lib/erp";
 import { hojeISO } from "@/lib/caixa";
 import { aPrazo, FORMAS_COMPRA } from "@/lib/vasilhames";
-import { CATEGORIA_COMPRA_MERCADORIA } from "@/lib/despesas";
+import { CATEGORIA_COMPRA_MERCADORIA, CATEGORIA_ENVASE } from "@/lib/despesas";
 
 function MovimentoDialog({
   children,
