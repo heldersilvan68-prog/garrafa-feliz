@@ -15,6 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FiltroPeriodo } from "@/components/filtro-periodo";
 import { DespesasChart } from "@/components/dashboard/charts";
 import { ClientesCobrar, ContasPagar } from "@/components/dashboard/financeiro";
+import { SaldosCards } from "@/components/financeiro/saldos-cards";
 import { useCaixa } from "@/context/caixa";
 import { brl } from "@/lib/erp";
 import { dataCurta, horaCurta, somaMovimentos } from "@/lib/caixa";
@@ -91,6 +92,8 @@ function Financeiro() {
           <FiltroPeriodo estado={periodo} />
         </div>
       </header>
+
+      <SaldosCards />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {[
