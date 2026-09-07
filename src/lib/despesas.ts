@@ -18,6 +18,9 @@ export const CATEGORIA_TAXA_CARTAO = "Taxas de Cartão / Maquininha";
 /** Categoria automática das compras de mercadoria (entradas de estoque). */
 export const CATEGORIA_COMPRA_MERCADORIA = "Compra de Mercadoria / Fornecedores";
 
+/** Categoria automática do custo de envase/recarga na fonte. */
+export const CATEGORIA_ENVASE = "Custo de Envase / Recarga";
+
 export const FORMAS_DESPESA = [
   "PIX",
   "Dinheiro do Caixa",
