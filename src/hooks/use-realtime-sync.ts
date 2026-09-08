@@ -9,12 +9,12 @@ import { useAuth } from "@/hooks/use-auth";
  * movimento de caixa) reflete na hora em todas as telas abertas.
  */
 const MAPA: Record<string, string[]> = {
-  orders: ["pedidos", "clientes"],
+  orders: ["pedidos", "clientes", "caixa"],
   order_items: ["pedidos"],
-  order_payments: ["pedidos"],
+  order_payments: ["pedidos", "caixa"],
   clients: ["clientes"],
   client_purchases: ["clientes"],
-  expenses: ["despesas"],
+  expenses: ["despesas", "caixa"],
   cash_registers: ["caixa"],
   cash_movements: ["caixa"],
   products: ["produtos"],
