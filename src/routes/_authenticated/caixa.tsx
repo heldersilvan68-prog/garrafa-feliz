@@ -46,11 +46,11 @@ import { useDespesas } from "@/context/despesas";
 import { useEstoque } from "@/context/estoque";
 import { brl } from "@/lib/erp";
 import { CATEGORIA_TAXA_CARTAO } from "@/lib/despesas";
+import { calcularMovimentoDia, sangriaDeDespesa } from "@/lib/financas";
 import {
   hojeISO,
   horaCurta,
   pedidosDoDia,
-  somaMovimentos,
   totaisPorPagamento,
   type TipoMovimento,
 } from "@/lib/caixa";
