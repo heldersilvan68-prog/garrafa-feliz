@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Campo } from "@/components/ui/campo";
-import { SaldosCards } from "@/components/financeiro/saldos-cards";
+
 import {
   Select,
   SelectContent,
@@ -483,7 +483,8 @@ function CaixaPage() {
         )}
       </header>
 
-      <SaldosCards />
+
+
 
 
 
