@@ -47,7 +47,11 @@ export function DespesasProvider({ children }: { children: ReactNode }) {
     },
   });
 
-  const invalidar = () => queryClient.invalidateQueries({ queryKey: ["despesas"] });
+  const invalidar = () => {
+    // Despesas afetam saldos e o extrato do caixa: recarrega os dois.
+    queryClient.invalidateQueries({ queryKey: ["despesas"] });
+    queryClient.invalidateQueries({ queryKey: ["caixa"] });
+  };
 
   const useMutacao = <T,>(fn: (v: T) => Promise<void>, erro: string) =>
     useMutation({

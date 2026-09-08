@@ -55,7 +55,12 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
     },
   });
 
-  const invalidar = () => queryClient.invalidateQueries({ queryKey: ["pedidos"] });
+  const invalidar = () => {
+    // Uma venda mexe em saldo do cliente, caixa e estoque: recarrega tudo.
+    for (const chave of ["pedidos", "clientes", "caixa", "produtos", "movimentos-vasilhames"]) {
+      queryClient.invalidateQueries({ queryKey: [chave] });
+    }
+  };
 
   const useMutacao = <T,>(fn: (v: T) => Promise<void>, erro: string) =>
     useMutation({
