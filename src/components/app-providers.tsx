@@ -9,6 +9,7 @@ import { PedidosProvider } from "@/context/pedidos";
 import { CaixaProvider } from "@/context/caixa";
 import { DespesasProvider } from "@/context/despesas";
 import { EntregadoresProvider } from "@/context/entregadores";
+import { SincronizacaoRealtime } from "@/hooks/use-realtime-sync";
 
 /**
  * Toda a pilha de contextos vive em um único módulo para garantir que
@@ -25,7 +26,10 @@ export function AppProviders({ children }: { children: ReactNode }) {
           <PedidosProvider>
             <CaixaProvider>
               <DespesasProvider>
-                <EntregadoresProvider>{children}</EntregadoresProvider>
+                <EntregadoresProvider>
+                  <SincronizacaoRealtime />
+                  {children}
+                </EntregadoresProvider>
               </DespesasProvider>
             </CaixaProvider>
           </PedidosProvider>
