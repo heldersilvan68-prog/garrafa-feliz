@@ -46,11 +46,11 @@ import { useDespesas } from "@/context/despesas";
 import { useEstoque } from "@/context/estoque";
 import { brl } from "@/lib/erp";
 import { CATEGORIA_TAXA_CARTAO } from "@/lib/despesas";
+import { calcularMovimentoDia, sangriaDeDespesa } from "@/lib/financas";
 import {
   hojeISO,
   horaCurta,
   pedidosDoDia,
-  somaMovimentos,
   totaisPorPagamento,
   type TipoMovimento,
 } from "@/lib/caixa";
@@ -411,40 +411,35 @@ function CaixaPage() {
   const fechados = caixas.filter((c) => c.fechadoEm);
   const cartaoTotal = totais["Débito"] + totais["Crédito"];
 
+  // Fonte única dos cálculos financeiros (mesma usada no Dashboard/Relatórios).
+  const mov = useMemo(
+    () => calcularMovimentoDia(dia, pedidos, despesas, caixaAberto ? [caixaAberto] : []),
+    [dia, pedidos, despesas, caixaAberto],
+  );
+
   // Saídas reais do dia (taxas de cartão são retenções da adquirente, não saída de caixa).
   const saidasDoDia = useMemo(
-    () => despesas.filter((d) => d.data === dia && d.categoria !== CATEGORIA_TAXA_CARTAO),
+    () =>
+      despesas.filter(
+        (d) =>
+          d.data === dia && d.status === "Pago" && d.categoria !== CATEGORIA_TAXA_CARTAO,
+      ),
     [despesas, dia],
   );
-  const totalSaidas = saidasDoDia.reduce((s, d) => s + d.valor, 0);
-  const saidasPix = saidasDoDia
-    .filter((d) => d.forma === "PIX")
-    .reduce((s, d) => s + d.valor, 0);
-  const saidasDinheiro = saidasDoDia
-    .filter((d) => d.forma === "Dinheiro do Caixa")
-    .reduce((s, d) => s + d.valor, 0);
+  const totalSaidas = mov.saidasTotal;
 
-  // Recebimentos/baixas de fiado em PIX no dia (mesma regra do Dashboard).
-  const recebimentosPix = (caixaAberto?.movimentos ?? [])
-    .filter((m) => m.tipo === "recebimento" && /\(pix\)/i.test(m.motivo))
-    .reduce((s, m) => s + m.valor, 0);
-  const vendasPix = totais.PIX + recebimentosPix;
-  const pixEsperadoConta = vendasPix - saidasPix;
+  const recebimentosPix = mov.recebimentosPix;
+  const vendasPix = mov.vendasPix + recebimentosPix;
+  const pixEsperadoConta = mov.entradaPix;
 
   // Sangrias avulsas: as geradas por despesas já aparecem na lista de saídas.
   const movimentosVisiveis = useMemo(
-    () =>
-      (caixaAberto?.movimentos ?? []).filter(
-        (m) => !(m.tipo === "sangria" && m.motivo.trim().toLowerCase().startsWith("despesa:")),
-      ),
+    () => (caixaAberto?.movimentos ?? []).filter((m) => !sangriaDeDespesa(m)),
     [caixaAberto],
   );
-  const suprimentos = caixaAberto
-    ? somaMovimentos(caixaAberto.movimentos, "suprimento")
-    : 0;
-  const sangriasAvulsas = somaMovimentos(movimentosVisiveis, "sangria");
+  const suprimentos = mov.suprimentos;
   const esperado = caixaAberto
-    ? caixaAberto.trocoInicial + totais.Dinheiro + suprimentos - saidasDinheiro - sangriasAvulsas
+    ? caixaAberto.trocoInicial + mov.entradaDinheiro + suprimentos - mov.sangrias
     : 0;
 
   // Agrupa despesas divididas (mesma descrição no dia) para mostrar cada forma.

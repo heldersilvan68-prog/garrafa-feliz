@@ -3,6 +3,7 @@ import type { Cliente } from "@/lib/clientes";
 import type { Despesa } from "@/lib/despesas";
 import { CATEGORIA_TAXA_CARTAO, CORES_CATEGORIA } from "@/lib/despesas";
 import { fiadoEmAberto, valorFaturado, valorPorForma, type Pedido } from "@/lib/pedidos";
+import { lucroLiquido as calcLucroLiquido } from "@/lib/financas";
 import {
   INICIO_TUDO,
   dentroFaixa,
@@ -120,8 +121,13 @@ export function calcularResumo(
 
   // CMV: custo de TODA mercadoria que saiu no período, inclusive as saídas por vale.
   const lucroBruto = vendas - custoProduto;
-  // Despesas do período já incluem as taxas de cartão (categoria automática).
-  const lucroLiquido = lucroBruto - despesasPeriodo;
+  // Fórmula única do sistema: faturamento − CMV − despesas operacionais − taxas.
+  const lucroLiquido = calcLucroLiquido(
+    vendas,
+    custoProduto,
+    despesasPeriodo - taxasCartao,
+    taxasCartao,
+  );
 
   const fiado = doPeriodo
     .filter(fiadoEmAberto)
