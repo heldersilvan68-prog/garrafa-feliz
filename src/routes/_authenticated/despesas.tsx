@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { ConfirmarExclusao } from "@/components/confirmar-exclusao";
-import { CircleAlert, CircleCheck, Pencil, Plus, Receipt, Trash2 } from "lucide-react";
+import { CircleAlert, CircleCheck, Layers, Pencil, Plus, Receipt, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,9 +14,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { DespesaDialog } from "@/components/financeiro/despesa-dialog";
+import { DespesasCategoriaDialog } from "@/components/financeiro/despesas-categoria";
+import { FiltroPeriodo } from "@/components/filtro-periodo";
+import { usePeriodo } from "@/hooks/use-periodo";
+import { dentroFaixa, rotuloFaixa } from "@/lib/periodo";
 import { useDespesas } from "@/context/despesas";
 import { brl } from "@/lib/erp";
-import { dataBR, despesasDoMes, somaDespesas, type Despesa } from "@/lib/despesas";
+import { dataBR, somaDespesas, type Despesa } from "@/lib/despesas";
+
 
 export const Route = createFileRoute("/_authenticated/despesas")({
   head: () => ({
