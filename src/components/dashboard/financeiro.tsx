@@ -1,7 +1,8 @@
-import { CalendarClock, MessageCircle } from "lucide-react";
+import { CalendarClock, HandCoins, MessageCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { BaixaFiadoDialog } from "@/components/pedidos/baixa-fiado-dialog";
 import { brl } from "@/lib/erp";
 import { clientesParaCobrar, contasAPagar } from "@/lib/dashboard";
 import { useClientes } from "@/context/clientes";
@@ -37,24 +38,34 @@ export function ClientesCobrar() {
                   {c.dias} dias em aberto · {brl(c.valor)}
                 </p>
               </div>
-              {c.telefone ? (
-                <Button
-                  asChild
-                  size="icon"
-                  className="shrink-0 bg-success text-success-foreground hover:bg-success/90"
-                  aria-label={`Cobrar ${c.nome} pelo WhatsApp`}
+              <div className="flex shrink-0 items-center gap-2">
+                <BaixaFiadoDialog
+                  cliente={{ id: c.id, nome: c.nome }}
+                  saldo={c.valor}
                 >
-                  <a
-                    href={`https://wa.me/${c.telefone}?text=${encodeURIComponent(
-                      `Olá, ${c.nome}! Passando para lembrar do saldo em aberto de ${brl(c.valor)}.`,
-                    )}`}
-                    target="_blank"
-                    rel="noreferrer"
+                  <Button size="sm" variant="outline" aria-label={`Dar baixa em ${c.nome}`}>
+                    <HandCoins className="size-4" /> Dar baixa
+                  </Button>
+                </BaixaFiadoDialog>
+                {c.telefone ? (
+                  <Button
+                    asChild
+                    size="icon"
+                    className="shrink-0 bg-success text-success-foreground hover:bg-success/90"
+                    aria-label={`Cobrar ${c.nome} pelo WhatsApp`}
                   >
-                    <MessageCircle className="size-4" />
-                  </a>
-                </Button>
-              ) : null}
+                    <a
+                      href={`https://wa.me/${c.telefone}?text=${encodeURIComponent(
+                        `Olá, ${c.nome}! Passando para lembrar do saldo em aberto de ${brl(c.valor)}.`,
+                      )}`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      <MessageCircle className="size-4" />
+                    </a>
+                  </Button>
+                ) : null}
+              </div>
             </div>
           ))
         )}
@@ -62,6 +73,7 @@ export function ClientesCobrar() {
     </Card>
   );
 }
+
 
 export function ContasPagar() {
   const { despesas } = useDespesas();
