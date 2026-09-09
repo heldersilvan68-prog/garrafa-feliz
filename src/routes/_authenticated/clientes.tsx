@@ -118,6 +118,9 @@ function ClientesPage() {
   const [busca, setBusca] = useState("");
   const [aba, setAba] = useState<(typeof TABS)[number]["id"]>("todos");
   const [detalhe, setDetalhe] = useState<string | null>(null);
+  const [expandido, setExpandido] = useState(false);
+  const [modalAtivos, setModalAtivos] = useState(false);
+  const [modalInativos, setModalInativos] = useState(false);
 
   // Ativos = pelo menos 1 pedido válido nos últimos 30 dias corridos.
   const base = useMemo(() => {
@@ -127,14 +130,14 @@ function ClientesPage() {
         .filter((p) => p.status !== "cancelado" && new Date(p.criadoEm).getTime() >= limite)
         .map((p) => p.clienteId),
     );
-    const ativos = clientes.filter(
-      (c) =>
-        comPedido.has(c.id) ||
-        c.historico.some((h) => new Date(`${h.data}T00:00:00`).getTime() >= limite),
-    ).length;
+    const ehAtivo = (c: Cliente) =>
+      comPedido.has(c.id) ||
+      c.historico.some((h) => new Date(`${h.data}T00:00:00`).getTime() >= limite);
+    const ativos = clientes.filter(ehAtivo);
+    const inativos = clientes.filter((c) => !ehAtivo(c));
     const total = clientes.length;
     const pct = (n: number) => (total > 0 ? Math.round((n / total) * 100) : 0);
-    return { total, ativos, inativos: total - ativos, pct };
+    return { total, ativos, inativos, pct };
   }, [clientes, pedidos]);
 
   const dadosPizza = [
