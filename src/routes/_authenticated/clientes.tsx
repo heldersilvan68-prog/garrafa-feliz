@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   CalendarClock,
+  ChevronDown,
+  ChevronUp,
   MessageCircle,
   Pencil,
   Plus,
@@ -15,6 +17,13 @@ import { ConfirmarExclusao } from "@/components/confirmar-exclusao";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -109,6 +118,9 @@ function ClientesPage() {
   const [busca, setBusca] = useState("");
   const [aba, setAba] = useState<(typeof TABS)[number]["id"]>("todos");
   const [detalhe, setDetalhe] = useState<string | null>(null);
+  const [expandido, setExpandido] = useState(false);
+  const [modalAtivos, setModalAtivos] = useState(false);
+  const [modalInativos, setModalInativos] = useState(false);
 
   // Ativos = pelo menos 1 pedido válido nos últimos 30 dias corridos.
   const base = useMemo(() => {
@@ -118,19 +130,19 @@ function ClientesPage() {
         .filter((p) => p.status !== "cancelado" && new Date(p.criadoEm).getTime() >= limite)
         .map((p) => p.clienteId),
     );
-    const ativos = clientes.filter(
-      (c) =>
-        comPedido.has(c.id) ||
-        c.historico.some((h) => new Date(`${h.data}T00:00:00`).getTime() >= limite),
-    ).length;
+    const ehAtivo = (c: Cliente) =>
+      comPedido.has(c.id) ||
+      c.historico.some((h) => new Date(`${h.data}T00:00:00`).getTime() >= limite);
+    const ativos = clientes.filter(ehAtivo);
+    const inativos = clientes.filter((c) => !ehAtivo(c));
     const total = clientes.length;
     const pct = (n: number) => (total > 0 ? Math.round((n / total) * 100) : 0);
-    return { total, ativos, inativos: total - ativos, pct };
+    return { total, ativos, inativos, pct };
   }, [clientes, pedidos]);
 
   const dadosPizza = [
-    { nome: "Ativos", valor: base.ativos, cor: "var(--color-success)" },
-    { nome: "Inativos", valor: base.inativos, cor: "var(--color-destructive)" },
+    { nome: "Ativos", valor: base.ativos.length, cor: "var(--color-success)" },
+    { nome: "Inativos", valor: base.inativos.length, cor: "var(--color-destructive)" },
   ];
 
   const lista = useMemo(() => {
@@ -178,23 +190,29 @@ function ClientesPage() {
               <p className="mt-1 text-xs text-muted-foreground">Cadastros na base</p>
             </CardContent>
           </Card>
-          <Card className="border-success/40 bg-success/5 shadow-[var(--shadow-card)]">
+          <Card
+            className="cursor-pointer border-success/40 bg-success/5 shadow-[var(--shadow-card)] transition-colors hover:bg-success/10"
+            onClick={() => setModalAtivos(true)}
+          >
             <CardContent className="p-4">
               <p className="text-xs text-muted-foreground">Clientes ativos</p>
-              <p className="mt-1 text-2xl font-semibold tabular-nums text-success">{base.ativos}</p>
+              <p className="mt-1 text-2xl font-semibold tabular-nums text-success">{base.ativos.length}</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                {base.pct(base.ativos)}% · pedido nos últimos 30 dias
+                {base.pct(base.ativos.length)}% · pedido nos últimos 30 dias
               </p>
             </CardContent>
           </Card>
-          <Card className="border-destructive/40 bg-destructive/5 shadow-[var(--shadow-card)]">
+          <Card
+            className="cursor-pointer border-destructive/40 bg-destructive/5 shadow-[var(--shadow-card)] transition-colors hover:bg-destructive/10"
+            onClick={() => setModalInativos(true)}
+          >
             <CardContent className="p-4">
               <p className="text-xs text-muted-foreground">Clientes inativos</p>
               <p className="mt-1 text-2xl font-semibold tabular-nums text-destructive">
-                {base.inativos}
+                {base.inativos.length}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                {base.pct(base.inativos)}% · sem compras há mais de 30 dias
+                {base.pct(base.inativos.length)}% · sem compras há mais de 30 dias
               </p>
             </CardContent>
           </Card>
@@ -257,7 +275,7 @@ function ClientesPage() {
               Nenhum cliente previsto para recompra hoje.
             </p>
           )}
-          {lembrarHoje.map((c) => (
+          {(expandido ? lembrarHoje : lembrarHoje.slice(0, 3)).map((c) => (
             <div
               key={c.id}
               className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg border border-border bg-card p-3"
@@ -277,6 +295,24 @@ function ClientesPage() {
               </div>
             </div>
           ))}
+          {lembrarHoje.length > 3 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="self-start"
+              onClick={() => setExpandido((v) => !v)}
+            >
+              {expandido ? (
+                <>
+                  <ChevronUp className="size-4" /> Ver menos
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="size-4" /> Ver todos ({lembrarHoje.length})
+                </>
+              )}
+            </Button>
+          )}
         </CardContent>
       </Card>
 
@@ -394,6 +430,98 @@ function ClientesPage() {
           <p className="text-sm text-muted-foreground">Nenhum cliente encontrado.</p>
         )}
       </div>
+
+      <Dialog open={modalAtivos} onOpenChange={setModalAtivos}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Clientes ativos</DialogTitle>
+            <DialogDescription>
+              {base.ativos.length} cliente(s) com pedido nos últimos 30 dias.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[60vh] overflow-y-auto">
+            {base.ativos.length === 0 ? (
+              <p className="py-6 text-center text-sm text-muted-foreground">
+                Nenhum cliente ativo no período.
+              </p>
+            ) : (
+              <ul className="flex flex-col gap-2">
+                {ordenarPorCodigo(base.ativos).map((c) => (
+                  <li
+                    key={c.id}
+                    className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg border border-border bg-card p-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium">{rotuloCliente(c)}</p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {c.telefone} · última compra {formatarData(c.ultimaCompra)}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <Button variant="outline" size="sm" onClick={() => {
+                        setModalAtivos(false);
+                        setDetalhe(c.id);
+                      }}>
+                        <Users /> Perfil
+                      </Button>
+                      <WhatsAppButton cliente={c} />
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={modalInativos} onOpenChange={setModalInativos}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Clientes inativos</DialogTitle>
+            <DialogDescription>
+              {base.inativos.length} cliente(s) sem compras há mais de 30 dias.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[60vh] overflow-y-auto">
+            {base.inativos.length === 0 ? (
+              <p className="py-6 text-center text-sm text-muted-foreground">
+                Nenhum cliente inativo. Todos compraram recentemente.
+              </p>
+            ) : (
+              <ul className="flex flex-col gap-2">
+                {ordenarPorCodigo(base.inativos).map((c) => {
+                  const dias = Math.round(
+                    (new Date(hojeISO()).getTime() - new Date(`${c.ultimaCompra}T00:00:00`).getTime()) /
+                      86_400_000,
+                  );
+                  return (
+                    <li
+                      key={c.id}
+                      className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg border border-border bg-card p-3"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium">{rotuloCliente(c)}</p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {c.telefone} · {dias} dia(s) sem comprar
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <Button variant="outline" size="sm" onClick={() => {
+                          setModalInativos(false);
+                          setDetalhe(c.id);
+                        }}>
+                          <Users /> Perfil
+                        </Button>
+                        <WhatsAppButton cliente={c} />
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <ClienteDetalhes
         cliente={selecionado}
