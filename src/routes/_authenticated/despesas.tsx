@@ -46,16 +46,18 @@ export const Route = createFileRoute("/_authenticated/despesas")({
 function DespesasPage() {
   const { despesas, removerDespesa } = useDespesas();
   const [open, setOpen] = useState(false);
+  const [porCategoria, setPorCategoria] = useState(false);
   const [editando, setEditando] = useState<Despesa | undefined>();
+  const periodo = usePeriodo("mes");
 
-  const doMes = despesasDoMes(despesas);
-  const pagas = doMes.filter((d) => d.status === "Pago");
-  const pendentes = doMes.filter((d) => d.status === "Pendente");
+  const doPeriodo = despesas.filter((d) => dentroFaixa(d.data, periodo.faixa));
+  const pagas = doPeriodo.filter((d) => d.status === "Pago");
+  const pendentes = doPeriodo.filter((d) => d.status === "Pendente");
 
   const cards = [
     {
-      titulo: "Total de despesas no mês",
-      valor: brl(somaDespesas(doMes)),
+      titulo: "Total de despesas no período",
+      valor: brl(somaDespesas(doPeriodo)),
       icon: Receipt,
       tom: "bg-primary/10 text-primary",
     },
@@ -73,7 +75,7 @@ function DespesasPage() {
     },
   ];
 
-  const ordenadas = [...despesas].sort((a, b) => (a.data < b.data ? 1 : -1));
+  const ordenadas = [...doPeriodo].sort((a, b) => (a.data < b.data ? 1 : -1));
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
@@ -86,15 +88,22 @@ function DespesasPage() {
             Registre custos operacionais, acompanhe pagamentos e alimente o lucro líquido.
           </p>
         </div>
-        <Button
-          onClick={() => {
-            setEditando(undefined);
-            setOpen(true);
-          }}
-        >
-          <Plus className="size-4" /> Nova Despesa
-        </Button>
+        <div className="flex flex-wrap items-end gap-2">
+          <FiltroPeriodo estado={periodo} />
+          <Button variant="outline" onClick={() => setPorCategoria(true)}>
+            <Layers className="size-4" /> Visualizar Despesas por Categoria
+          </Button>
+          <Button
+            onClick={() => {
+              setEditando(undefined);
+              setOpen(true);
+            }}
+          >
+            <Plus className="size-4" /> Nova Despesa
+          </Button>
+        </div>
       </header>
+
 
       <div className="grid gap-4 sm:grid-cols-3">
         {cards.map((c) => (
