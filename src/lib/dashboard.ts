@@ -291,7 +291,7 @@ export function clientesParaCobrar(pedidos: Pedido[], clientes: Cliente[]) {
     mapa.set(chave, {
       id: chave,
       nome: p.clienteNome || "Cliente sem nome",
-      valor: (atual?.valor ?? 0) + p.total,
+      valor: (atual?.valor ?? 0) + valorEmAberto(p),
       dias: Math.max(atual?.dias ?? 0, dias),
       telefone,
     });
