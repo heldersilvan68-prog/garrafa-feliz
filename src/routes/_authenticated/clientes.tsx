@@ -190,23 +190,29 @@ function ClientesPage() {
               <p className="mt-1 text-xs text-muted-foreground">Cadastros na base</p>
             </CardContent>
           </Card>
-          <Card className="border-success/40 bg-success/5 shadow-[var(--shadow-card)]">
+          <Card
+            className="cursor-pointer border-success/40 bg-success/5 shadow-[var(--shadow-card)] transition-colors hover:bg-success/10"
+            onClick={() => setModalAtivos(true)}
+          >
             <CardContent className="p-4">
               <p className="text-xs text-muted-foreground">Clientes ativos</p>
-              <p className="mt-1 text-2xl font-semibold tabular-nums text-success">{base.ativos}</p>
+              <p className="mt-1 text-2xl font-semibold tabular-nums text-success">{base.ativos.length}</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                {base.pct(base.ativos)}% · pedido nos últimos 30 dias
+                {base.pct(base.ativos.length)}% · pedido nos últimos 30 dias
               </p>
             </CardContent>
           </Card>
-          <Card className="border-destructive/40 bg-destructive/5 shadow-[var(--shadow-card)]">
+          <Card
+            className="cursor-pointer border-destructive/40 bg-destructive/5 shadow-[var(--shadow-card)] transition-colors hover:bg-destructive/10"
+            onClick={() => setModalInativos(true)}
+          >
             <CardContent className="p-4">
               <p className="text-xs text-muted-foreground">Clientes inativos</p>
               <p className="mt-1 text-2xl font-semibold tabular-nums text-destructive">
-                {base.inativos}
+                {base.inativos.length}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                {base.pct(base.inativos)}% · sem compras há mais de 30 dias
+                {base.pct(base.inativos.length)}% · sem compras há mais de 30 dias
               </p>
             </CardContent>
           </Card>
