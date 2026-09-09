@@ -275,7 +275,7 @@ function ClientesPage() {
               Nenhum cliente previsto para recompra hoje.
             </p>
           )}
-          {lembrarHoje.map((c) => (
+          {(expandido ? lembrarHoje : lembrarHoje.slice(0, 3)).map((c) => (
             <div
               key={c.id}
               className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg border border-border bg-card p-3"
@@ -295,6 +295,24 @@ function ClientesPage() {
               </div>
             </div>
           ))}
+          {lembrarHoje.length > 3 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="self-start"
+              onClick={() => setExpandido((v) => !v)}
+            >
+              {expandido ? (
+                <>
+                  <ChevronUp className="size-4" /> Ver menos
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="size-4" /> Ver todos ({lembrarHoje.length})
+                </>
+              )}
+            </Button>
+          )}
         </CardContent>
       </Card>
 
