@@ -19,10 +19,12 @@ import { usePedidos } from "@/context/pedidos";
 import { brl } from "@/lib/erp";
 import {
   FORMAS_RECEBIMENTO,
+  fiadoEmAberto,
   valorEmAberto,
   type FormaPagamento,
   type Pedido,
 } from "@/lib/pedidos";
+
 
 type Props = {
   children: ReactNode;
@@ -74,8 +76,23 @@ export function BaixaFiadoDialog({ children, pedido, cliente, saldo, onConcluido
         }
       }
     } else if (cliente) {
-      ajustarDivida(cliente.id, -valorNum);
+      // Quita os fiados mais antigos até esgotar o valor recebido e
+      // recalcula o "Devido total" com o que sobrou em aberto.
+      const abertos = pedidos
+        .filter((p) => p.clienteId === cliente.id && fiadoEmAberto(p))
+        .sort((a, b) => (a.criadoEm < b.criadoEm ? -1 : 1));
+      const totalAberto = abertos.reduce((s, p) => s + valorEmAberto(p), 0);
+      let resto = valorNum;
+      for (const p of abertos) {
+        const v = valorEmAberto(p);
+        if (resto >= v - 0.009) {
+          darBaixa(p.id, forma);
+          resto -= v;
+        } else break;
+      }
+      definirDivida(cliente.id, Math.max(0, Math.round((totalAberto - valorNum) * 100) / 100));
     }
+
 
     registrarMovimento(
       forma === "Dinheiro" ? "suprimento" : "recebimento",

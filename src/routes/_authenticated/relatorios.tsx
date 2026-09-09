@@ -48,6 +48,8 @@ import { lancamentosVale, totaisVale } from "@/lib/vales";
 import { ValesNaRua } from "@/components/relatorios/vales-na-rua";
 
 import { AnaliseProdutos } from "@/components/relatorios/analise-produtos";
+import { TabelaDespesasCategoria } from "@/components/financeiro/despesas-categoria";
+
 
 export const Route = createFileRoute("/_authenticated/relatorios")({
   head: () => ({
@@ -139,12 +141,8 @@ function RelatoriosPage() {
     .filter((d) => d.status === "Pendente")
     .reduce((s, d) => s + d.valor, 0);
 
-  const porCategoria = [
-    ...despesasFaixa.reduce((mapa, d) => {
-      mapa.set(d.categoria, (mapa.get(d.categoria) ?? 0) + d.valor);
-      return mapa;
-    }, new Map<string, number>()),
-  ].sort((a, b) => b[1] - a[1]);
+
+
 
   const saldoCaixa = caixaAberto
     ? caixaAberto.trocoInicial +
@@ -987,29 +985,9 @@ function RelatoriosPage() {
               </Button>
             </CardHeader>
             <CardContent className="overflow-x-auto">
-              {porCategoria.length === 0 ? (
-                <p className="py-6 text-center text-sm text-muted-foreground">
-                  Nenhuma despesa lançada no período.
-                </p>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Categoria</TableHead>
-                      <TableHead className="text-right">Valor</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {porCategoria.map(([cat, valor]) => (
-                      <TableRow key={cat}>
-                        <TableCell className="font-medium">{cat}</TableCell>
-                        <TableCell className="text-right">{brl(valor)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
+              <TabelaDespesasCategoria despesas={despesasFaixa} />
             </CardContent>
+
           </Card>
         </TabsContent>
       </Tabs>

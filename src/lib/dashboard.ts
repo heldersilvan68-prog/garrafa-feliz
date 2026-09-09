@@ -2,7 +2,7 @@ import type { Produto } from "@/lib/erp";
 import type { Cliente } from "@/lib/clientes";
 import type { Despesa } from "@/lib/despesas";
 import { CATEGORIA_TAXA_CARTAO, CORES_CATEGORIA } from "@/lib/despesas";
-import { fiadoEmAberto, valorFaturado, valorPorForma, type Pedido } from "@/lib/pedidos";
+import { fiadoEmAberto, valorEmAberto, valorFaturado, valorPorForma, type Pedido } from "@/lib/pedidos";
 import { lucroLiquido as calcLucroLiquido } from "@/lib/financas";
 import {
   INICIO_TUDO,
@@ -291,7 +291,7 @@ export function clientesParaCobrar(pedidos: Pedido[], clientes: Cliente[]) {
     mapa.set(chave, {
       id: chave,
       nome: p.clienteNome || "Cliente sem nome",
-      valor: (atual?.valor ?? 0) + p.total,
+      valor: (atual?.valor ?? 0) + valorEmAberto(p),
       dias: Math.max(atual?.dias ?? 0, dias),
       telefone,
     });
