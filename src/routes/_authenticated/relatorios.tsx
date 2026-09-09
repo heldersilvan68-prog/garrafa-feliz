@@ -48,6 +48,8 @@ import { lancamentosVale, totaisVale } from "@/lib/vales";
 import { ValesNaRua } from "@/components/relatorios/vales-na-rua";
 
 import { AnaliseProdutos } from "@/components/relatorios/analise-produtos";
+import { TabelaDespesasCategoria } from "@/components/financeiro/despesas-categoria";
+
 
 export const Route = createFileRoute("/_authenticated/relatorios")({
   head: () => ({
