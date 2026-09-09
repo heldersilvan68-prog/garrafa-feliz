@@ -19,10 +19,12 @@ import { usePedidos } from "@/context/pedidos";
 import { brl } from "@/lib/erp";
 import {
   FORMAS_RECEBIMENTO,
+  fiadoEmAberto,
   valorEmAberto,
   type FormaPagamento,
   type Pedido,
 } from "@/lib/pedidos";
+
 
 type Props = {
   children: ReactNode;
