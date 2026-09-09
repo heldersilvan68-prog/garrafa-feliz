@@ -141,8 +141,8 @@ function ClientesPage() {
   }, [clientes, pedidos]);
 
   const dadosPizza = [
-    { nome: "Ativos", valor: base.ativos, cor: "var(--color-success)" },
-    { nome: "Inativos", valor: base.inativos, cor: "var(--color-destructive)" },
+    { nome: "Ativos", valor: base.ativos.length, cor: "var(--color-success)" },
+    { nome: "Inativos", valor: base.inativos.length, cor: "var(--color-destructive)" },
   ];
 
   const lista = useMemo(() => {
