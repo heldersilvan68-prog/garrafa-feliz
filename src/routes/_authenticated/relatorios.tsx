@@ -987,29 +987,9 @@ function RelatoriosPage() {
               </Button>
             </CardHeader>
             <CardContent className="overflow-x-auto">
-              {porCategoria.length === 0 ? (
-                <p className="py-6 text-center text-sm text-muted-foreground">
-                  Nenhuma despesa lançada no período.
-                </p>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Categoria</TableHead>
-                      <TableHead className="text-right">Valor</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {porCategoria.map(([cat, valor]) => (
-                      <TableRow key={cat}>
-                        <TableCell className="font-medium">{cat}</TableCell>
-                        <TableCell className="text-right">{brl(valor)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
+              <TabelaDespesasCategoria despesas={despesasFaixa} />
             </CardContent>
+
           </Card>
         </TabsContent>
       </Tabs>
