@@ -139,12 +139,8 @@ function RelatoriosPage() {
     .filter((d) => d.status === "Pendente")
     .reduce((s, d) => s + d.valor, 0);
 
-  const porCategoria = [
-    ...despesasFaixa.reduce((mapa, d) => {
-      mapa.set(d.categoria, (mapa.get(d.categoria) ?? 0) + d.valor);
-      return mapa;
-    }, new Map<string, number>()),
-  ].sort((a, b) => b[1] - a[1]);
+
+
 
   const saldoCaixa = caixaAberto
     ? caixaAberto.trocoInicial +
