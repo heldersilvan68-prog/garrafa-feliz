@@ -205,6 +205,13 @@ function DespesasPage() {
       </Card>
 
       <DespesaDialog open={open} onOpenChange={setOpen} despesa={editando} />
+      <DespesasCategoriaDialog
+        open={porCategoria}
+        onOpenChange={setPorCategoria}
+        despesas={doPeriodo}
+        rotuloPeriodo={rotuloFaixa(periodo.faixa)}
+      />
+
     </div>
   );
 }
