@@ -431,6 +431,98 @@ function ClientesPage() {
         )}
       </div>
 
+      <Dialog open={modalAtivos} onOpenChange={setModalAtivos}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Clientes ativos</DialogTitle>
+            <DialogDescription>
+              {base.ativos.length} cliente(s) com pedido nos últimos 30 dias.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[60vh] overflow-y-auto">
+            {base.ativos.length === 0 ? (
+              <p className="py-6 text-center text-sm text-muted-foreground">
+                Nenhum cliente ativo no período.
+              </p>
+            ) : (
+              <ul className="flex flex-col gap-2">
+                {ordenarPorCodigo(base.ativos).map((c) => (
+                  <li
+                    key={c.id}
+                    className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg border border-border bg-card p-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium">{rotuloCliente(c)}</p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {c.telefone} · última compra {formatarData(c.ultimaCompra)}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <Button variant="outline" size="sm" onClick={() => {
+                        setModalAtivos(false);
+                        setDetalhe(c.id);
+                      }}>
+                        <Users /> Perfil
+                      </Button>
+                      <WhatsAppButton cliente={c} />
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={modalInativos} onOpenChange={setModalInativos}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Clientes inativos</DialogTitle>
+            <DialogDescription>
+              {base.inativos.length} cliente(s) sem compras há mais de 30 dias.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[60vh] overflow-y-auto">
+            {base.inativos.length === 0 ? (
+              <p className="py-6 text-center text-sm text-muted-foreground">
+                Nenhum cliente inativo. Todos compraram recentemente.
+              </p>
+            ) : (
+              <ul className="flex flex-col gap-2">
+                {ordenarPorCodigo(base.inativos).map((c) => {
+                  const dias = Math.round(
+                    (new Date(hojeISO()).getTime() - new Date(`${c.ultimaCompra}T00:00:00`).getTime()) /
+                      86_400_000,
+                  );
+                  return (
+                    <li
+                      key={c.id}
+                      className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg border border-border bg-card p-3"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium">{rotuloCliente(c)}</p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {c.telefone} · {dias} dia(s) sem comprar
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <Button variant="outline" size="sm" onClick={() => {
+                          setModalInativos(false);
+                          setDetalhe(c.id);
+                        }}>
+                          <Users /> Perfil
+                        </Button>
+                        <WhatsAppButton cliente={c} />
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <ClienteDetalhes
         cliente={selecionado}
         aberto={!!selecionado}
