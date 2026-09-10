@@ -291,7 +291,8 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
         alterarStatus: (id, status) => statusMut.mutate({ id, status }),
         atualizar: (id, dados) => atualizarMut.mutate({ id, dados }),
         cancelar: (id, motivo, observacao) => cancelarMut.mutate({ id, motivo, observacao }),
-        darBaixa: (id, forma) => baixaMut.mutate({ id, forma }),
+        darBaixa: (id, forma, converterParcelas) =>
+          baixaMut.mutate({ id, forma, converterParcelas }),
       }}
     >
       {children}
