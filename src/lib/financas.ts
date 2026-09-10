@@ -89,8 +89,25 @@ export function calcularMovimento(
   despesas: Despesa[],
   caixas: Caixa[],
 ): MovimentoFinanceiro {
+  return calcularCom(
+    (iso) => dentroFaixa(iso, faixa),
+    (d) => dentroFaixa(d.data, faixa),
+    pedidos,
+    despesas,
+    caixas,
+  );
+}
+
+/** Núcleo do cálculo: recebe o teste de pertencimento (período ou sessão). */
+function calcularCom(
+  dentro: (iso: string) => boolean,
+  dentroDespesa: (d: Despesa) => boolean,
+  pedidos: Pedido[],
+  despesas: Despesa[],
+  caixas: Caixa[],
+): MovimentoFinanceiro {
   const validos = pedidos.filter((p) => p.status !== "cancelado");
-  const doPeriodo = validos.filter((p) => dentroFaixa(p.criadoEm, faixa));
+  const doPeriodo = validos.filter((p) => dentro(p.criadoEm));
 
   let vendasDinheiro = 0;
   let vendasPix = 0;
@@ -115,7 +132,7 @@ export function calcularMovimento(
 
   for (const c of caixas) {
     for (const m of c.movimentos) {
-      if (!dentroFaixa(m.em, faixa)) continue;
+      if (!dentro(m.em)) continue;
       if (m.tipo === "suprimento") suprimentos += m.valor;
       else if (m.tipo === "sangria") {
         if (!sangriaDeDespesa(m)) sangrias += m.valor;
@@ -128,9 +145,7 @@ export function calcularMovimento(
     }
   }
 
-  const pagasNoPeriodo = despesas.filter(
-    (d) => d.status === "Pago" && dentroFaixa(d.data, faixa),
-  );
+  const pagasNoPeriodo = despesas.filter((d) => d.status === "Pago" && dentroDespesa(d));
   const taxasCartao = pagasNoPeriodo
     .filter((d) => d.categoria === CATEGORIA_TAXA_CARTAO)
     .reduce((s, d) => s + d.valor, 0);
@@ -172,6 +187,34 @@ export const calcularMovimentoDia = (
   despesas: Despesa[],
   caixas: Caixa[],
 ) => calcularMovimento({ inicio: isoLocal(dia), fim: isoLocal(dia) }, pedidos, despesas, caixas);
+
+/**
+ * Movimento financeiro de UMA sessão de caixa (do horário de abertura até o
+ * fechamento, ou até agora). Reabrir o caixa no mesmo dia zera os acumuladores,
+ * porque só o que aconteceu depois da nova abertura entra na conta.
+ */
+export function calcularMovimentoSessao(
+  caixa: Caixa,
+  pedidos: Pedido[],
+  despesas: Despesa[],
+): MovimentoFinanceiro {
+  return calcularMovimento(
+    { inicio: isoLocal(caixa.abertoEm), fim: isoLocal(caixa.fechadoEm ?? new Date()) },
+    pedidos.filter((p) => naSessao(caixa, p.criadoEm)),
+    despesas.filter((d) => naSessao(caixa, d.criadoEm)),
+    [caixa],
+  );
+}
+
+/** Um instante pertence à sessão do caixa? */
+export const naSessao = (caixa: Caixa, iso?: string) => {
+  if (!iso) return false;
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return false;
+  const inicio = new Date(caixa.abertoEm).getTime();
+  const fim = caixa.fechadoEm ? new Date(caixa.fechadoEm).getTime() : Infinity;
+  return t >= inicio && t <= fim;
+};
 
 /**
  * Lucro líquido padrão do sistema:
