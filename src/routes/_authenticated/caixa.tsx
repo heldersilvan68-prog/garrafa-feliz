@@ -46,7 +46,12 @@ import { useDespesas } from "@/context/despesas";
 import { useEstoque } from "@/context/estoque";
 import { brl } from "@/lib/erp";
 import { CATEGORIA_TAXA_CARTAO } from "@/lib/despesas";
-import { calcularMovimentoDia, sangriaDeDespesa } from "@/lib/financas";
+import {
+  calcularMovimentoDia,
+  calcularMovimentoSessao,
+  naSessao,
+  sangriaDeDespesa,
+} from "@/lib/financas";
 import {
   hojeISO,
   horaCurta,
@@ -406,14 +411,25 @@ function CaixaPage() {
   const { pedidos } = usePedidos();
   const { despesas } = useDespesas();
   const dia = hojeISO();
-  const doDia = useMemo(() => pedidosDoDia(pedidos, dia), [pedidos, dia]);
+  // Tudo na tela é da SESSÃO de caixa aberta (não do dia do calendário):
+  // fechar e reabrir no mesmo dia zera os acumuladores.
+  const doDia = useMemo(
+    () =>
+      caixaAberto
+        ? pedidos.filter((p) => p.status !== "cancelado" && naSessao(caixaAberto, p.criadoEm))
+        : pedidosDoDia(pedidos, dia),
+    [pedidos, dia, caixaAberto],
+  );
   const totais = totaisPorPagamento(doDia);
   const fechados = caixas.filter((c) => c.fechadoEm);
   const cartaoTotal = totais["Débito"] + totais["Crédito"];
 
   // Fonte única dos cálculos financeiros (mesma usada no Dashboard/Relatórios).
   const mov = useMemo(
-    () => calcularMovimentoDia(dia, pedidos, despesas, caixaAberto ? [caixaAberto] : []),
+    () =>
+      caixaAberto
+        ? calcularMovimentoSessao(caixaAberto, pedidos, despesas)
+        : calcularMovimentoDia(dia, pedidos, despesas, []),
     [dia, pedidos, despesas, caixaAberto],
   );
 
@@ -422,9 +438,11 @@ function CaixaPage() {
     () =>
       despesas.filter(
         (d) =>
-          d.data === dia && d.status === "Pago" && d.categoria !== CATEGORIA_TAXA_CARTAO,
+          d.status === "Pago" &&
+          d.categoria !== CATEGORIA_TAXA_CARTAO &&
+          (caixaAberto ? naSessao(caixaAberto, d.criadoEm) : d.data === dia),
       ),
-    [despesas, dia],
+    [despesas, dia, caixaAberto],
   );
   const totalSaidas = mov.saidasTotal;
 
@@ -495,7 +513,9 @@ function CaixaPage() {
               <CreditCard className="size-4 text-primary" />
               Entradas do dia por forma
             </CardTitle>
-            <CardDescription>{doDia.length} pedido(s) hoje</CardDescription>
+            <CardDescription>
+              {doDia.length} pedido(s){caixaAberto ? " nesta sessão de caixa" : " hoje"}
+            </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-2">
             <ValorLinha label="Dinheiro" valor={brl(totais.Dinheiro)} />
@@ -519,7 +539,9 @@ function CaixaPage() {
               <Banknote className="size-4 text-primary" />
               Conferência Geral
             </CardTitle>
-            <CardDescription>Resumo completo do caixa de hoje</CardDescription>
+            <CardDescription>
+              {caixaAberto ? "Resumo da sessão de caixa aberta" : "Nenhum caixa aberto"}
+            </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-2">
             <ValorLinha label="Troco inicial" valor={brl(caixaAberto?.trocoInicial ?? 0)} />
@@ -555,7 +577,9 @@ function CaixaPage() {
               <Calculator className="size-4 text-primary" />
               Movimentos
             </CardTitle>
-            <CardDescription>Sangrias, suprimentos e todas as saídas de hoje</CardDescription>
+            <CardDescription>
+              Sangrias, suprimentos e saídas desta sessão de caixa
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {semMovimentos ? (
