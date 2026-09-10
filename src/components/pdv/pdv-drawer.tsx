@@ -1043,7 +1043,13 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
             <DialogClose asChild>
               <Button variant="ghost">Fechar</Button>
             </DialogClose>
-            {pedidoCriado ? <ImprimirComprovante pedido={pedidoCriado} variant="default" /> : null}
+            {pedidoCriado ? (
+              <ImprimirComprovante
+                pedido={pedidoCriado}
+                variant="default"
+                onPrinted={() => setPedidoCriado(null)}
+              />
+            ) : null}
           </DialogFooter>
         </DialogContent>
       </Dialog>
