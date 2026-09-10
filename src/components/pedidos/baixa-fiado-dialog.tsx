@@ -26,6 +26,12 @@ import {
 } from "@/lib/pedidos";
 
 
+import { hojeISO } from "@/lib/caixa";
+import { isoLocal } from "@/lib/periodo";
+
+/** Venda emitida hoje (fuso da Bahia): baixa converte a forma de pagamento. */
+const ehDeHoje = (p: Pedido) => isoLocal(p.criadoEm) === hojeISO();
+
 type Props = {
   children: ReactNode;
   /** Baixa de um pedido fiado específico. */
@@ -60,10 +66,18 @@ export function BaixaFiadoDialog({ children, pedido, cliente, saldo, onConcluido
       return;
     }
 
+    // Valor recebido de vendas feitas hoje: vira venda direta na forma escolhida,
+    // sem lançamento de "recebimento" no extrato (evita contagem dupla).
+    let valorMesmoDia = 0;
+
     if (pedido) {
       // Só encerra o pedido quando o valor recebido cobre o fiado em aberto.
       const quitou = valorNum >= totalPedido - 0.009;
-      if (quitou) darBaixa(pedido.id, forma);
+      const hoje = ehDeHoje(pedido);
+      if (quitou) {
+        darBaixa(pedido.id, forma, hoje);
+        if (hoje) valorMesmoDia += totalPedido;
+      }
       if (pedido.clienteId) {
         if (quitou) {
           // Recalcula o "Devido total" a partir dos fiados que continuam em aberto.
@@ -86,21 +100,26 @@ export function BaixaFiadoDialog({ children, pedido, cliente, saldo, onConcluido
       for (const p of abertos) {
         const v = valorEmAberto(p);
         if (resto >= v - 0.009) {
-          darBaixa(p.id, forma);
+          const hoje = ehDeHoje(p);
+          darBaixa(p.id, forma, hoje);
+          if (hoje) valorMesmoDia += v;
           resto -= v;
         } else break;
       }
       definirDivida(cliente.id, Math.max(0, Math.round((totalAberto - valorNum) * 100) / 100));
     }
 
-
-    registrarMovimento(
-      forma === "Dinheiro" ? "suprimento" : "recebimento",
-      valorNum,
-      pedido
-        ? `Baixa fiado pedido #${pedido.numero} — ${nome} (${forma})`
-        : `Baixa fiado — ${nome} (${forma})`,
-    );
+    // Só fiados de dias anteriores entram no extrato como recebimento de dívida.
+    const valorAntigo = Math.round((valorNum - valorMesmoDia) * 100) / 100;
+    if (valorAntigo > 0.009) {
+      registrarMovimento(
+        forma === "Dinheiro" ? "suprimento" : "recebimento",
+        valorAntigo,
+        pedido
+          ? `Baixa fiado pedido #${pedido.numero} — ${nome} (${forma})`
+          : `Baixa fiado — ${nome} (${forma})`,
+      );
+    }
 
     toast.success(`${brl(valorNum)} recebido em ${forma} e lançado no caixa.`);
     setAberto(false);
