@@ -26,6 +26,12 @@ import {
 } from "@/lib/pedidos";
 
 
+import { hojeISO } from "@/lib/caixa";
+import { isoLocal } from "@/lib/periodo";
+
+/** Venda emitida hoje (fuso da Bahia): baixa converte a forma de pagamento. */
+const ehDeHoje = (p: Pedido) => isoLocal(p.criadoEm) === hojeISO();
+
 type Props = {
   children: ReactNode;
   /** Baixa de um pedido fiado específico. */
