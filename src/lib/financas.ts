@@ -132,7 +132,7 @@ function calcularCom(
 
   for (const c of caixas) {
     for (const m of c.movimentos) {
-      if (!dentroFaixa(m.em, faixa)) continue;
+      if (!dentro(m.em)) continue;
       if (m.tipo === "suprimento") suprimentos += m.valor;
       else if (m.tipo === "sangria") {
         if (!sangriaDeDespesa(m)) sangrias += m.valor;
@@ -145,9 +145,7 @@ function calcularCom(
     }
   }
 
-  const pagasNoPeriodo = despesas.filter(
-    (d) => d.status === "Pago" && dentroFaixa(d.data, faixa),
-  );
+  const pagasNoPeriodo = despesas.filter((d) => d.status === "Pago" && dentroDespesa(d));
   const taxasCartao = pagasNoPeriodo
     .filter((d) => d.categoria === CATEGORIA_TAXA_CARTAO)
     .reduce((s, d) => s + d.valor, 0);
