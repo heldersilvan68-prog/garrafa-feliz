@@ -89,12 +89,19 @@ export function calcularMovimento(
   despesas: Despesa[],
   caixas: Caixa[],
 ): MovimentoFinanceiro {
-  return calcularCom((iso) => dentroFaixa(iso, faixa), pedidos, despesas, caixas);
+  return calcularCom(
+    (iso) => dentroFaixa(iso, faixa),
+    (d) => dentroFaixa(d.data, faixa),
+    pedidos,
+    despesas,
+    caixas,
+  );
 }
 
 /** Núcleo do cálculo: recebe o teste de pertencimento (período ou sessão). */
 function calcularCom(
   dentro: (iso: string) => boolean,
+  dentroDespesa: (d: Despesa) => boolean,
   pedidos: Pedido[],
   despesas: Despesa[],
   caixas: Caixa[],
