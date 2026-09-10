@@ -89,8 +89,18 @@ export function calcularMovimento(
   despesas: Despesa[],
   caixas: Caixa[],
 ): MovimentoFinanceiro {
+  return calcularCom((iso) => dentroFaixa(iso, faixa), pedidos, despesas, caixas);
+}
+
+/** Núcleo do cálculo: recebe o teste de pertencimento (período ou sessão). */
+function calcularCom(
+  dentro: (iso: string) => boolean,
+  pedidos: Pedido[],
+  despesas: Despesa[],
+  caixas: Caixa[],
+): MovimentoFinanceiro {
   const validos = pedidos.filter((p) => p.status !== "cancelado");
-  const doPeriodo = validos.filter((p) => dentroFaixa(p.criadoEm, faixa));
+  const doPeriodo = validos.filter((p) => dentro(p.criadoEm));
 
   let vendasDinheiro = 0;
   let vendasPix = 0;
