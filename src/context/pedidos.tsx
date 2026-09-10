@@ -236,7 +236,11 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
     "Não foi possível cancelar o pedido",
   );
 
-  const baixaMut = useMutacao<{ id: string; forma: FormaPagamento }>(async ({ id, forma }) => {
+  const baixaMut = useMutacao<{
+    id: string;
+    forma: FormaPagamento;
+    converterParcelas?: boolean;
+  }>(async ({ id, forma, converterParcelas }) => {
     const { error } = await supabase
       .from("orders")
       .update({
@@ -248,6 +252,34 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
       })
       .eq("id", id);
     if (error) throw error;
+
+    if (!converterParcelas) return;
+    // Venda quitada no mesmo dia: a parcela em Fiado passa a ser venda direta
+    // na forma efetivamente recebida (Dinheiro/PIX/Cartão).
+    if (!userId) return;
+    const { data: parcelas, error: erroLeitura } = await supabase
+      .from("order_payments")
+      .select("id, forma, valor")
+      .eq("order_id", id);
+    if (erroLeitura) throw erroLeitura;
+
+    const fiadas = (parcelas ?? []).filter((x) => x.forma === "Fiado");
+    if (fiadas.length === 0) return;
+    const total = fiadas.reduce((s, x) => s + Number(x.valor), 0);
+
+    const { error: erroRemover } = await supabase
+      .from("order_payments")
+      .delete()
+      .in(
+        "id",
+        fiadas.map((x) => x.id),
+      );
+    if (erroRemover) throw erroRemover;
+
+    const { error: erroInserir } = await supabase
+      .from("order_payments")
+      .insert({ user_id: userId, order_id: id, forma, valor: total });
+    if (erroInserir) throw erroInserir;
   }, "Não foi possível dar baixa no fiado");
 
   return (
