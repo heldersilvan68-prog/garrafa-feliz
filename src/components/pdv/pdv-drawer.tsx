@@ -729,34 +729,55 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                 </div>
               )}
 
-              <div className="flex flex-col gap-2 rounded-lg border border-primary/30 bg-primary/5 p-3">
-                <p className="flex items-center gap-2 text-sm font-medium">
-                  <Ticket className="size-4 text-primary" /> Pacote de vales (crédito)
-                </p>
-                <div className="flex items-center gap-2">
-                  <Campo label="Qtd. de vales" htmlFor="pdv-vales-qtd">
-                    <InputNumero
-                      id="pdv-vales-qtd"
-                      min={0}
-                      valor={valesVendidos}
-                      onValor={(n) => setPacoteQtd(String(Math.max(0, n)))}
-                    />
-                  </Campo>
-                  <Campo label="Valor por vale (R$)" htmlFor="pdv-vales-valor">
-                    <InputNumero
-                      id="pdv-vales-valor"
-                      decimal
-                      min={0}
-                      valor={valorValeUnit}
-                      onValor={(n) => setPacoteValorUnit(String(Math.max(0, n)))}
-                    />
-                  </Campo>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {valesVendidos > 0
-                    ? `${valesVendidos} vales × ${brl(valorValeUnit)} = ${brl(valesVendidos * valorValeUnit)} — entra no caixa e credita o saldo do cliente, sem baixar estoque.`
-                    : "Venda de crédito antecipado: soma no caixa e credita vales ao cliente, sem baixa de estoque."}
-                </p>
+              <div className="rounded-lg border border-primary/30 bg-primary/5">
+                <button
+                  type="button"
+                  aria-expanded={pacoteAberto}
+                  onClick={() => setPacoteAberto((v) => !v)}
+                  className="flex w-full items-center justify-between gap-2 p-3 text-left"
+                >
+                  <span className="flex items-center gap-2 text-sm font-medium">
+                    <Ticket className="size-4 text-primary" /> Venda de pacote de vales
+                    {valesVendidos > 0 && (
+                      <span className="text-xs font-normal text-muted-foreground">
+                        {valesVendidos} × {brl(valorValeUnit)}
+                      </span>
+                    )}
+                  </span>
+                  <ChevronDown
+                    className={`size-4 shrink-0 text-muted-foreground transition-transform ${
+                      pacoteAberto ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+                {pacoteAberto && (
+                  <div className="flex flex-col gap-2 px-3 pb-3">
+                    <div className="flex items-center gap-2">
+                      <Campo label="Qtd. de vales" htmlFor="pdv-vales-qtd">
+                        <InputNumero
+                          id="pdv-vales-qtd"
+                          min={0}
+                          valor={valesVendidos}
+                          onValor={(n) => setPacoteQtd(String(Math.max(0, n)))}
+                        />
+                      </Campo>
+                      <Campo label="Valor por vale (R$)" htmlFor="pdv-vales-valor">
+                        <InputNumero
+                          id="pdv-vales-valor"
+                          decimal
+                          min={0}
+                          valor={valorValeUnit}
+                          onValor={(n) => setPacoteValorUnit(String(Math.max(0, n)))}
+                        />
+                      </Campo>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {valesVendidos > 0
+                        ? `${valesVendidos} vales × ${brl(valorValeUnit)} = ${brl(valesVendidos * valorValeUnit)} — entra no caixa e credita o saldo do cliente, sem baixar estoque.`
+                        : "Venda de crédito antecipado: soma no caixa e credita vales ao cliente, sem baixa de estoque."}
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div className="flex flex-col gap-2 rounded-lg border border-border p-3">
