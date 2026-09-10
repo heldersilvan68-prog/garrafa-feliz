@@ -109,6 +109,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
   // Pacote de vales: entrada financeira que gera crédito, sem baixa de estoque.
   const [pacoteQtd, setPacoteQtd] = useState("");
   const [pacoteValorUnit, setPacoteValorUnit] = useState("");
+  const [pacoteAberto, setPacoteAberto] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   // Último pedido criado: abre a confirmação com opção de imprimir o comprovante.
   const [pedidoCriado, setPedidoCriado] = useState<Pedido | null>(null);
