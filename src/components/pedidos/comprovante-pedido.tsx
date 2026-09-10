@@ -5,14 +5,14 @@ import { Button } from "@/components/ui/button";
 import { brl } from "@/lib/erp";
 import { TIMEZONE } from "@/lib/periodo";
 import { BALCAO } from "@/lib/entregadores";
-import { LABEL_MODO } from "@/lib/vasilhames";
 import { parcelasDe, type Pedido } from "@/lib/pedidos";
 import { useConfiguracoes, IMPRESSAO_PADRAO } from "@/context/configuracoes";
 import { useClientes } from "@/context/clientes";
 import { mascaraTelefone } from "@/lib/clientes";
 
-const EMPRESA_PADRAO = "P.K Distribuidora";
-const CIDADE_PADRAO = "Itaberaba - BA";
+const EMPRESA_PADRAO = "PK DISTRIBUIDORA";
+const ENDERECO_PADRAO = "AV LUIZ VIANA FILHO 285";
+const FONE_PADRAO = "(75) 99872-3270";
 
 const LARGURA_CSS: Record<string, string> = {
   "80mm": "80mm",
@@ -44,13 +44,12 @@ function Cupom({ pedido }: { pedido: Pedido }) {
   const { clientes } = useClientes();
   const imp = config.impressao ?? IMPRESSAO_PADRAO;
   const parcelas = parcelasDe(pedido);
-  const subtotal = pedido.total + (pedido.desconto ?? 0);
   const balcao = !pedido.entregador || pedido.entregador === BALCAO;
   const cliente = pedido.clienteId ? clientes.find((c) => c.id === pedido.clienteId) : undefined;
 
   const empresa = config.nomeFantasia?.trim() || EMPRESA_PADRAO;
-  const cidade = config.endereco?.trim() || CIDADE_PADRAO;
-  const fone = config.whatsapp?.trim() ? mascaraTelefone(config.whatsapp) : "";
+  const enderecoEmpresa = config.endereco?.trim() || ENDERECO_PADRAO;
+  const fone = config.whatsapp?.trim() ? mascaraTelefone(config.whatsapp) : FONE_PADRAO;
 
   // Endereço completo: prioriza o cadastro do cliente, com fallback no pedido.
   const enderecoCompleto = [
@@ -60,6 +59,8 @@ function Cupom({ pedido }: { pedido: Pedido }) {
     .filter(Boolean)
     .join(", ");
 
+  const troco = pedido.trocoPara ? pedido.trocoPara - pedido.total : 0;
+
   const largura = LARGURA_CSS[imp.largura] ?? "80mm";
   const fonte = FONTE_PX[imp.tamanhoFonte] ?? 12;
   const estreito = imp.largura === "58mm";
@@ -68,7 +69,10 @@ function Cupom({ pedido }: { pedido: Pedido }) {
     <>
       <style>{`@media print { @page { size: ${PAGE_CSS[imp.largura] ?? "80mm auto"}; margin: ${
         imp.largura === "A4" ? "10mm" : "0"
-      }; } }`}</style>
+      }; } }
+        .cupom-endereco { font-size: 1.2em; font-weight: 700; text-transform: uppercase; }
+        .cupom-pagamento { font-weight: 600; font-size: 1.05em; }
+      `}</style>
       <div
         className={`cupom${imp.altaDensidade ? " cupom-forte" : ""}${
           imp.modoImpressora === "navegador" ? " cupom-navegador" : ""
@@ -83,12 +87,11 @@ function Cupom({ pedido }: { pedido: Pedido }) {
           {imp.mostrarLogo ? <strong className="cupom-titulo">{empresa}</strong> : null}
           {imp.mostrarEnderecoEmpresa ? (
             <>
-              <div className="cupom-quebra">{cidade}</div>
-              {fone ? <div>Tel / WhatsApp: {fone}</div> : null}
+              <div className="cupom-quebra">{enderecoEmpresa}</div>
+              <div>Telefone : {fone}</div>
             </>
           ) : null}
-          <div>Comprovante de Pedido</div>
-          <div className="cupom-negrito">Pedido nº {pedido.numero}</div>
+          <div>Comprovante do Pedido nº {pedido.numero}</div>
           <div>{dataHora(pedido.criadoEm)}</div>
         </div>
 
@@ -99,77 +102,55 @@ function Cupom({ pedido }: { pedido: Pedido }) {
             <div className="cupom-quebra cupom-negrito">
               Cliente: {pedido.clienteNome || "Consumidor Final / Balcão"}
             </div>
-            {balcao && !enderecoCompleto ? (
+            {!balcao ? <div>Entregador: {pedido.entregador}</div> : null}
+            {enderecoCompleto ? (
+              <div className="cupom-quebra cupom-endereco">ENDEREÇO: {enderecoCompleto}</div>
+            ) : balcao ? (
               <div>Entrega: Retirada no Balcão</div>
-            ) : (
-              <>
-                {!balcao ? <div>Entregador: {pedido.entregador}</div> : null}
-                {enderecoCompleto ? (
-                  <div className="cupom-quebra">Endereço: {enderecoCompleto}</div>
-                ) : null}
-              </>
-            )}
+            ) : null}
             <hr />
           </>
         ) : null}
 
-        <div className="cupom-linha cupom-negrito">
-          <span>ITEM</span>
-          <span>TOTAL</span>
-        </div>
         {pedido.itens.map((i) => (
           <div key={`${i.produtoId}-${i.nome}-${i.modo}`} className="cupom-item">
             <div className="cupom-linha cupom-negrito">
               <span className="cupom-quebra">
                 {i.qtd}x {i.nome}
-                {i.retornavel ? ` (${LABEL_MODO[i.modo]})` : ""}
               </span>
               <span>{brl(i.qtd * i.precoUnit)}</span>
             </div>
-            <div className="cupom-sub">un. {brl(i.precoUnit)}</div>
           </div>
         ))}
 
-        {pedido.vaziosRecolhidos > 0 ? (
-          <>
-            <hr />
-            <div className="cupom-destaque">
-              Galões 20L Recolhidos: {pedido.vaziosRecolhidos}
-            </div>
-          </>
-        ) : null}
-
         <hr />
 
-        {(pedido.desconto ?? 0) > 0 ? (
-          <>
-            <div className="cupom-linha">
-              <span>Subtotal</span>
-              <span>{brl(subtotal)}</span>
-            </div>
-            <div className="cupom-linha">
-              <span>Desconto</span>
-              <span>- {brl(pedido.desconto)}</span>
-            </div>
-          </>
-        ) : null}
+        <div className="cupom-centro cupom-pagamento">FORMA DE PAGAMENTO</div>
         {parcelas.map((x, idx) => (
-          <div key={`${x.forma}-${idx}`} className="cupom-linha">
+          <div key={`${x.forma}-${idx}`} className="cupom-linha cupom-pagamento">
             <span>{x.forma}</span>
             <span>{brl(x.valor)}</span>
           </div>
         ))}
         {pedido.valorFiado > 0 ? (
-          <div className="cupom-linha cupom-negrito">
+          <div className="cupom-linha cupom-pagamento">
             <span>Em fiado</span>
             <span>{brl(pedido.valorFiado)}</span>
           </div>
         ) : null}
         {pedido.trocoPara ? (
-          <div className="cupom-linha">
-            <span>Troco para</span>
-            <span>{brl(pedido.trocoPara)}</span>
-          </div>
+          <>
+            <div className="cupom-linha cupom-pagamento">
+              <span>Troco para</span>
+              <span>{brl(pedido.trocoPara)}</span>
+            </div>
+            {troco > 0 ? (
+              <div className="cupom-linha cupom-pagamento">
+                <span>Levar</span>
+                <span>{brl(troco)}</span>
+              </div>
+            ) : null}
+          </>
         ) : null}
 
         <div className="cupom-linha cupom-total">
@@ -214,11 +195,13 @@ export function ImprimirComprovante({
   variant = "outline",
   className,
   rotulo = "Imprimir Comprovante",
+  onPrinted,
 }: {
   pedido: Pedido;
   variant?: "outline" | "default" | "secondary" | "ghost";
   className?: string;
   rotulo?: string;
+  onPrinted?: () => void;
 }) {
   const [montado, setMontado] = useState(false);
 
@@ -234,9 +217,11 @@ export function ImprimirComprovante({
     requestAnimationFrame(() =>
       requestAnimationFrame(() => {
         window.print();
+        // Fecha o modal chamador logo após acionar a impressão.
+        onPrinted?.();
       }),
     );
-  }, []);
+  }, [onPrinted]);
 
   return (
     <>
