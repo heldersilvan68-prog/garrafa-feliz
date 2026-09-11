@@ -1,4 +1,4 @@
-import { createContext, useContext, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useMemo, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -264,10 +264,10 @@ export function ConfiguracoesProvider({ children }: { children: ReactNode }) {
   );
 
   const formas = data?.formas ?? [];
-  const ativas = formas.filter((f) => f.ativo);
+  const ativas = useMemo(() => formas.filter((f) => f.ativo), [formas]);
 
   /** Casa um método do enum com a forma cadastrada (por nome ou por tipo). */
-  const formaDoMetodo = (metodo: string) => {
+  const formaDoMetodo = useCallback((metodo: string) => {
     const alvo = metodo.toLowerCase();
     return (
       ativas.find((f) => f.nome.toLowerCase() === alvo) ??
@@ -278,34 +278,42 @@ export function ConfiguracoesProvider({ children }: { children: ReactNode }) {
         ? ativas.find((f) => f.tipo.toLowerCase() === "cartão")
         : undefined)
     );
-  };
+  }, [ativas]);
 
   // Sem formas cadastradas, todos os métodos ficam disponíveis.
-  const metodosAtivos =
-    ativas.length === 0
-      ? [...METODOS_BASE]
-      : METODOS_BASE.filter((m) => !!formaDoMetodo(m)).map((m) => m as string);
+  const metodosAtivos = useMemo(
+    () =>
+      ativas.length === 0
+        ? [...METODOS_BASE]
+        : METODOS_BASE.filter((m) => !!formaDoMetodo(m)).map((m) => m as string),
+    [ativas, formaDoMetodo],
+  );
 
-  const taxaDe = (metodo: string) => formaDoMetodo(metodo)?.taxa ?? 0;
+  const taxaDe = useCallback((metodo: string) => formaDoMetodo(metodo)?.taxa ?? 0, [formaDoMetodo]);
+
+  const valor = useMemo<Ctx>(
+    () => ({
+      config,
+      formas,
+      metodosAtivos: metodosAtivos.length > 0 ? metodosAtivos : [...METODOS_BASE],
+      taxaDe,
+      categoriasCliente: data?.categoriasCliente ?? [],
+      carregando: isLoading,
+      salvarConfig: (c) => configMut.mutateAsync(c).then(() => undefined),
+      salvarForma: (f) => formaMut.mutateAsync(f).then(() => undefined),
+      removerForma: (id) => removerFormaMut.mutateAsync(id).then(() => undefined),
+      criarCategoriaCliente: (nome) => criarCatMut.mutateAsync(nome).then(() => undefined),
+      renomearCategoriaCliente: (id, nome) =>
+        renomearCatMut.mutateAsync({ id, nome }).then(() => undefined),
+      removerCategoriaCliente: (id) => removerCatMut.mutateAsync(id).then(() => undefined),
+      semearFormasPadrao: () => semearMut.mutateAsync().then(() => undefined),
+    }),
+    [config, formas, metodosAtivos, taxaDe, data?.categoriasCliente, isLoading, configMut, formaMut, removerFormaMut, criarCatMut, renomearCatMut, removerCatMut, semearMut],
+  );
 
   return (
     <ConfiguracoesContext.Provider
-      value={{
-        config,
-        formas,
-        metodosAtivos: metodosAtivos.length > 0 ? metodosAtivos : [...METODOS_BASE],
-        taxaDe,
-        categoriasCliente: data?.categoriasCliente ?? [],
-        carregando: isLoading,
-        salvarConfig: (c) => configMut.mutateAsync(c).then(() => undefined),
-        salvarForma: (f) => formaMut.mutateAsync(f).then(() => undefined),
-        removerForma: (id) => removerFormaMut.mutateAsync(id).then(() => undefined),
-        criarCategoriaCliente: (nome) => criarCatMut.mutateAsync(nome).then(() => undefined),
-        renomearCategoriaCliente: (id, nome) =>
-          renomearCatMut.mutateAsync({ id, nome }).then(() => undefined),
-        removerCategoriaCliente: (id) => removerCatMut.mutateAsync(id).then(() => undefined),
-        semearFormasPadrao: () => semearMut.mutateAsync().then(() => undefined),
-      }}
+      value={valor}
     >
       {children}
     </ConfiguracoesContext.Provider>

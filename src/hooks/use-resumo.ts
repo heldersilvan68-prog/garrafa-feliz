@@ -24,11 +24,10 @@ export function useResumo(faixa: Faixa) {
     [faixa, pedidos, despesas, produtos, config.metaVendasMensal],
   );
 
-  return {
-    resumo,
-    carregando: carregandoPedidos || carregandoDespesas || carregandoProdutos,
-    pedidos,
-    despesas,
-    produtos,
-  };
+  const carregando = carregandoPedidos || carregandoDespesas || carregandoProdutos;
+
+  return useMemo(
+    () => ({ resumo, carregando, pedidos, despesas, produtos }),
+    [resumo, carregando, pedidos, despesas, produtos],
+  );
 }

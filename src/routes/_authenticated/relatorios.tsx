@@ -91,7 +91,7 @@ function RelatoriosPage() {
   const { caixaAberto } = useCaixa();
   const { clientes } = useClientes();
   const { metodosAtivos, taxaDe } = useConfiguracoes();
-  const formasFiltro = metodosAtivos as FormaPagamento[];
+  const formasFiltro = useMemo(() => metodosAtivos as FormaPagamento[], [metodosAtivos]);
 
   const periodoEstado = usePeriodo("hoje");
   const faixa = periodoEstado.faixa;
@@ -176,25 +176,32 @@ function RelatoriosPage() {
 
   // Clientes com dívida em aberto + quanto desse fiado nasceu no período.
   const pendentes = useMemo(
-    () =>
-      clientes
+    () => {
+      const fiadoPorCliente = new Map<string, number>();
+      for (const pedido of validos) {
+        fiadoPorCliente.set(
+          pedido.clienteId,
+          (fiadoPorCliente.get(pedido.clienteId) ?? 0) + (pedido.valorFiado ?? 0),
+        );
+      }
+      return clientes
         .filter((c) => (c.divida ?? 0) > 0)
         .map((c) => ({
           id: c.id,
           nome: c.nome,
           telefone: c.telefone,
           divida: c.divida ?? 0,
-          fiadoPeriodo: validos
-            .filter((p) => p.clienteId === c.id)
-            .reduce((s, p) => s + (p.valorFiado ?? 0), 0),
+          fiadoPeriodo: fiadoPorCliente.get(c.id) ?? 0,
         }))
-        .sort((a, b) => b.divida - a.divida),
+        .sort((a, b) => b.divida - a.divida);
+    },
     [clientes, validos],
   );
   const totalPendente = pendentes.reduce((s, c) => s + c.divida, 0);
 
   // Faturamento e lucro por modalidade de vasilhame retornável.
   const porModalidade = useMemo(() => {
+    const produtosPorId = new Map(produtos.map((produto) => [produto.id, produto]));
     const modos: { id: ModoVenda; label: string }[] = [
       { id: "refil", label: LABEL_MODO.refil },
       { id: "completa", label: LABEL_MODO.completa },
@@ -210,7 +217,7 @@ function RelatoriosPage() {
         const fator = p.total > 0 ? valorFaturado(p) / p.total : 0;
         for (const i of p.itens) {
           if (!i.retornavel || (i.modo ?? "refil") !== id) continue;
-          const prod = produtos.find((x) => x.id === i.produtoId);
+          const prod = produtosPorId.get(i.produtoId);
           const envase = prod?.custoEnvase || prod?.precoCusto || 0;
           const casco = prod?.custoCasco ?? 0;
           const unitario = id === "refil" ? envase : id === "casco" ? casco : envase + casco;
