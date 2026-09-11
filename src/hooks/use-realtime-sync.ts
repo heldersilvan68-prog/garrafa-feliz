@@ -32,23 +32,39 @@ export function useRealtimeSync() {
   useEffect(() => {
     if (!userId) return;
 
-    const canal = supabase.channel(`sync-${userId}`);
+    let ativo = true;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const pendentes = new Set<string>();
+    const canal = supabase.channel(`sync-global-${userId}`);
+
+    const agendarInvalidacao = (chaves: string[]) => {
+      for (const chave of chaves) pendentes.add(chave);
+      if (timer) return;
+      timer = setTimeout(() => {
+        timer = undefined;
+        if (!ativo) return;
+        const lote = [...pendentes];
+        pendentes.clear();
+        for (const chave of lote) {
+          void queryClient.invalidateQueries({ queryKey: [chave] });
+        }
+      }, 150);
+    };
 
     for (const [tabela, chaves] of Object.entries(MAPA)) {
       canal.on(
         "postgres_changes",
         { event: "*", schema: "public", table: tabela },
-        () => {
-          for (const chave of chaves) {
-            queryClient.invalidateQueries({ queryKey: [chave] });
-          }
-        },
+        () => agendarInvalidacao(chaves),
       );
     }
 
     canal.subscribe();
 
     return () => {
+      ativo = false;
+      if (timer) clearTimeout(timer);
+      pendentes.clear();
       void supabase.removeChannel(canal);
     };
   }, [userId, queryClient]);

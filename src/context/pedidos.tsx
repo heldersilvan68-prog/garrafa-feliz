@@ -1,10 +1,11 @@
-import { createContext, useContext, type ReactNode } from "react";
+import { createContext, useContext, useMemo, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import {
   paraPedido,
+  mapearPedidos,
   type ItemPedidoRow,
   type PagamentoPedidoRow,
   type PedidoRow,
@@ -53,8 +54,10 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
       if (error) throw error;
       if (erroItens) throw erroItens;
       if (erroPagos) throw erroPagos;
-      return (linhas as PedidoRow[]).map((l) =>
-        paraPedido(l, (itens ?? []) as ItemPedidoRow[], (pagos ?? []) as PagamentoPedidoRow[]),
+      return mapearPedidos(
+        linhas as PedidoRow[],
+        (itens ?? []) as ItemPedidoRow[],
+        (pagos ?? []) as PagamentoPedidoRow[],
       );
     },
   });
@@ -282,19 +285,24 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
     if (erroInserir) throw erroInserir;
   }, "Não foi possível dar baixa no fiado");
 
+  const valor = useMemo<Ctx>(
+    () => ({
+      pedidos,
+      carregando: isLoading,
+      criar: (p) => criarMut.mutateAsync(p),
+      alterarStatus: (id, status) => statusMut.mutate({ id, status }),
+      atualizar: (id, dados) => atualizarMut.mutate({ id, dados }),
+      cancelar: (id, motivo, observacao) =>
+        cancelarMut.mutateAsync({ id, motivo, observacao }).then(() => undefined),
+      darBaixa: (id, forma, converterParcelas) =>
+        baixaMut.mutate({ id, forma, converterParcelas }),
+    }),
+    [pedidos, isLoading, criarMut, statusMut, atualizarMut, cancelarMut, baixaMut],
+  );
+
   return (
     <PedidosContext.Provider
-      value={{
-        pedidos,
-        carregando: isLoading,
-        criar: (p) => criarMut.mutateAsync(p),
-        alterarStatus: (id, status) => statusMut.mutate({ id, status }),
-        atualizar: (id, dados) => atualizarMut.mutate({ id, dados }),
-        cancelar: (id, motivo, observacao) =>
-          cancelarMut.mutateAsync({ id, motivo, observacao }).then(() => undefined),
-        darBaixa: (id, forma, converterParcelas) =>
-          baixaMut.mutate({ id, forma, converterParcelas }),
-      }}
+      value={valor}
     >
       {children}
     </PedidosContext.Provider>

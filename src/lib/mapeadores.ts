@@ -75,7 +75,6 @@ const consumoMedio = (datas: string[], padrao: number) => {
 
 export const paraCliente = (r: ClienteRow, compras: CompraRow[]): Cliente => {
   const historico = compras
-    .filter((c) => c.client_id === r.id)
     .sort((a, b) => (a.data < b.data ? 1 : -1))
     .map(paraCompra);
   const datas = historico.map((h) => h.data);
@@ -148,6 +147,43 @@ export const paraPedido = (
   pagoEm: r.pago_em ?? undefined,
   obsCancelamento: r.obs_cancelamento ?? undefined,
 });
+
+/** Monta listas sem repetir filtros completos para cada registro pai. */
+export function mapearClientes(linhas: ClienteRow[], compras: CompraRow[]) {
+  const porCliente = new Map<string, CompraRow[]>();
+  for (const compra of compras) {
+    const lista = porCliente.get(compra.client_id) ?? [];
+    lista.push(compra);
+    porCliente.set(compra.client_id, lista);
+  }
+  return linhas.map((linha) => paraCliente(linha, porCliente.get(linha.id) ?? []));
+}
+
+export function mapearPedidos(
+  linhas: PedidoRow[],
+  itens: ItemPedidoRow[],
+  pagamentos: PagamentoPedidoRow[],
+) {
+  const itensPorPedido = new Map<string, ItemPedidoRow[]>();
+  const pagamentosPorPedido = new Map<string, PagamentoPedidoRow[]>();
+  for (const item of itens) {
+    const lista = itensPorPedido.get(item.order_id) ?? [];
+    lista.push(item);
+    itensPorPedido.set(item.order_id, lista);
+  }
+  for (const pagamento of pagamentos) {
+    const lista = pagamentosPorPedido.get(pagamento.order_id) ?? [];
+    lista.push(pagamento);
+    pagamentosPorPedido.set(pagamento.order_id, lista);
+  }
+  return linhas.map((linha) =>
+    paraPedido(
+      linha,
+      itensPorPedido.get(linha.id) ?? [],
+      pagamentosPorPedido.get(linha.id) ?? [],
+    ),
+  );
+}
 
 export const paraMovimentoVasilhame = (r: VasilhameRow): MovimentoVasilhame => ({
   id: r.id,
