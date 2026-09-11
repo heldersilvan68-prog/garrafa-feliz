@@ -30,6 +30,7 @@ type Ctx = {
   carregarMaisMovimentos: () => void;
   temMaisMovimentos: boolean;
   carregandoMaisMovimentos: boolean;
+  emTransitoFonte: number;
   carregando: boolean;
   salvar: (p: Produto) => void;
   remover: (id: string) => void;
@@ -90,6 +91,23 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
     () => movimentosQuery.data?.pages.flat() ?? [],
     [movimentosQuery.data],
   );
+  const { data: emTransitoFonte = 0 } = useQuery({
+    queryKey: ["movimentos-vasilhames", "saldo-transito", userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("returnable_movements")
+        .select("tipo,qtd")
+        .in("tipo", ["envasado", "entrada", "retorno_sem_envase"]);
+      if (error) throw error;
+      return (data ?? []).reduce((saldo, movimento) => {
+        if (movimento.tipo === "envasado") return saldo + movimento.qtd;
+        return saldo - movimento.qtd;
+      }, 0);
+    },
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
+  });
 
   const invalidar = () => {
     queryClient.invalidateQueries({ queryKey: ["produtos"] });
@@ -529,6 +547,7 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
       carregarMaisMovimentos: () => void movimentosQuery.fetchNextPage(),
       temMaisMovimentos: movimentosQuery.hasNextPage,
       carregandoMaisMovimentos: movimentosQuery.isFetchingNextPage,
+      emTransitoFonte: Math.max(0, emTransitoFonte),
       carregando: isLoading,
       salvar: (p) => salvarMut.mutate(p),
       remover: (id) => removerMut.mutate(id),
@@ -543,7 +562,7 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
         estornoMut.mutateAsync({ itens, vaziosRecolhidos }).then(() => undefined),
       baixaVenda: (itens, vaziosRecolhidos) => baixaMut.mutate({ itens, vaziosRecolhidos }),
     }),
-    [produtos, movimentos, movimentosQuery.fetchNextPage, movimentosQuery.hasNextPage, movimentosQuery.isFetchingNextPage, isLoading, salvarMut, removerMut, entradaMut, vaziosMut, comprarMut, retornoMut, avariaMut, devolucaoMut, estornoMut, baixaMut],
+    [produtos, movimentos, movimentosQuery.fetchNextPage, movimentosQuery.hasNextPage, movimentosQuery.isFetchingNextPage, emTransitoFonte, isLoading, salvarMut, removerMut, entradaMut, vaziosMut, comprarMut, retornoMut, avariaMut, devolucaoMut, estornoMut, baixaMut],
   );
 
   return (

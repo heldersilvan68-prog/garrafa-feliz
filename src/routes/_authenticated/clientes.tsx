@@ -141,10 +141,13 @@ function ClientesPage() {
     return { total, ativos, inativos, pct };
   }, [clientes, pedidos]);
 
-  const dadosPizza = [
-    { nome: "Ativos", valor: base.ativos.length, cor: "var(--color-success)" },
-    { nome: "Inativos", valor: base.inativos.length, cor: "var(--color-destructive)" },
-  ];
+  const dadosPizza = useMemo(
+    () => [
+      { nome: "Ativos", valor: base.ativos.length, cor: "var(--color-success)" },
+      { nome: "Inativos", valor: base.inativos.length, cor: "var(--color-destructive)" },
+    ],
+    [base.ativos.length, base.inativos.length],
+  );
 
   const lista = useMemo(() => {
     return ordenarPorCodigo(filtrarClientes(clientes, busca))
@@ -160,7 +163,10 @@ function ClientesPage() {
   const listaVisivel = useMemo(() => lista.slice(0, limiteVisivel), [lista, limiteVisivel]);
 
   // Estritamente: previsão igual à data de hoje (fuso local) ou em atraso.
-  const lembrarHoje = clientes.filter((c) => proximaCompra(c) <= hojeISO());
+  const lembrarHoje = useMemo(
+    () => clientes.filter((c) => proximaCompra(c) <= hojeISO()),
+    [clientes],
+  );
 
   const selecionado = clientes.find((c) => c.id === detalhe) ?? null;
 

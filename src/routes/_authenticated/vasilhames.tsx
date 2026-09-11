@@ -50,6 +50,7 @@ function Vasilhames() {
     carregarMaisMovimentos,
     temMaisMovimentos,
     carregandoMaisMovimentos,
+    emTransitoFonte,
   } = useEstoque();
   const { clientes } = useClientes();
   const retornaveis = useMemo(() => produtos.filter((p) => p.retornavel), [produtos]);
@@ -58,19 +59,7 @@ function Vasilhames() {
     [clientes],
   );
 
-  // Calcula garrafões que saíram para a fonte e ainda não retornaram
-  const emTransitoFonte = useMemo(
-    () =>
-      movimentos.reduce((acc, m) => {
-        if (m.tipo === "envasado") return acc + m.qtd;
-        if (m.tipo === "entrada") return acc - m.qtd;
-        if (m.tipo === "retorno_sem_envase") return acc - m.qtd;
-        return acc;
-      }, 0),
-    [movimentos],
-  );
-
-  const emTransitoSeguro = Math.max(0, emTransitoFonte);
+  const emTransitoSeguro = emTransitoFonte;
 
   const r = resumoVasilhames(produtos, naRua, emTransitoSeguro);
 
