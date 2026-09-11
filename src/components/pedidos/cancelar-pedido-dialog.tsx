@@ -54,21 +54,42 @@ export function CancelarPedidoDialog({
     }
     setProcessando(true);
     try {
-      cancelar(pedido.id, motivo, obs);
+      // 1) Marca como cancelado — todos os cálculos (Painel, Caixa, Relatórios)
+      // já ignoram pedidos cancelados, então faturamento e formas de pagamento
+      // deixam de contar este valor imediatamente.
+      await cancelar(pedido.id, motivo, obs);
+
+      // 2) Produtos e vasilhames voltam ao depósito.
       if (estorna) {
         await estornarVenda(pedido.itens, pedido.vaziosRecolhidos);
       }
-      if (fiadoEmAberto && pedido.clienteId) {
-        ajustarDivida(pedido.clienteId, -valorFiadoAberto);
+
+      if (pedido.clienteId) {
+        // 3) Caderneta: recalcula o saldo devedor exato considerando o pedido cancelado.
+        const restantes = pedidos.map((p) =>
+          p.id === pedido.id ? { ...p, status: "cancelado" as const } : p,
+        );
+        await definirDivida(pedido.clienteId, saldoFiadoCliente(restantes, pedido.clienteId));
+
+        // 4) Vales: desfaz o pacote vendido e devolve os vales resgatados.
+        const deltaVales = (pedido.valesResgatados ?? 0) - (pedido.valesCredito ?? 0);
+        if (deltaVales !== 0) await ajustarVales(pedido.clienteId, deltaVales);
+
+        // 5) Cascos que ficaram na rua nesta venda voltam a não pertencer ao cliente.
+        const cascosNaRua =
+          pedido.itens
+            .filter((i) => i.retornavel && i.modo === "refil")
+            .reduce((t, i) => t + i.qtd, 0) - pedido.vaziosRecolhidos;
+        if (cascosNaRua > 0) {
+          await ajustarVasilhames(pedido.clienteId, -cascosNaRua);
+        }
       }
-      // Cascos que ficaram na rua nesta venda voltam a não pertencer ao cliente.
-      const cascosNaRua =
-        pedido.itens
-          .filter((i) => i.retornavel && i.modo === "refil")
-          .reduce((t, i) => t + i.qtd, 0) - pedido.vaziosRecolhidos;
-      if (cascosNaRua > 0 && pedido.clienteId) {
-        await ajustarVasilhames(pedido.clienteId, -cascosNaRua);
-      }
+
+      // 6) Taxa de maquininha lançada automaticamente na venda deixa de existir.
+      const taxa = despesas.find(
+        (d) => d.descricao === `Taxa de cartão — Pedido #${pedido.numero}`,
+      );
+      if (taxa) removerDespesa(taxa.id);
 
       toast.info(`Pedido #${pedido.numero} cancelado — ${motivo}`);
       setAberto(false);
