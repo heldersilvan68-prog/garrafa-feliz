@@ -14,10 +14,11 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { useClientes } from "@/context/clientes";
+import { useDespesas } from "@/context/despesas";
 import { useEstoque } from "@/context/estoque";
 import { usePedidos } from "@/context/pedidos";
 import { brl } from "@/lib/erp";
-import { MOTIVOS_CANCELAMENTO, type Pedido } from "@/lib/pedidos";
+import { MOTIVOS_CANCELAMENTO, saldoFiadoCliente, type Pedido } from "@/lib/pedidos";
 
 export function CancelarPedidoDialog({
   pedido,
