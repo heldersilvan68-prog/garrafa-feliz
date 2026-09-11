@@ -15,7 +15,7 @@ type Ctx = {
   registrarCompra: (id: string, descricao: string, valor: number, data: string) => void;
   ajustarDivida: (id: string, delta: number) => void;
   /** Define o saldo devedor exato do cliente (sincronização com os fiados em aberto). */
-  definirDivida: (id: string, valor: number) => void;
+  definirDivida: (id: string, valor: number) => Promise<void>;
   /** Ajusta os cascos que o cliente tem na rua (positivo = levou, negativo = devolveu). */
   ajustarVasilhames: (id: string, delta: number) => Promise<void>;
   /** Ajusta o saldo de vales do cliente (positivo = comprou pacote, negativo = resgatou). */
@@ -186,7 +186,8 @@ export function ClientesProvider({ children }: { children: ReactNode }) {
         registrarCompra: (id, descricao, valor, data) =>
           compraMut.mutate({ id, descricao, valor, data }),
         ajustarDivida: (id, delta) => dividaMut.mutate({ id, delta }),
-        definirDivida: (id, valor) => definirDividaMut.mutate({ id, valor }),
+        definirDivida: (id, valor) =>
+          definirDividaMut.mutateAsync({ id, valor }).then(() => undefined),
         ajustarVasilhames: (id, delta) =>
           vasilhamesMut.mutateAsync({ id, delta }).then(() => undefined),
         ajustarVales: (id, delta) => valesMut.mutateAsync({ id, delta }).then(() => undefined),
