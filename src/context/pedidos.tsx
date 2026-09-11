@@ -23,7 +23,7 @@ type Ctx = {
   criar: (p: NovoPedido) => Promise<Pedido>;
   alterarStatus: (id: string, status: StatusPedido) => void;
   atualizar: (id: string, dados: Partial<Pedido>) => void;
-  cancelar: (id: string, motivo: string, observacao?: string) => void;
+  cancelar: (id: string, motivo: string, observacao?: string) => Promise<void>;
   /**
    * Baixa de fiado. Com `converterParcelas`, a venda deixa de ser fiado e passa
    * a contar como venda direta na forma recebida (usado no mesmo dia da venda).
