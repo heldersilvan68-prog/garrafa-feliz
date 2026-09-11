@@ -1,5 +1,5 @@
-import { createContext, useContext, type ReactNode } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createContext, useContext, useMemo, type ReactNode } from "react";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -27,6 +27,9 @@ export type CompraEntrada = {
 type Ctx = {
   produtos: Produto[];
   movimentos: MovimentoVasilhame[];
+  carregarMaisMovimentos: () => void;
+  temMaisMovimentos: boolean;
+  carregandoMaisMovimentos: boolean;
   carregando: boolean;
   salvar: (p: Produto) => void;
   remover: (id: string) => void;
@@ -65,19 +68,28 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
     },
   });
 
-  const { data: movimentos = [] } = useQuery({
+  const movimentosQuery = useInfiniteQuery({
     queryKey: ["movimentos-vasilhames", userId],
     enabled: !!userId,
-    queryFn: async () => {
+    initialPageParam: 0,
+    queryFn: async ({ pageParam }) => {
+      const inicio = pageParam * 50;
       const { data, error } = await supabase
         .from("returnable_movements")
         .select("*")
         .order("created_at", { ascending: false })
-        .limit(300);
+        .range(inicio, inicio + 49);
       if (error) throw error;
       return (data as VasilhameRow[]).map(paraMovimentoVasilhame);
     },
+    getNextPageParam: (ultima, paginas) => (ultima.length === 50 ? paginas.length : undefined),
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
   });
+  const movimentos = useMemo(
+    () => movimentosQuery.data?.pages.flat() ?? [],
+    [movimentosQuery.data],
+  );
 
   const invalidar = () => {
     queryClient.invalidateQueries({ queryKey: ["produtos"] });
@@ -510,25 +522,33 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
     onError: (e: Error) => toast.error(`Não foi possível estornar o estoque: ${e.message}`),
   });
 
+  const valor = useMemo<Ctx>(
+    () => ({
+      produtos,
+      movimentos,
+      carregarMaisMovimentos: () => void movimentosQuery.fetchNextPage(),
+      temMaisMovimentos: movimentosQuery.hasNextPage,
+      carregandoMaisMovimentos: movimentosQuery.isFetchingNextPage,
+      carregando: isLoading,
+      salvar: (p) => salvarMut.mutate(p),
+      remover: (id) => removerMut.mutate(id),
+      entradaEstoque: (id, qtd, compra) => entradaMut.mutate({ id, qtd, compra }),
+      moverVazios: (id, qtd) => vaziosMut.mutate({ id, qtd }),
+      comprarVasilhames: (id, qtd) => comprarMut.mutateAsync({ id, qtd }).then(() => undefined),
+      retornoSemEnvase: (id, qtd) => retornoMut.mutateAsync({ id, qtd }).then(() => undefined),
+      registrarAvaria: (dados) => avariaMut.mutateAsync(dados).then(() => undefined),
+      devolucaoCliente: (produtoId, qtd, clienteId) =>
+        devolucaoMut.mutateAsync({ produtoId, qtd, clienteId }).then(() => undefined),
+      estornarVenda: (itens, vaziosRecolhidos) =>
+        estornoMut.mutateAsync({ itens, vaziosRecolhidos }).then(() => undefined),
+      baixaVenda: (itens, vaziosRecolhidos) => baixaMut.mutate({ itens, vaziosRecolhidos }),
+    }),
+    [produtos, movimentos, movimentosQuery.fetchNextPage, movimentosQuery.hasNextPage, movimentosQuery.isFetchingNextPage, isLoading, salvarMut, removerMut, entradaMut, vaziosMut, comprarMut, retornoMut, avariaMut, devolucaoMut, estornoMut, baixaMut],
+  );
+
   return (
     <EstoqueContext.Provider
-      value={{
-        produtos,
-        movimentos,
-        carregando: isLoading,
-        salvar: (p) => salvarMut.mutate(p),
-        remover: (id) => removerMut.mutate(id),
-        entradaEstoque: (id, qtd, compra) => entradaMut.mutate({ id, qtd, compra }),
-        moverVazios: (id, qtd) => vaziosMut.mutate({ id, qtd }),
-        comprarVasilhames: (id, qtd) => comprarMut.mutateAsync({ id, qtd }).then(() => undefined),
-        retornoSemEnvase: (id, qtd) => retornoMut.mutateAsync({ id, qtd }).then(() => undefined),
-        registrarAvaria: (dados) => avariaMut.mutateAsync(dados).then(() => undefined),
-        devolucaoCliente: (produtoId, qtd, clienteId) =>
-          devolucaoMut.mutateAsync({ produtoId, qtd, clienteId }).then(() => undefined),
-        estornarVenda: (itens, vaziosRecolhidos) =>
-          estornoMut.mutateAsync({ itens, vaziosRecolhidos }).then(() => undefined),
-        baixaVenda: (itens, vaziosRecolhidos) => baixaMut.mutate({ itens, vaziosRecolhidos }),
-      }}
+      value={valor}
     >
       {children}
     </EstoqueContext.Provider>

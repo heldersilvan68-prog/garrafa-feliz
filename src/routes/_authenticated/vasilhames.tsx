@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useMemo } from "react";
 import { AlertTriangle, ArrowDownLeft, Boxes, Plus, Recycle, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -43,18 +44,31 @@ export const Route = createFileRoute("/_authenticated/vasilhames")({
 });
 
 function Vasilhames() {
-  const { produtos, movimentos } = useEstoque();
+  const {
+    produtos,
+    movimentos,
+    carregarMaisMovimentos,
+    temMaisMovimentos,
+    carregandoMaisMovimentos,
+  } = useEstoque();
   const { clientes } = useClientes();
-  const retornaveis = produtos.filter((p) => p.retornavel);
-  const naRua = clientes.reduce((s, c) => s + (c.vasilhamesRua ?? 0), 0);
+  const retornaveis = useMemo(() => produtos.filter((p) => p.retornavel), [produtos]);
+  const naRua = useMemo(
+    () => clientes.reduce((s, c) => s + (c.vasilhamesRua ?? 0), 0),
+    [clientes],
+  );
 
   // Calcula garrafões que saíram para a fonte e ainda não retornaram
-  const emTransitoFonte = movimentos.reduce((acc, m) => {
-    if (m.tipo === "envasado") return acc + m.qtd;
-    if (m.tipo === "entrada") return acc - m.qtd;
-    if (m.tipo === "retorno_sem_envase") return acc - m.qtd;
-    return acc;
-  }, 0);
+  const emTransitoFonte = useMemo(
+    () =>
+      movimentos.reduce((acc, m) => {
+        if (m.tipo === "envasado") return acc + m.qtd;
+        if (m.tipo === "entrada") return acc - m.qtd;
+        if (m.tipo === "retorno_sem_envase") return acc - m.qtd;
+        return acc;
+      }, 0),
+    [movimentos],
+  );
 
   const emTransitoSeguro = Math.max(0, emTransitoFonte);
 
@@ -237,6 +251,17 @@ function Vasilhames() {
               ))}
             </TableBody>
           </Table>
+          {temMaisMovimentos && (
+            <div className="flex justify-center border-t border-border pt-4">
+              <Button
+                variant="outline"
+                onClick={carregarMaisMovimentos}
+                disabled={carregandoMaisMovimentos}
+              >
+                {carregandoMaisMovimentos ? "Carregando..." : "Carregar mais movimentações"}
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

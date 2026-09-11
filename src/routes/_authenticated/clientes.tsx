@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   CalendarClock,
@@ -121,6 +121,7 @@ function ClientesPage() {
   const [expandido, setExpandido] = useState(false);
   const [modalAtivos, setModalAtivos] = useState(false);
   const [modalInativos, setModalInativos] = useState(false);
+  const [limiteVisivel, setLimiteVisivel] = useState(50);
 
   // Ativos = pelo menos 1 pedido válido nos últimos 30 dias corridos.
   const base = useMemo(() => {
@@ -155,6 +156,8 @@ function ClientesPage() {
         return s === "ok" || s === "amanha" || s === "em-breve";
       });
   }, [clientes, busca, aba]);
+  useEffect(() => setLimiteVisivel(50), [busca, aba]);
+  const listaVisivel = useMemo(() => lista.slice(0, limiteVisivel), [lista, limiteVisivel]);
 
   // Estritamente: previsão igual à data de hoje (fuso local) ou em atraso.
   const lembrarHoje = clientes.filter((c) => proximaCompra(c) <= hojeISO());
@@ -338,7 +341,7 @@ function ClientesPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {lista.map((c) => {
+        {listaVisivel.map((c) => {
           const status = statusRecompra(c);
           const dias = diasRestantes(c);
           return (
@@ -428,6 +431,13 @@ function ClientesPage() {
         })}
         {lista.length === 0 && (
           <p className="text-sm text-muted-foreground">Nenhum cliente encontrado.</p>
+        )}
+        {listaVisivel.length < lista.length && (
+          <div className="flex justify-center md:col-span-2 xl:col-span-3">
+            <Button variant="outline" onClick={() => setLimiteVisivel((v) => v + 50)}>
+              Carregar mais clientes
+            </Button>
+          </div>
         )}
       </div>
 
