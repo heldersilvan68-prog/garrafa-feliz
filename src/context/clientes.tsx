@@ -186,7 +186,8 @@ export function ClientesProvider({ children }: { children: ReactNode }) {
         registrarCompra: (id, descricao, valor, data) =>
           compraMut.mutate({ id, descricao, valor, data }),
         ajustarDivida: (id, delta) => dividaMut.mutate({ id, delta }),
-        definirDivida: (id, valor) => definirDividaMut.mutate({ id, valor }),
+        definirDivida: (id, valor) =>
+          definirDividaMut.mutateAsync({ id, valor }).then(() => undefined),
         ajustarVasilhames: (id, delta) =>
           vasilhamesMut.mutateAsync({ id, delta }).then(() => undefined),
         ajustarVales: (id, delta) => valesMut.mutateAsync({ id, delta }).then(() => undefined),
