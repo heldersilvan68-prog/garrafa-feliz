@@ -562,7 +562,7 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
         estornoMut.mutateAsync({ itens, vaziosRecolhidos }).then(() => undefined),
       baixaVenda: (itens, vaziosRecolhidos) => baixaMut.mutate({ itens, vaziosRecolhidos }),
     }),
-    [produtos, movimentos, movimentosQuery.fetchNextPage, movimentosQuery.hasNextPage, movimentosQuery.isFetchingNextPage, emTransitoFonte, isLoading, salvarMut, removerMut, entradaMut, vaziosMut, comprarMut, retornoMut, avariaMut, devolucaoMut, estornoMut, baixaMut],
+    [produtos, movimentos, movimentosQuery.fetchNextPage, movimentosQuery.hasNextPage, movimentosQuery.isFetchingNextPage, emTransitoFonte, isLoading, salvarMut.mutate, removerMut.mutate, entradaMut.mutate, vaziosMut.mutate, comprarMut.mutateAsync, retornoMut.mutateAsync, avariaMut.mutateAsync, devolucaoMut.mutateAsync, estornoMut.mutateAsync, baixaMut.mutate],
   );
 
   return (

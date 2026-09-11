@@ -308,7 +308,7 @@ export function ConfiguracoesProvider({ children }: { children: ReactNode }) {
       removerCategoriaCliente: (id) => removerCatMut.mutateAsync(id).then(() => undefined),
       semearFormasPadrao: () => semearMut.mutateAsync().then(() => undefined),
     }),
-    [config, formas, metodosAtivos, taxaDe, data?.categoriasCliente, isLoading, configMut, formaMut, removerFormaMut, criarCatMut, renomearCatMut, removerCatMut, semearMut],
+    [config, formas, metodosAtivos, taxaDe, data?.categoriasCliente, isLoading, configMut.mutateAsync, formaMut.mutateAsync, removerFormaMut.mutateAsync, criarCatMut.mutateAsync, renomearCatMut.mutateAsync, removerCatMut.mutateAsync, semearMut.mutateAsync],
   );
 
   return (

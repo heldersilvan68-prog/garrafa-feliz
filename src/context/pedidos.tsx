@@ -297,7 +297,7 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
       darBaixa: (id, forma, converterParcelas) =>
         baixaMut.mutate({ id, forma, converterParcelas }),
     }),
-    [pedidos, isLoading, criarMut, statusMut, atualizarMut, cancelarMut, baixaMut],
+    [pedidos, isLoading, criarMut.mutateAsync, statusMut.mutate, atualizarMut.mutate, cancelarMut.mutateAsync, baixaMut.mutate],
   );
 
   return (

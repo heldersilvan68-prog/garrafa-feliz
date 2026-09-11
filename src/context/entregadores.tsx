@@ -1,4 +1,4 @@
-import { createContext, useContext, type ReactNode } from "react";
+import { createContext, useContext, useMemo, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -75,21 +75,29 @@ export function EntregadoresProvider({ children }: { children: ReactNode }) {
     onError: (e: Error) => toast.error(`Não foi possível excluir o cadastro: ${e.message}`),
   });
 
-  const opcoes = [
-    BALCAO,
-    ...entregadores.filter((e) => e.ativo && e.tipo === "entregador").map((e) => e.nome),
-    ...entregadores.filter((e) => e.ativo && e.tipo === "auxiliar").map((e) => e.nome),
-  ];
+  const opcoes = useMemo(
+    () => [
+      BALCAO,
+      ...entregadores.filter((e) => e.ativo && e.tipo === "entregador").map((e) => e.nome),
+      ...entregadores.filter((e) => e.ativo && e.tipo === "auxiliar").map((e) => e.nome),
+    ],
+    [entregadores],
+  );
+
+  const valor = useMemo<Ctx>(
+    () => ({
+      entregadores,
+      opcoes,
+      carregando: isLoading,
+      salvar: (e) => salvarMut.mutateAsync(e).then(() => undefined),
+      remover: (id) => removerMut.mutateAsync(id).then(() => undefined),
+    }),
+    [entregadores, opcoes, isLoading, salvarMut.mutateAsync, removerMut.mutateAsync],
+  );
 
   return (
     <EntregadoresContext.Provider
-      value={{
-        entregadores,
-        opcoes,
-        carregando: isLoading,
-        salvar: (e) => salvarMut.mutateAsync(e).then(() => undefined),
-        remover: (id) => removerMut.mutateAsync(id).then(() => undefined),
-      }}
+      value={valor}
     >
       {children}
     </EntregadoresContext.Provider>

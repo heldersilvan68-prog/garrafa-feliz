@@ -1,4 +1,4 @@
-import { createContext, useContext, type ReactNode } from "react";
+import { createContext, useContext, useMemo, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -174,23 +174,30 @@ export function CaixaProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
   }, "Não foi possível registrar o pagamento");
 
+  const valor = useMemo<Ctx>(
+    () => ({
+      caixas,
+      regras: data?.regras ?? [],
+      vales: data?.vales ?? [],
+      pagamentos: data?.pagamentos ?? [],
+      carregando: isLoading,
+      caixaAberto,
+      abrirCaixa: (trocoInicial) => abrirMut.mutate(trocoInicial),
+      fecharCaixa: (dados) => fecharMut.mutate(dados),
+      registrarMovimento: (tipo, valorMovimento, motivo) =>
+        movimentoMut.mutate({ tipo, valor: valorMovimento, motivo }),
+      salvarRegra: (regra) => regraMut.mutate(regra),
+      registrarVale: (entregador, valorVale, motivo) =>
+        valeMut.mutate({ entregador, valor: valorVale, motivo }),
+      pagarComissao: (entregador, valorPagamento) =>
+        pagamentoMut.mutate({ entregador, valor: valorPagamento }),
+    }),
+    [caixas, data?.regras, data?.vales, data?.pagamentos, isLoading, caixaAberto, abrirMut.mutate, fecharMut.mutate, movimentoMut.mutate, regraMut.mutate, valeMut.mutate, pagamentoMut.mutate],
+  );
+
   return (
     <CaixaContext.Provider
-      value={{
-        caixas,
-        regras: data?.regras ?? [],
-        vales: data?.vales ?? [],
-        pagamentos: data?.pagamentos ?? [],
-        carregando: isLoading,
-        caixaAberto,
-        abrirCaixa: (trocoInicial) => abrirMut.mutate(trocoInicial),
-        fecharCaixa: (dados) => fecharMut.mutate(dados),
-        registrarMovimento: (tipo, valor, motivo) => movimentoMut.mutate({ tipo, valor, motivo }),
-        salvarRegra: (regra) => regraMut.mutate(regra),
-        registrarVale: (entregador, valor, motivo) =>
-          valeMut.mutate({ entregador, valor, motivo }),
-        pagarComissao: (entregador, valor) => pagamentoMut.mutate({ entregador, valor }),
-      }}
+      value={valor}
     >
       {children}
     </CaixaContext.Provider>
