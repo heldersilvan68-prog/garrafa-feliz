@@ -420,9 +420,9 @@ function CaixaPage() {
         : pedidosDoDia(pedidos, dia),
     [pedidos, dia, caixaAberto],
   );
-  const totais = totaisPorPagamento(doDia);
-  const fechados = caixas.filter((c) => c.fechadoEm);
-  const cartaoTotal = totais["Débito"] + totais["Crédito"];
+  const totais = useMemo(() => totaisPorPagamento(doDia), [doDia]);
+  const fechados = useMemo(() => caixas.filter((c) => c.fechadoEm), [caixas]);
+  const cartaoTotal = useMemo(() => totais["Débito"] + totais["Crédito"], [totais]);
 
   // Fonte única dos cálculos financeiros (mesma usada no Dashboard/Relatórios).
   const mov = useMemo(
@@ -456,9 +456,13 @@ function CaixaPage() {
     [caixaAberto],
   );
   const suprimentos = mov.suprimentos;
-  const esperado = caixaAberto
-    ? caixaAberto.trocoInicial + mov.entradaDinheiro + suprimentos - mov.sangrias
-    : 0;
+  const esperado = useMemo(
+    () =>
+      caixaAberto
+        ? caixaAberto.trocoInicial + mov.entradaDinheiro + suprimentos - mov.sangrias
+        : 0,
+    [caixaAberto, mov.entradaDinheiro, mov.sangrias, suprimentos],
+  );
 
   // Agrupa despesas divididas (mesma descrição no dia) para mostrar cada forma.
   const gruposSaidas = useMemo(() => {

@@ -1,4 +1,4 @@
-import { createContext, useContext, type ReactNode } from "react";
+import { createContext, useContext, useMemo, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -141,20 +141,25 @@ export function DespesasProvider({ children }: { children: ReactNode }) {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const valor = useMemo<Ctx>(
+    () => ({
+      despesas: data?.despesas ?? [],
+      categorias: data?.categorias ?? [],
+      carregando: isLoading,
+      adicionarDespesa: (d) => adicionarMut.mutate(d),
+      atualizarDespesa: (id, d) => atualizarMut.mutate({ id, d }),
+      removerDespesa: (id) => removerMut.mutate(id),
+      criarCategoria: (nome) => categoriaMut.mutateAsync(nome),
+      renomearCategoria: (id, nome) =>
+        renomearCategoriaMut.mutateAsync({ id, nome }).then(() => undefined),
+      removerCategoria: (id) => removerCategoriaMut.mutateAsync(id).then(() => undefined),
+    }),
+    [data?.despesas, data?.categorias, isLoading, adicionarMut.mutate, atualizarMut.mutate, removerMut.mutate, categoriaMut.mutateAsync, renomearCategoriaMut.mutateAsync, removerCategoriaMut.mutateAsync],
+  );
+
   return (
     <DespesasContext.Provider
-      value={{
-        despesas: data?.despesas ?? [],
-        categorias: data?.categorias ?? [],
-        carregando: isLoading,
-        adicionarDespesa: (d) => adicionarMut.mutate(d),
-        atualizarDespesa: (id, d) => atualizarMut.mutate({ id, d }),
-        removerDespesa: (id) => removerMut.mutate(id),
-        criarCategoria: (nome) => categoriaMut.mutateAsync(nome),
-        renomearCategoria: (id, nome) =>
-          renomearCategoriaMut.mutateAsync({ id, nome }).then(() => undefined),
-        removerCategoria: (id) => removerCategoriaMut.mutateAsync(id).then(() => undefined),
-      }}
+      value={valor}
     >
       {children}
     </DespesasContext.Provider>

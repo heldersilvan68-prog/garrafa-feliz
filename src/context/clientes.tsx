@@ -1,9 +1,9 @@
-import { createContext, useContext, type ReactNode } from "react";
+import { createContext, useContext, useMemo, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { paraCliente, type ClienteRow, type CompraRow } from "@/lib/mapeadores";
+import { mapearClientes, type ClienteRow, type CompraRow } from "@/lib/mapeadores";
 import { ordenarPorCodigo, type Cliente } from "@/lib/clientes";
 import { isoLocal } from "@/lib/periodo";
 
@@ -52,7 +52,7 @@ export function ClientesProvider({ children }: { children: ReactNode }) {
       if (erroCompras) throw erroCompras;
       // Ordem global: código numérico crescente (1, 2, 3... 10, 11).
       return ordenarPorCodigo(
-        (linhas as ClienteRow[]).map((l) => paraCliente(l, (compras ?? []) as CompraRow[])),
+        mapearClientes(linhas as ClienteRow[], (compras ?? []) as CompraRow[]),
       );
     },
   });
@@ -176,23 +176,28 @@ export function ClientesProvider({ children }: { children: ReactNode }) {
     onError: (e: Error) => toast.error(`Falha na importação: ${e.message}`),
   });
 
+  const valor = useMemo<Ctx>(
+    () => ({
+      clientes,
+      carregando: isLoading,
+      salvar: (c) => salvarMut.mutate(c),
+      remover: (id) => removerMut.mutate(id),
+      registrarCompra: (id, descricao, valorCompra, data) =>
+        compraMut.mutate({ id, descricao, valor: valorCompra, data }),
+      ajustarDivida: (id, delta) => dividaMut.mutate({ id, delta }),
+      definirDivida: (id, valorDivida) =>
+        definirDividaMut.mutateAsync({ id, valor: valorDivida }).then(() => undefined),
+      ajustarVasilhames: (id, delta) =>
+        vasilhamesMut.mutateAsync({ id, delta }).then(() => undefined),
+      ajustarVales: (id, delta) => valesMut.mutateAsync({ id, delta }).then(() => undefined),
+      importar: (lista) => importarMut.mutateAsync(lista),
+    }),
+    [clientes, isLoading, salvarMut.mutate, removerMut.mutate, compraMut.mutate, dividaMut.mutate, definirDividaMut.mutateAsync, vasilhamesMut.mutateAsync, valesMut.mutateAsync, importarMut.mutateAsync],
+  );
+
   return (
     <ClientesContext.Provider
-      value={{
-        clientes,
-        carregando: isLoading,
-        salvar: (c) => salvarMut.mutate(c),
-        remover: (id) => removerMut.mutate(id),
-        registrarCompra: (id, descricao, valor, data) =>
-          compraMut.mutate({ id, descricao, valor, data }),
-        ajustarDivida: (id, delta) => dividaMut.mutate({ id, delta }),
-        definirDivida: (id, valor) =>
-          definirDividaMut.mutateAsync({ id, valor }).then(() => undefined),
-        ajustarVasilhames: (id, delta) =>
-          vasilhamesMut.mutateAsync({ id, delta }).then(() => undefined),
-        ajustarVales: (id, delta) => valesMut.mutateAsync({ id, delta }).then(() => undefined),
-        importar: (lista) => importarMut.mutateAsync(lista),
-      }}
+      value={valor}
     >
       {children}
     </ClientesContext.Provider>

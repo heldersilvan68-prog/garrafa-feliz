@@ -60,9 +60,9 @@ const variacao = (atual: number, anterior: number) =>
 
 const validos = (pedidos: Pedido[]) => pedidos.filter((p) => p.status !== "cancelado");
 
-const custo = (p: Pedido, produtos: Produto[]) =>
+const custo = (p: Pedido, produtosPorId: Map<string, Produto>) =>
   p.itens.reduce((s, i) => {
-    const prod = produtos.find((x) => x.id === i.produtoId);
+    const prod = produtosPorId.get(i.produtoId);
     return s + (prod?.precoCusto ?? 0) * i.qtd;
   }, 0);
 
@@ -91,6 +91,7 @@ export function calcularResumo(
   const hoje = opcoes.hoje ?? new Date();
   const anterior = faixaAnterior(faixa);
   const hojeIso = isoLocal(hoje);
+  const produtosPorId = new Map(produtos.map((produto) => [produto.id, produto]));
 
   const ativos = validos(pedidos);
   const doPeriodo = ativos.filter((p) => naFaixa(diaDoPedido(p), faixa));
@@ -99,7 +100,7 @@ export function calcularResumo(
   // Vendas em Vale não somam faturamento novo (dinheiro entrou na compra do pacote).
   const vendas = doPeriodo.reduce((s, p) => s + valorFaturado(p), 0);
   const vendasAnt = doAnterior.reduce((s, p) => s + valorFaturado(p), 0);
-  const custoProduto = doPeriodo.reduce((s, p) => s + custo(p, produtos), 0);
+  const custoProduto = doPeriodo.reduce((s, p) => s + custo(p, produtosPorId), 0);
 
   const pagas = despesas.filter((d) => d.status === "Pago");
   const despesasPeriodo = pagas
@@ -198,14 +199,17 @@ export function calcularResumo(
     }));
   }
 
+  const vendasPorMes = new Map<string, number>();
+  for (const pedido of ativos) {
+    const prefixo = diaDoPedido(pedido).slice(0, 7);
+    vendasPorMes.set(prefixo, (vendasPorMes.get(prefixo) ?? 0) + valorFaturado(pedido));
+  }
   const vendasMes = Array.from({ length: 6 }, (_, i) => {
     const d = new Date(hoje.getFullYear(), hoje.getMonth() - (5 - i), 1);
     const prefixo = isoLocal(d).slice(0, 7);
     return {
       rotulo: MESES[d.getMonth()],
-      valor: ativos
-        .filter((p) => diaDoPedido(p).startsWith(prefixo))
-        .reduce((s, p) => s + valorFaturado(p), 0),
+      valor: vendasPorMes.get(prefixo) ?? 0,
     };
   });
 

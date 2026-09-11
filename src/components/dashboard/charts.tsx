@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -79,8 +79,12 @@ export function VendasChart({ resumo }: { resumo: ResumoPeriodo }) {
 
 export function DespesasChart({ faixa }: { faixa?: Faixa }) {
   const { despesas } = useDespesas();
-  const dados = despesasPorCategoria(despesas, faixa ?? faixaPeriodo("mes"));
-  const total = dados.reduce((s, d) => s + d.valor, 0);
+  const faixaEfetiva = faixa ?? faixaPeriodo("mes");
+  const dados = useMemo(
+    () => despesasPorCategoria(despesas, faixaEfetiva),
+    [despesas, faixaEfetiva.inicio, faixaEfetiva.fim],
+  );
+  const total = useMemo(() => dados.reduce((s, d) => s + d.valor, 0), [dados]);
 
   return (
     <Card className="shadow-[var(--shadow-card)]">

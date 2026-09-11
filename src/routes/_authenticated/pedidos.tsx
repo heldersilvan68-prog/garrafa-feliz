@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import {
   Bike,
   CheckCircle2,
@@ -80,7 +80,7 @@ const STATUS_BADGE: Record<StatusPedido, "default" | "secondary" | "destructive"
   cancelado: "destructive",
 };
 
-function PedidoCard({ pedido }: { pedido: Pedido }) {
+const PedidoCard = memo(function PedidoCard({ pedido }: { pedido: Pedido }) {
   const { alterarStatus } = usePedidos();
   const avancar = proximoStatus(pedido.status);
 
@@ -199,12 +199,13 @@ function PedidoCard({ pedido }: { pedido: Pedido }) {
       </CardContent>
     </Card>
   );
-}
+});
 
 function PedidosPage() {
   const { pedidos } = usePedidos();
   const [filtro, setFiltro] = useState<Filtro>("todos");
   const [filtroForma, setFiltroForma] = useState<FiltroForma>("especie");
+  const [limiteVisivel, setLimiteVisivel] = useState(50);
   const periodo = usePeriodo("hoje");
 
   const doPeriodo = useMemo(
@@ -225,6 +226,10 @@ function PedidosPage() {
     return doPeriodo.filter((p) => p.status === filtro);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filtro, filtroForma, doPeriodo]);
+
+  useEffect(() => setLimiteVisivel(50), [filtro, filtroForma, periodo.faixa.inicio, periodo.faixa.fim]);
+
+  const listaVisivel = useMemo(() => lista.slice(0, limiteVisivel), [lista, limiteVisivel]);
 
   const contar = (s: Filtro) => {
     if (s === "todos") return doPeriodo.length;
@@ -313,9 +318,16 @@ function PedidosPage() {
         </Card>
       ) : (
         <div className="grid gap-4 xl:grid-cols-2">
-          {lista.map((p) => (
+          {listaVisivel.map((p) => (
             <PedidoCard key={p.id} pedido={p} />
           ))}
+          {listaVisivel.length < lista.length && (
+            <div className="flex justify-center xl:col-span-2">
+              <Button variant="outline" onClick={() => setLimiteVisivel((v) => v + 50)}>
+                Carregar mais vendas
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </div>

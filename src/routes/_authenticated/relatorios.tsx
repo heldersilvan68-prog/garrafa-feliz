@@ -91,7 +91,7 @@ function RelatoriosPage() {
   const { caixaAberto } = useCaixa();
   const { clientes } = useClientes();
   const { metodosAtivos, taxaDe } = useConfiguracoes();
-  const formasFiltro = metodosAtivos as FormaPagamento[];
+  const formasFiltro = useMemo(() => metodosAtivos as FormaPagamento[], [metodosAtivos]);
 
   const periodoEstado = usePeriodo("hoje");
   const faixa = periodoEstado.faixa;
@@ -112,34 +112,41 @@ function RelatoriosPage() {
     [pedidos, faixa, status, forma],
   );
 
-  const validos = filtrados.filter((p) => p.status !== "cancelado");
-  // Faturamento real: resgates em Vale Crédito não faturam de novo (o dinheiro
-  // entrou no dia da compra do pacote). Mesma base usada no Dashboard.
-  const faturado = validos.reduce((s, p) => s + valorFaturado(p), 0);
-  const ticket = validos.length > 0 ? faturado / validos.length : 0;
-  const cancelados = filtrados.filter((p) => p.status === "cancelado");
-
-  // Formas e taxas vêm das Configurações (contexto global).
-  const porForma = formasFiltro.map((f) => {
-    const valor = validos.reduce((s, p) => s + valorPorForma(p, f), 0);
-    const taxa = taxaDe(f);
+  const metricas = useMemo(() => {
+    const validos = filtrados.filter((p) => p.status !== "cancelado");
+    const faturado = validos.reduce((s, p) => s + valorFaturado(p), 0);
+    const porForma = formasFiltro.map((f) => {
+      let valor = 0;
+      let qtd = 0;
+      for (const p of validos) {
+        const valorPedido = valorPorForma(p, f);
+        valor += valorPedido;
+        if (valorPedido > 0) qtd += 1;
+      }
+      const taxa = taxaDe(f);
+      return { forma: f, qtd, valor, taxa, taxaValor: (valor * taxa) / 100, liquido: valor - (valor * taxa) / 100 };
+    });
+    const despesasFaixa = despesas.filter((d) => dentroFaixa(d.data, faixa));
     return {
-      forma: f,
-      qtd: validos.filter((p) => valorPorForma(p, f) > 0).length,
-      valor,
-      taxa,
-      taxaValor: (valor * taxa) / 100,
-      liquido: valor - (valor * taxa) / 100,
+      validos,
+      faturado,
+      ticket: validos.length > 0 ? faturado / validos.length : 0,
+      cancelados: filtrados.filter((p) => p.status === "cancelado"),
+      porForma,
+      totalTaxas: porForma.reduce((s, f) => s + f.taxaValor, 0),
+      ranking: maisVendidos(validos),
+      despesasFaixa,
+      despesasPendentes: despesasFaixa
+        .filter((d) => d.status === "Pendente")
+        .reduce((s, d) => s + d.valor, 0),
+      fiadoPeriodo: validos.reduce((s, p) => s + (p.valorFiado ?? 0), 0),
+      vaziosRecolhidos: validos.reduce((s, p) => s + p.vaziosRecolhidos, 0),
     };
-  });
-  const totalTaxas = porForma.reduce((s, f) => s + f.taxaValor, 0);
-
-  const ranking = maisVendidos(validos);
-
-  const despesasFaixa = despesas.filter((d) => dentroFaixa(d.data, faixa));
-  const despesasPendentes = despesasFaixa
-    .filter((d) => d.status === "Pendente")
-    .reduce((s, d) => s + d.valor, 0);
+  }, [filtrados, formasFiltro, taxaDe, despesas, faixa]);
+  const {
+    validos, faturado, ticket, cancelados, porForma, totalTaxas, ranking,
+    despesasFaixa, despesasPendentes, fiadoPeriodo, vaziosRecolhidos,
+  } = metricas;
 
 
 
@@ -149,41 +156,52 @@ function RelatoriosPage() {
       caixaAberto.movimentos.reduce((s, m) => s + (m.tipo === "sangria" ? -m.valor : m.valor), 0)
     : 0;
 
-  const cheios = produtos.reduce((s, p) => s + p.estoqueCheio, 0);
-  const vazios = produtos.reduce((s, p) => s + p.estoqueVazio, 0);
-  const abaixoMinimo = produtos.filter((p) => p.estoqueCheio <= p.estoqueMinimo);
-  const vaziosRecolhidos = validos.reduce((s, p) => s + p.vaziosRecolhidos, 0);
+  const { cheios, vazios, abaixoMinimo } = useMemo(
+    () => ({
+      cheios: produtos.reduce((s, p) => s + p.estoqueCheio, 0),
+      vazios: produtos.reduce((s, p) => s + p.estoqueVazio, 0),
+      abaixoMinimo: produtos.filter((p) => p.estoqueCheio <= p.estoqueMinimo),
+    }),
+    [produtos],
+  );
 
   // Novos clientes: data real de criação do cadastro (created_at) em America/Bahia.
-  const novosClientes = clientes.filter((c) => {
-    const dia = c.criadoEm ?? c.cadastradoEm;
-    return !!dia && dentroFaixa(dia, faixa);
-  });
-
-  // Fiado gerado dentro do período (pedidos válidos com valor fiado).
-  const fiadoPeriodo = validos.reduce((s, p) => s + (p.valorFiado ?? 0), 0);
+  const novosClientes = useMemo(
+    () => clientes.filter((c) => {
+      const dia = c.criadoEm ?? c.cadastradoEm;
+      return !!dia && dentroFaixa(dia, faixa);
+    }),
+    [clientes, faixa],
+  );
 
   // Clientes com dívida em aberto + quanto desse fiado nasceu no período.
   const pendentes = useMemo(
-    () =>
-      clientes
+    () => {
+      const fiadoPorCliente = new Map<string, number>();
+      for (const pedido of validos) {
+        fiadoPorCliente.set(
+          pedido.clienteId,
+          (fiadoPorCliente.get(pedido.clienteId) ?? 0) + (pedido.valorFiado ?? 0),
+        );
+      }
+      return clientes
         .filter((c) => (c.divida ?? 0) > 0)
         .map((c) => ({
           id: c.id,
           nome: c.nome,
           telefone: c.telefone,
           divida: c.divida ?? 0,
-          fiadoPeriodo: validos
-            .filter((p) => p.clienteId === c.id)
-            .reduce((s, p) => s + (p.valorFiado ?? 0), 0),
+          fiadoPeriodo: fiadoPorCliente.get(c.id) ?? 0,
         }))
-        .sort((a, b) => b.divida - a.divida),
+        .sort((a, b) => b.divida - a.divida);
+    },
     [clientes, validos],
   );
   const totalPendente = pendentes.reduce((s, c) => s + c.divida, 0);
 
   // Faturamento e lucro por modalidade de vasilhame retornável.
   const porModalidade = useMemo(() => {
+    const produtosPorId = new Map(produtos.map((produto) => [produto.id, produto]));
     const modos: { id: ModoVenda; label: string }[] = [
       { id: "refil", label: LABEL_MODO.refil },
       { id: "completa", label: LABEL_MODO.completa },
@@ -199,7 +217,7 @@ function RelatoriosPage() {
         const fator = p.total > 0 ? valorFaturado(p) / p.total : 0;
         for (const i of p.itens) {
           if (!i.retornavel || (i.modo ?? "refil") !== id) continue;
-          const prod = produtos.find((x) => x.id === i.produtoId);
+          const prod = produtosPorId.get(i.produtoId);
           const envase = prod?.custoEnvase || prod?.precoCusto || 0;
           const casco = prod?.custoCasco ?? 0;
           const unitario = id === "refil" ? envase : id === "casco" ? casco : envase + casco;
