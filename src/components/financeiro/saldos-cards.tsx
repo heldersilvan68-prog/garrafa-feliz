@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { Banknote, Landmark, Wallet } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCaixa } from "@/context/caixa";
@@ -14,7 +15,7 @@ export function SaldosCards() {
   const { pedidos } = usePedidos();
   const { despesas } = useDespesas();
   const { caixas } = useCaixa();
-  const s = calcularSaldos(pedidos, despesas, caixas);
+  const s = useMemo(() => calcularSaldos(pedidos, despesas, caixas), [pedidos, despesas, caixas]);
 
   const cards = [
     {
