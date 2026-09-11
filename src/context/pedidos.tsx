@@ -290,7 +290,8 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
         criar: (p) => criarMut.mutateAsync(p),
         alterarStatus: (id, status) => statusMut.mutate({ id, status }),
         atualizar: (id, dados) => atualizarMut.mutate({ id, dados }),
-        cancelar: (id, motivo, observacao) => cancelarMut.mutate({ id, motivo, observacao }),
+        cancelar: (id, motivo, observacao) =>
+          cancelarMut.mutateAsync({ id, motivo, observacao }).then(() => undefined),
         darBaixa: (id, forma, converterParcelas) =>
           baixaMut.mutate({ id, forma, converterParcelas }),
       }}
