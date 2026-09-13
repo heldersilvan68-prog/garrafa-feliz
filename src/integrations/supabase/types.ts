@@ -497,6 +497,7 @@ export type Database = {
           qtd: number
           quantidade_embalagens: number | null
           retornavel: boolean
+          rotulo_embalagem: string | null
           user_id: string
         }
         Insert: {
@@ -512,6 +513,7 @@ export type Database = {
           qtd?: number
           quantidade_embalagens?: number | null
           retornavel?: boolean
+          rotulo_embalagem?: string | null
           user_id: string
         }
         Update: {
@@ -527,6 +529,7 @@ export type Database = {
           qtd?: number
           quantidade_embalagens?: number | null
           retornavel?: boolean
+          rotulo_embalagem?: string | null
           user_id?: string
         }
         Relationships: [
