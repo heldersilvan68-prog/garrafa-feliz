@@ -46,8 +46,10 @@ export type ItemPedido = {
 /** Total registrado da linha, sem ratear o preço do fardo em unidades avulsas. */
 export const totalItemPedido = (i: ItemPedido) => {
   const valor =
-    i.embalagem === "fardo" && (i.quantidadeEmbalagens ?? 0) > 0
-      ? (i.quantidadeEmbalagens ?? 0) * (i.precoEmbalagem ?? 0)
+    i.embalagem === "fardo" &&
+    (i.quantidadeEmbalagens ?? 0) > 0 &&
+    i.precoEmbalagem !== undefined
+      ? (i.quantidadeEmbalagens ?? 0) * i.precoEmbalagem
       : i.qtd * i.precoUnit;
   return Math.round(valor * 100) / 100;
 };

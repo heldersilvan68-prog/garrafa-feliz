@@ -246,18 +246,26 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
     nome: l.nome,
     qtd: l.qtd,
     // Preço negociado apenas nesta venda — não altera o cadastro do produto.
-    // Fardo fechado: o valor digitado é do fardo, convertido por unidade.
-    // Atacado: aplica combos fechados + unidades avulsas progressivamente.
+    // O rateio abaixo existe somente para compatibilidade com módulos antigos;
+    // o total oficial do fardo usa quantidadeEmbalagens × precoEmbalagem.
     precoUnit: l.qtd > 0 ? totalLinha(l) / l.qtd : 0,
     embalagem: l.embalagem,
     quantidadeEmbalagens:
       l.embalagem === "fardo"
-        ? Math.max(1, Math.round(l.qtd / unidPorFardo(produtos.find((p) => p.id === l.produtoId) ?? ({} as never))))
+        ? Math.max(
+            1,
+            Math.round(
+              l.qtd /
+                unidPorFardo(produtos.find((p) => p.id === l.produtoId) ?? ({} as never)),
+            ),
+          )
         : undefined,
     precoEmbalagem: l.embalagem === "fardo" ? l.preco : undefined,
     rotuloEmbalagem:
       l.embalagem === "fardo"
-        ? rotuloEmbalagem(produtos.find((p) => p.id === l.produtoId)?.unidade).singular.replace(/^./, (c) => c.toUpperCase())
+        ? rotuloEmbalagem(
+            produtos.find((p) => p.id === l.produtoId)?.unidade,
+          ).singular.replace(/^./, (c) => c.toUpperCase())
         : undefined,
     retornavel: l.retornavel,
     modo: l.modo,
