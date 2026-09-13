@@ -112,8 +112,8 @@ function Cupom({ pedido }: { pedido: Pedido }) {
           </>
         ) : null}
 
-        {pedido.itens.map((i) => (
-          <div key={`${i.produtoId}-${i.nome}-${i.modo}`} className="cupom-item">
+        {pedido.itens.map((i, idx) => (
+          <div key={`${i.produtoId}-${i.nome}-${i.modo}-${i.embalagem}-${idx}`} className="cupom-item">
             <div className="cupom-linha cupom-negrito">
               <span className="cupom-quebra">
                  {rotuloItemPedido(i)}

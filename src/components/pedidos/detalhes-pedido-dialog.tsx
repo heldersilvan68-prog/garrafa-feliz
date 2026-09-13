@@ -82,8 +82,11 @@ export function DetalhesPedidoDialog({
                 <Package className="size-4" /> Produtos
               </h3>
               <div className="flex flex-col gap-1.5 rounded-xl border border-border p-3">
-                {pedido.itens.map((i) => (
-                  <div key={i.produtoId} className="flex items-start justify-between gap-3 text-sm">
+                {pedido.itens.map((i, idx) => (
+                  <div
+                    key={`${i.produtoId}-${i.modo}-${i.embalagem}-${idx}`}
+                    className="flex items-start justify-between gap-3 text-sm"
+                  >
                     <span className="min-w-0">
                        {rotuloItemPedido(i)}
                       {i.retornavel && (
