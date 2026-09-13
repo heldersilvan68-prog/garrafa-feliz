@@ -34,6 +34,7 @@ import { dataBR } from "@/lib/despesas";
 import {
   STATUS_PEDIDO_LABEL,
   valorFaturado,
+  totalItemPedido,
   valorPorForma,
   type FormaPagamento,
   type StatusPedido,
@@ -222,7 +223,7 @@ function RelatoriosPage() {
           const casco = prod?.custoCasco ?? 0;
           const unitario = id === "refil" ? envase : id === "casco" ? casco : envase + casco;
           qtd += i.qtd;
-          faturamento += i.qtd * i.precoUnit * fator;
+          faturamento += totalItemPedido(i) * fator;
           custo += i.qtd * unitario;
         }
       }
