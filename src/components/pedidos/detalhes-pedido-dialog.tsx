@@ -15,7 +15,13 @@ import { Separator } from "@/components/ui/separator";
 import { brl } from "@/lib/erp";
 import { isoLocal, TIMEZONE } from "@/lib/periodo";
 import { LABEL_MODO } from "@/lib/vasilhames";
-import { STATUS_PEDIDO_LABEL, parcelasDe, type Pedido } from "@/lib/pedidos";
+import {
+  STATUS_PEDIDO_LABEL,
+  parcelasDe,
+  rotuloItemPedido,
+  totalItemPedido,
+  type Pedido,
+} from "@/lib/pedidos";
 
 const dataHora = (iso: string) =>
   new Date(iso).toLocaleString("pt-BR", {
@@ -79,18 +85,20 @@ export function DetalhesPedidoDialog({
                 {pedido.itens.map((i) => (
                   <div key={i.produtoId} className="flex items-start justify-between gap-3 text-sm">
                     <span className="min-w-0">
-                      {i.qtd}x {i.nome}
+                       {rotuloItemPedido(i)}
                       {i.retornavel && (
                         <span className="ml-1 text-xs text-muted-foreground">
                           ({LABEL_MODO[i.modo]})
                         </span>
                       )}
                       <span className="block text-xs text-muted-foreground">
-                        {brl(i.precoUnit)} / un.
+                         {i.embalagem === "fardo" && i.precoEmbalagem !== undefined
+                           ? `${brl(i.precoEmbalagem)} / ${i.rotuloEmbalagem || "Fardo"}`
+                           : `${brl(i.precoUnit)} / un.`}
                       </span>
                     </span>
                     <span className="shrink-0 font-medium tabular-nums">
-                      {brl(i.qtd * i.precoUnit)}
+                       {brl(totalItemPedido(i))}
                     </span>
                   </div>
                 ))}

@@ -109,6 +109,10 @@ export const paraItemPedido = (r: ItemPedidoRow): ItemPedido => ({
   nome: r.nome,
   qtd: r.qtd,
   precoUnit: num(r.preco_unit),
+  embalagem: r.embalagem === "fardo" ? "fardo" : r.embalagem === "un" ? "un" : undefined,
+  quantidadeEmbalagens: r.quantidade_embalagens ?? undefined,
+  precoEmbalagem: r.preco_embalagem === null ? undefined : num(r.preco_embalagem),
+  rotuloEmbalagem: r.rotulo_embalagem ?? undefined,
   retornavel: r.retornavel,
   modo: (r.modo as ModoVenda | null) ?? "refil",
 });

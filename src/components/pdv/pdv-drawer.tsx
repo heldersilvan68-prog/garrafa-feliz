@@ -44,9 +44,16 @@ import {
   precoPorModo,
   totalComPromocao,
   unidPorFardo,
+  rotuloEmbalagem,
 } from "@/lib/erp";
 import { BALCAO } from "@/lib/entregadores";
-import { resumoItens, type FormaPagamento, type ItemPedido, type Pedido } from "@/lib/pedidos";
+import {
+  resumoItens,
+  totalItemPedido,
+  type FormaPagamento,
+  type ItemPedido,
+  type Pedido,
+} from "@/lib/pedidos";
 import { ImprimirComprovante } from "@/components/pedidos/comprovante-pedido";
 import { LABEL_MODO, type ModoVenda } from "@/lib/vasilhames";
 
@@ -238,6 +245,16 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
     // Fardo fechado: o valor digitado é do fardo, convertido por unidade.
     // Atacado: aplica combos fechados + unidades avulsas progressivamente.
     precoUnit: l.qtd > 0 ? totalLinha(l) / l.qtd : 0,
+    embalagem: l.embalagem,
+    quantidadeEmbalagens:
+      l.embalagem === "fardo"
+        ? Math.max(1, Math.round(l.qtd / unidPorFardo(produtos.find((p) => p.id === l.produtoId) ?? ({} as never))))
+        : undefined,
+    precoEmbalagem: l.embalagem === "fardo" ? l.preco : undefined,
+    rotuloEmbalagem:
+      l.embalagem === "fardo"
+        ? rotuloEmbalagem(produtos.find((p) => p.id === l.produtoId)?.unidade).singular.replace(/^./, (c) => c.toUpperCase())
+        : undefined,
     retornavel: l.retornavel,
     modo: l.modo,
   }));
@@ -260,8 +277,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
       : [];
   const itens: ItemPedido[] = [...itensFisicos, ...itemPacote];
 
-  const subtotal =
-    Math.round(itens.reduce((s, i) => s + i.qtd * i.precoUnit, 0) * 100) / 100;
+  const subtotal = Math.round(itens.reduce((s, i) => s + totalItemPedido(i), 0) * 100) / 100;
   const descontoAplicado = Math.min(Math.max(0, desconto), subtotal);
   const total = Math.round((subtotal - descontoAplicado) * 100) / 100;
   // Só as trocas de refil geram devolução de vasilhame vazio.
