@@ -44,9 +44,16 @@ import {
   precoPorModo,
   totalComPromocao,
   unidPorFardo,
+  rotuloEmbalagem,
 } from "@/lib/erp";
 import { BALCAO } from "@/lib/entregadores";
-import { resumoItens, type FormaPagamento, type ItemPedido, type Pedido } from "@/lib/pedidos";
+import {
+  resumoItens,
+  totalItemPedido,
+  type FormaPagamento,
+  type ItemPedido,
+  type Pedido,
+} from "@/lib/pedidos";
 import { ImprimirComprovante } from "@/components/pedidos/comprovante-pedido";
 import { LABEL_MODO, type ModoVenda } from "@/lib/vasilhames";
 
@@ -142,7 +149,11 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
   const precoPadrao = (id: string) => {
     const p = produtos.find((x) => x.id === id);
     if (!p) return 0;
-    if (embalagemDe(id) === "fardo") return getDadosMedidaProduto(p).vendaPadrao;
+    if (embalagemDe(id) === "fardo") {
+      return p.precoFardo > 0
+        ? p.precoFardo
+        : Math.round(p.precoVenda * unidPorFardo(p) * 100) / 100;
+    }
     if (p.retornavel) return precoPorModo(p, modos[id] ?? "refil");
     return p.precoVenda;
   };
@@ -235,9 +246,27 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
     nome: l.nome,
     qtd: l.qtd,
     // Preço negociado apenas nesta venda — não altera o cadastro do produto.
-    // Fardo fechado: o valor digitado é do fardo, convertido por unidade.
-    // Atacado: aplica combos fechados + unidades avulsas progressivamente.
+    // O rateio abaixo existe somente para compatibilidade com módulos antigos;
+    // o total oficial do fardo usa quantidadeEmbalagens × precoEmbalagem.
     precoUnit: l.qtd > 0 ? totalLinha(l) / l.qtd : 0,
+    embalagem: l.embalagem,
+    quantidadeEmbalagens:
+      l.embalagem === "fardo"
+        ? Math.max(
+            1,
+            Math.round(
+              l.qtd /
+                unidPorFardo(produtos.find((p) => p.id === l.produtoId) ?? ({} as never)),
+            ),
+          )
+        : undefined,
+    precoEmbalagem: l.embalagem === "fardo" ? l.preco : undefined,
+    rotuloEmbalagem:
+      l.embalagem === "fardo"
+        ? rotuloEmbalagem(
+            produtos.find((p) => p.id === l.produtoId)?.unidade,
+          ).singular.replace(/^./, (c) => c.toUpperCase())
+        : undefined,
     retornavel: l.retornavel,
     modo: l.modo,
   }));
@@ -260,8 +289,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
       : [];
   const itens: ItemPedido[] = [...itensFisicos, ...itemPacote];
 
-  const subtotal =
-    Math.round(itens.reduce((s, i) => s + i.qtd * i.precoUnit, 0) * 100) / 100;
+  const subtotal = Math.round(itens.reduce((s, i) => s + totalItemPedido(i), 0) * 100) / 100;
   const descontoAplicado = Math.min(Math.max(0, desconto), subtotal);
   const total = Math.round((subtotal - descontoAplicado) * 100) / 100;
   // Só as trocas de refil geram devolução de vasilhame vazio.

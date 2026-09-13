@@ -34,6 +34,7 @@ import {
   type FormaPagamento,
   type ItemPedido,
   type Pedido,
+  totalItemPedido,
 } from "@/lib/pedidos";
 import { useClientes } from "@/context/clientes";
 
@@ -77,18 +78,32 @@ export function EditarPedidoDialog({
 
   const itens: ItemPedido[] = produtos
     .filter((p) => (carrinho[p.id] ?? 0) > 0)
-    .map((p) => ({
-      produtoId: p.id,
-      nome: p.nome,
-      qtd: carrinho[p.id]!,
-      // Preço negociado guardado só no item do pedido.
-      precoUnit: Math.max(0, Number(precos[p.id] ?? p.precoVenda) || 0),
-      retornavel: p.retornavel,
-      modo: pedido.itens.find((i) => i.produtoId === p.id)?.modo ?? "refil",
-    }));
+    .map((p) => {
+      const original = pedido.itens.find((i) => i.produtoId === p.id);
+      const qtd = carrinho[p.id] ?? 0;
+      const precoUnit = Math.max(0, Number(precos[p.id] ?? p.precoVenda) || 0);
+      const embalagemInalterada =
+        original?.embalagem === "fardo" &&
+        original.qtd === qtd &&
+        Math.abs(original.precoUnit - precoUnit) < 0.000001;
+      return {
+        produtoId: p.id,
+        nome: p.nome,
+        qtd,
+        precoUnit,
+        embalagem: embalagemInalterada ? original.embalagem : "un",
+        quantidadeEmbalagens: embalagemInalterada
+          ? original.quantidadeEmbalagens
+          : undefined,
+        precoEmbalagem: embalagemInalterada ? original.precoEmbalagem : undefined,
+        rotuloEmbalagem: embalagemInalterada ? original.rotuloEmbalagem : undefined,
+        retornavel: p.retornavel,
+        modo: original?.modo ?? "refil",
+      } satisfies ItemPedido;
+    });
 
 
-  const total = itens.reduce((s, i) => s + i.qtd * i.precoUnit, 0);
+  const total = itens.reduce((s, i) => s + totalItemPedido(i), 0);
   const pago = Math.round(parcelas.reduce((s, x) => s + (Number(x.valor) || 0), 0) * 100) / 100;
   const restante = Math.round((total - pago) * 100) / 100;
   const valorFiado =

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { brl } from "@/lib/erp";
 import { TIMEZONE } from "@/lib/periodo";
 import { BALCAO } from "@/lib/entregadores";
-import { parcelasDe, type Pedido } from "@/lib/pedidos";
+import { parcelasDe, rotuloItemPedido, totalItemPedido, type Pedido } from "@/lib/pedidos";
 import { useConfiguracoes, IMPRESSAO_PADRAO } from "@/context/configuracoes";
 import { useClientes } from "@/context/clientes";
 import { mascaraTelefone } from "@/lib/clientes";
@@ -112,14 +112,19 @@ function Cupom({ pedido }: { pedido: Pedido }) {
           </>
         ) : null}
 
-        {pedido.itens.map((i) => (
-          <div key={`${i.produtoId}-${i.nome}-${i.modo}`} className="cupom-item">
+        {pedido.itens.map((i, idx) => (
+          <div key={`${i.produtoId}-${i.nome}-${i.modo}-${i.embalagem}-${idx}`} className="cupom-item">
             <div className="cupom-linha cupom-negrito">
               <span className="cupom-quebra">
-                {i.qtd}x {i.nome}
+                 {rotuloItemPedido(i)}
               </span>
-              <span>{brl(i.qtd * i.precoUnit)}</span>
+               <span>{brl(totalItemPedido(i))}</span>
             </div>
+             <div>
+               {i.embalagem === "fardo" && i.precoEmbalagem !== undefined
+                 ? `${brl(i.precoEmbalagem)} / ${i.rotuloEmbalagem || "Fardo"}`
+                 : `${brl(i.precoUnit)} / un.`}
+             </div>
           </div>
         ))}
 

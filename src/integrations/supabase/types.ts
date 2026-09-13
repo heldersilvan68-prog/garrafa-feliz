@@ -486,38 +486,50 @@ export type Database = {
       order_items: {
         Row: {
           created_at: string
+          embalagem: string | null
           id: string
           modo: string
           nome: string
           order_id: string
+          preco_embalagem: number | null
           preco_unit: number
           product_id: string | null
           qtd: number
+          quantidade_embalagens: number | null
           retornavel: boolean
+          rotulo_embalagem: string | null
           user_id: string
         }
         Insert: {
           created_at?: string
+          embalagem?: string | null
           id?: string
           modo?: string
           nome?: string
           order_id: string
+          preco_embalagem?: number | null
           preco_unit?: number
           product_id?: string | null
           qtd?: number
+          quantidade_embalagens?: number | null
           retornavel?: boolean
+          rotulo_embalagem?: string | null
           user_id: string
         }
         Update: {
           created_at?: string
+          embalagem?: string | null
           id?: string
           modo?: string
           nome?: string
           order_id?: string
+          preco_embalagem?: number | null
           preco_unit?: number
           product_id?: string | null
           qtd?: number
+          quantidade_embalagens?: number | null
           retornavel?: boolean
+          rotulo_embalagem?: string | null
           user_id?: string
         }
         Relationships: [
