@@ -593,6 +593,7 @@ export type Database = {
           created_at: string
           desconto: number
           endereco: string
+          endereco_entrega: string | null
           entregador: string
           forma_baixa: Database["public"]["Enums"]["payment_method"] | null
           id: string
@@ -623,6 +624,7 @@ export type Database = {
           created_at?: string
           desconto?: number
           endereco?: string
+          endereco_entrega?: string | null
           entregador?: string
           forma_baixa?: Database["public"]["Enums"]["payment_method"] | null
           id?: string
@@ -653,6 +655,7 @@ export type Database = {
           created_at?: string
           desconto?: number
           endereco?: string
+          endereco_entrega?: string | null
           entregador?: string
           forma_baixa?: Database["public"]["Enums"]["payment_method"] | null
           id?: string
