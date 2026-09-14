@@ -89,6 +89,7 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
           cliente_nome: dados.clienteNome,
           telefone: dados.telefone,
           endereco: dados.endereco,
+          endereco_entrega: dados.enderecoEntrega,
           bairro: dados.bairro,
           total: dados.total,
           pagamento: dados.pagamento,
@@ -170,6 +171,8 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
       if (dados.clienteNome !== undefined) linha["cliente_nome"] = dados.clienteNome;
       if (dados.telefone !== undefined) linha["telefone"] = dados.telefone;
       if (dados.endereco !== undefined) linha["endereco"] = dados.endereco;
+      if (dados.enderecoEntrega !== undefined)
+        linha["endereco_entrega"] = dados.enderecoEntrega;
       if (dados.bairro !== undefined) linha["bairro"] = dados.bairro;
       if (dados.total !== undefined) linha["total"] = dados.total;
       if (dados.pagamento !== undefined) linha["pagamento"] = dados.pagamento;

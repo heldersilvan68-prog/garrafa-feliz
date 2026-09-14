@@ -127,6 +127,7 @@ export const paraPedido = (
   clienteId: r.client_id ?? "",
   clienteNome: r.cliente_nome,
   telefone: r.telefone,
+  enderecoEntrega: r.endereco_entrega?.trim() || r.endereco,
   endereco: r.endereco,
   bairro: r.bairro,
   itens: itens.filter((i) => i.order_id === r.id).map(paraItemPedido),

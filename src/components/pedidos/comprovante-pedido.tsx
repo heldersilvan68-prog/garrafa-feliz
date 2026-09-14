@@ -51,13 +51,12 @@ function Cupom({ pedido }: { pedido: Pedido }) {
   const enderecoEmpresa = config.endereco?.trim() || ENDERECO_PADRAO;
   const fone = config.whatsapp?.trim() ? mascaraTelefone(config.whatsapp) : FONE_PADRAO;
 
-  // Endereço completo: prioriza o cadastro do cliente, com fallback no pedido.
-  const enderecoCompleto = [
-    cliente?.endereco?.trim() || pedido.endereco?.trim(),
-    cliente?.bairro?.trim() || pedido.bairro?.trim(),
-  ]
-    .filter(Boolean)
-    .join(", ");
+  // O pedido é a fonte do endereço da entrega. O cadastro só atende registros antigos.
+  const enderecoCompleto =
+    pedido.enderecoEntrega?.trim() ||
+    [pedido.endereco?.trim() || cliente?.endereco?.trim(), pedido.bairro?.trim() || cliente?.bairro?.trim()]
+      .filter(Boolean)
+      .join(", ");
 
   const troco = pedido.trocoPara ? pedido.trocoPara - pedido.total : 0;
 

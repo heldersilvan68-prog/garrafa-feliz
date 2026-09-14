@@ -11,3 +11,8 @@
 - [x] Usar multiplicação direta no PDV, pedidos e comprovantes
 - [x] Corrigir faturamento e lucro em Produtos & Reposição
 - [x] Preservar compatibilidade com vendas antigas
+
+# Endereço de entrega por pedido
+- [x] Criar campo específico no banco sem alterar o cadastro do cliente
+- [x] Preencher e permitir editar o endereço no PDV
+- [x] Usar o endereço específico no pedido e no comprovante

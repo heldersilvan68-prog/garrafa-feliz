@@ -77,6 +77,9 @@ export type Pedido = {
   clienteId: string;
   clienteNome: string;
   telefone: string;
+  /** Endereço específico desta entrega; não altera o cadastro do cliente. */
+  enderecoEntrega: string;
+  /** Endereço do cliente copiado no momento da venda (compatibilidade). */
   endereco: string;
   bairro: string;
   itens: ItemPedido[];

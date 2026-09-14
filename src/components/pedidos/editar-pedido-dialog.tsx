@@ -55,7 +55,7 @@ export function EditarPedidoDialog({
   const [aberto, setAberto] = useState(false);
   const [carrinho, setCarrinho] = useState<Record<string, number>>({});
   const [precos, setPrecos] = useState<Record<string, string>>({});
-  const [endereco, setEndereco] = useState(pedido.endereco);
+  const [endereco, setEndereco] = useState(pedido.enderecoEntrega);
   const [parcelas, setParcelas] = useState<Parcela[]>([]);
   const [trocoPara, setTrocoPara] = useState(pedido.trocoPara ? String(pedido.trocoPara) : "");
   const [vazios, setVazios] = useState(String(pedido.vaziosRecolhidos));
@@ -67,7 +67,7 @@ export function EditarPedidoDialog({
     if (!aberto) return;
     setCarrinho(Object.fromEntries(pedido.itens.map((i) => [i.produtoId, i.qtd])));
     setPrecos(Object.fromEntries(pedido.itens.map((i) => [i.produtoId, String(i.precoUnit)])));
-    setEndereco(pedido.endereco);
+    setEndereco(pedido.enderecoEntrega);
     setParcelas(
       parcelasDe(pedido).map((x) => ({ forma: x.forma, valor: String(x.valor || "") })),
     );
@@ -145,7 +145,7 @@ export function EditarPedidoDialog({
     atualizar(pedido.id, {
       itens,
       total,
-      endereco: endereco || pedido.endereco,
+      enderecoEntrega: endereco.trim() || pedido.enderecoEntrega,
       pagamento: formaPrincipal,
       pago: valorFiado <= 0,
       valorFiado,

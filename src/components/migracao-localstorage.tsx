@@ -165,6 +165,7 @@ async function migrar(userId: string) {
         cliente_nome: pedido.clienteNome,
         telefone: pedido.telefone,
         endereco: pedido.endereco,
+        endereco_entrega: pedido.enderecoEntrega ?? pedido.endereco,
         bairro: pedido.bairro,
         total: pedido.total,
         pagamento: pedido.pagamento,

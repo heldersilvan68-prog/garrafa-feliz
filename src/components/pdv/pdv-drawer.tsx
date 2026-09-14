@@ -354,7 +354,15 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
   const selecionar = (id: string) => {
     const c = clientes.find((x) => x.id === id);
     setClienteId(id);
-    setEndereco(c?.endereco ?? "");
+    const enderecoPadrao = c
+      ? [c.endereco?.trim(), c.bairro?.trim()]
+          .filter((parte, indice, partes) =>
+            indice === 0 || !partes[0]?.toLocaleLowerCase("pt-BR").includes(parte?.toLocaleLowerCase("pt-BR") ?? ""),
+          )
+          .filter(Boolean)
+          .join(", ")
+      : "";
+    setEndereco(enderecoPadrao);
     setBusca(c ? rotuloCliente(c) : "");
     setListaAberta(false);
   };
@@ -399,7 +407,9 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
       clienteId: cliente?.id ?? "",
       clienteNome: cliente?.nome ?? CONSUMIDOR_FINAL,
       telefone: cliente?.telefone ?? "",
-      endereco: endereco || cliente?.endereco || "",
+      // O endereço principal continua intacto; a edição vale somente para esta entrega.
+      endereco: cliente?.endereco ?? endereco,
+      enderecoEntrega: endereco.trim() || cliente?.endereco || "",
       bairro: cliente ? bairroDe(cliente) : "",
       itens,
       pagamentos: parcelas
