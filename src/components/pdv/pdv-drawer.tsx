@@ -354,7 +354,15 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
   const selecionar = (id: string) => {
     const c = clientes.find((x) => x.id === id);
     setClienteId(id);
-    setEndereco(c?.endereco ?? "");
+    const enderecoPadrao = c
+      ? [c.endereco?.trim(), c.bairro?.trim()]
+          .filter((parte, indice, partes) =>
+            indice === 0 || !partes[0]?.toLocaleLowerCase("pt-BR").includes(parte?.toLocaleLowerCase("pt-BR") ?? ""),
+          )
+          .filter(Boolean)
+          .join(", ")
+      : "";
+    setEndereco(enderecoPadrao);
     setBusca(c ? rotuloCliente(c) : "");
     setListaAberta(false);
   };
