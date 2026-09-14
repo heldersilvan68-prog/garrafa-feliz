@@ -157,10 +157,7 @@ export function DetalhesPedidoDialog({
                 <div className="flex items-start gap-2 text-sm text-muted-foreground">
                   <MapPin className="mt-0.5 size-3.5 shrink-0" />
                   <span>
-                    {pedido.endereco}
-                    {pedido.bairro && !pedido.endereco.includes(pedido.bairro)
-                      ? ` — ${pedido.bairro}`
-                      : ""}
+                    {pedido.enderecoEntrega}
                   </span>
                 </div>
                 {pedido.observacao && (

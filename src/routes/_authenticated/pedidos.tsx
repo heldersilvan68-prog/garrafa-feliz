@@ -99,10 +99,7 @@ const PedidoCard = memo(function PedidoCard({ pedido }: { pedido: Pedido }) {
           <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
             <MapPin className="size-3.5 shrink-0" />
             <span className="truncate">
-              {pedido.endereco}
-              {pedido.bairro && !pedido.endereco.includes(pedido.bairro)
-                ? ` — ${pedido.bairro}`
-                : ""}
+              {pedido.enderecoEntrega}
             </span>
           </p>
         </div>

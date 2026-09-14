@@ -399,7 +399,9 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
       clienteId: cliente?.id ?? "",
       clienteNome: cliente?.nome ?? CONSUMIDOR_FINAL,
       telefone: cliente?.telefone ?? "",
-      endereco: endereco || cliente?.endereco || "",
+      // O endereço principal continua intacto; a edição vale somente para esta entrega.
+      endereco: cliente?.endereco ?? endereco,
+      enderecoEntrega: endereco.trim() || cliente?.endereco || "",
       bairro: cliente ? bairroDe(cliente) : "",
       itens,
       pagamentos: parcelas
