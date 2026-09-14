@@ -17,6 +17,23 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/sonner";
 import { AppProviders } from "@/components/app-providers";
 
+const CHUNK_RECOVERY_SCRIPT = `(() => {
+  const pattern = /Failed to fetch dynamically imported module|Importing a module script failed|ChunkLoadError/i;
+  const recover = (value) => {
+    const message = value instanceof Error ? value.message : String(value || "");
+    if (!pattern.test(message)) return;
+    const key = "aquaerp:chunk-reload:" + location.pathname;
+    const lastAttempt = Number(sessionStorage.getItem(key) || 0);
+    if (Date.now() - lastAttempt < 60000) return;
+    sessionStorage.setItem(key, String(Date.now()));
+    const url = new URL(location.href);
+    url.searchParams.set("_atualizar", String(Date.now()));
+    location.replace(url.toString());
+  };
+  addEventListener("unhandledrejection", (event) => recover(event.reason));
+  addEventListener("error", (event) => recover(event.error || event.message));
+})();`;
+
 
 
 function NotFoundComponent() {
@@ -46,6 +63,17 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   const router = useRouter();
   useEffect(() => {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
+
+    if (/Failed to fetch dynamically imported module|Importing a module script failed|ChunkLoadError/i.test(error.message)) {
+      const key = `aquaerp:chunk-reload:${window.location.pathname}`;
+      const lastAttempt = Number(window.sessionStorage.getItem(key) || 0);
+      if (Date.now() - lastAttempt >= 60_000) {
+        window.sessionStorage.setItem(key, String(Date.now()));
+        const url = new URL(window.location.href);
+        url.searchParams.set("_atualizar", String(Date.now()));
+        window.location.replace(url.toString());
+      }
+    }
   }, [error]);
 
   return (
@@ -121,6 +149,7 @@ function RootShell({ children }: { children: ReactNode }) {
       </head>
       <body>
         {children}
+        <script dangerouslySetInnerHTML={{ __html: CHUNK_RECOVERY_SCRIPT }} />
         <Scripts />
       </body>
     </html>
