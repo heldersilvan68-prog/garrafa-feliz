@@ -194,6 +194,7 @@ export const paraMovimentoVasilhame = (r: VasilhameRow): MovimentoVasilhame => (
   id: r.id,
   produtoId: r.product_id ?? undefined,
   clienteId: r.client_id ?? undefined,
+  pedidoId: r.order_id ?? undefined,
   tipo: r.tipo as TipoMovVasilhame,
   qtd: r.qtd,
   motivo: r.motivo ?? undefined,

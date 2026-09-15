@@ -140,15 +140,6 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
         if (erroPagos) throw erroPagos;
       }
 
-      if (dados.vaziosRecolhidos > 0) {
-        await supabase.from("returnable_movements").insert({
-          user_id: userId,
-          order_id: (criado as PedidoRow).id,
-          tipo: "recolhido" as const,
-          qtd: dados.vaziosRecolhidos,
-        });
-      }
-
       return {
         ...paraPedido(criado as PedidoRow, []),
         itens: dados.itens,
