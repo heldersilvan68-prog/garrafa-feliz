@@ -31,6 +31,7 @@ export type MovimentoVasilhame = {
   id: string;
   produtoId?: string;
   clienteId?: string;
+  pedidoId?: string;
   tipo: TipoMovVasilhame;
   qtd: number;
   motivo?: string;
@@ -47,6 +48,17 @@ export type MovimentoVasilhame = {
   despesaId?: string;
   em: string;
 };
+
+/** Saldo líquido de cascos de uma venda: positivo empresta, negativo devolve excedente. */
+export function saldoVasilhamesPedido(
+  itens: Array<{ qtd: number; retornavel: boolean; modo?: ModoVenda }>,
+  vaziosRecolhidos: number,
+) {
+  const entregues = itens
+    .filter((item) => item.retornavel && (item.modo ?? "refil") === "refil")
+    .reduce((total, item) => total + item.qtd, 0);
+  return entregues - Math.max(0, vaziosRecolhidos);
+}
 
 /** Formas de pagamento de uma compra de mercadoria. */
 export const FORMAS_COMPRA = [

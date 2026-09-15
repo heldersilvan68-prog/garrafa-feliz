@@ -51,6 +51,10 @@ export function DevolucaoCascoDialog({
       toast.error("Informe a quantidade devolvida.");
       return;
     }
+    if (n > naRua) {
+      toast.error(`A devolução não pode ultrapassar os ${naRua} casco(s) em posse do cliente.`);
+      return;
+    }
     setProcessando(true);
     try {
       await devolucaoCliente(produtoId, n, clienteId);
@@ -96,6 +100,7 @@ export function DevolucaoCascoDialog({
               id="dev-qtd"
               type="number"
               min={1}
+              max={naRua}
               value={qtd}
               onChange={(e) => setQtd(e.target.value)}
             />

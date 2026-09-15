@@ -16,3 +16,8 @@
 - [x] Criar campo específico no banco sem alterar o cadastro do cliente
 - [x] Preencher e permitir editar o endereço no PDV
 - [x] Usar o endereço específico no pedido e no comprovante
+
+# Controle integrado de vasilhames
+- [ ] Corrigir saldo líquido e estorno entre PDV, cliente e estoque
+- [ ] Adicionar saldo, histórico e devolução manual ao perfil do cliente
+- [ ] Adicionar detalhamento clicável de clientes com cascos na rua

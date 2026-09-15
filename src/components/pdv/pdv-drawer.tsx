@@ -55,7 +55,7 @@ import {
   type Pedido,
 } from "@/lib/pedidos";
 import { ImprimirComprovante } from "@/components/pedidos/comprovante-pedido";
-import { LABEL_MODO, type ModoVenda } from "@/lib/vasilhames";
+import { LABEL_MODO, saldoVasilhamesPedido, type ModoVenda } from "@/lib/vasilhames";
 
 type Parcela = { forma: FormaPagamento; valor: string };
 
@@ -430,9 +430,10 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
       });
 
       // Pacote de vales não baixa estoque físico — só os itens de produto.
-      baixaVenda(
+      await baixaVenda(
         itensFisicos.map((i) => ({ produtoId: i.produtoId, qtd: i.qtd, modo: i.modo })),
         nVazios,
+        { clienteId: cliente?.id, pedidoId: pedido.id, numeroPedido: pedido.numero },
       );
       if (cliente) {
         if (valesVendidos > 0) await ajustarVales(cliente.id, valesVendidos);
@@ -440,9 +441,9 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
         registrarCompra(cliente.id, resumoItens(itens), total, hojeISO());
         // Débito lançado exatamente igual ao valor informado como fiado.
         if (valorFiado > 0) ajustarDivida(cliente.id, valorFiado);
-        // Cascos que saíram e não voltaram ficam na conta do cliente.
-        const naRua = Math.max(0, qtdRetornavel - nVazios);
-        if (naRua > 0) void ajustarVasilhames(cliente.id, naRua);
+        // Saldo líquido: uma devolução excedente também baixa empréstimos antigos.
+        const deltaVasilhames = saldoVasilhamesPedido(itensFisicos, nVazios);
+        if (deltaVasilhames !== 0) await ajustarVasilhames(cliente.id, deltaVasilhames);
       }
 
       // Taxa da maquininha entra como despesa financeira do dia da venda.
