@@ -18,6 +18,6 @@
 - [x] Usar o endereço específico no pedido e no comprovante
 
 # Controle integrado de vasilhames
-- [ ] Corrigir saldo líquido e estorno entre PDV, cliente e estoque
-- [ ] Adicionar saldo, histórico e devolução manual ao perfil do cliente
-- [ ] Adicionar detalhamento clicável de clientes com cascos na rua
+- [x] Corrigir saldo líquido e estorno entre PDV, cliente e estoque
+- [x] Adicionar saldo, histórico e devolução manual ao perfil do cliente
+- [x] Adicionar detalhamento clicável de clientes com cascos na rua
