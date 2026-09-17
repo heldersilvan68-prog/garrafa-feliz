@@ -19,13 +19,16 @@ import { BaixaFiadoDialog } from "@/components/pedidos/baixa-fiado-dialog";
 import { CancelarPedidoDialog } from "@/components/pedidos/cancelar-pedido-dialog";
 import { DetalhesPedidoDialog } from "@/components/pedidos/detalhes-pedido-dialog";
 import { EditarPedidoDialog } from "@/components/pedidos/editar-pedido-dialog";
+import { FiltroPeriodo } from "@/components/filtro-periodo";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePedidos } from "@/context/pedidos";
+import { usePeriodo } from "@/hooks/use-periodo";
 import { brl } from "@/lib/erp";
+import { dentroFaixa } from "@/lib/periodo";
 
 import {
   STATUS_PEDIDO_LABEL,
@@ -223,10 +226,16 @@ function PedidosPage() {
   const [filtroForma, setFiltroForma] = useState<FiltroForma>("especie");
   const [busca, setBusca] = useState("");
   const [limiteVisivel, setLimiteVisivel] = useState(50);
+  const periodo = usePeriodo("hoje");
+
+  const pedidosDoPeriodo = useMemo(
+    () => pedidos.filter((pedido) => dentroFaixa(pedido.criadoEm, periodo.faixa)),
+    [pedidos, periodo.faixa],
+  );
 
   const pesquisados = useMemo(
-    () => pedidos.filter((pedido) => pedidoCorrespondeBusca(pedido, busca)),
-    [busca, pedidos],
+    () => pedidosDoPeriodo.filter((pedido) => pedidoCorrespondeBusca(pedido, busca)),
+    [busca, pedidosDoPeriodo],
   );
 
   const porForma = (forma: FiltroForma) =>
@@ -245,7 +254,7 @@ function PedidosPage() {
 
   useEffect(
     () => setLimiteVisivel(50),
-    [busca, filtro, filtroForma],
+    [busca, filtro, filtroForma, periodo.periodo, periodo.custom.inicio, periodo.custom.fim],
   );
 
   const listaVisivel = useMemo(() => lista.slice(0, limiteVisivel), [lista, limiteVisivel]);
@@ -256,7 +265,7 @@ function PedidosPage() {
     return pesquisados.filter((p) => p.status === s).length;
   };
 
-  const faturamento = pedidos
+  const faturamento = pedidosDoPeriodo
     .filter((p) => p.status !== "cancelado")
     .reduce((s, p) => s + p.total, 0);
 
@@ -281,7 +290,7 @@ function PedidosPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Vendas</h1>
           <p className="text-sm text-muted-foreground">
-            {pedidos.length} pedido(s) no total · {brl(faturamento)} em vendas
+            {pedidosDoPeriodo.length} pedido(s) no período · {brl(faturamento)} em vendas
           </p>
         </div>
         <div className="grid w-full gap-2 sm:w-[32rem] sm:max-w-full">
@@ -291,19 +300,22 @@ function PedidosPage() {
               Nova venda / Pedido express
             </Button>
           </PdvDrawer>
-          <div className="relative">
-            <Search
-              aria-hidden="true"
-              className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-            />
-            <Input
-              type="search"
-              value={busca}
-              onChange={(evento) => setBusca(evento.target.value)}
-              placeholder="Buscar por número do pedido, nome ou endereço..."
-              aria-label="Buscar vendas por número do pedido, cliente, entregador ou endereço"
-              className="pl-9"
-            />
+          <div className="grid gap-2 sm:grid-cols-[auto_minmax(0,1fr)]">
+            <FiltroPeriodo estado={periodo} className="w-full sm:w-auto" />
+            <div className="relative min-w-0">
+              <Search
+                aria-hidden="true"
+                className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+              />
+              <Input
+                type="search"
+                value={busca}
+                onChange={(evento) => setBusca(evento.target.value)}
+                placeholder="Buscar por número do pedido, nome ou endereço..."
+                aria-label="Buscar vendas no período por número do pedido, cliente, entregador ou endereço"
+                className="w-full pl-9"
+              />
+            </div>
           </div>
         </div>
       </header>
@@ -339,8 +351,8 @@ function PedidosPage() {
             <Truck className="size-8 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">
               {busca
-                ? "Nenhum pedido encontrado para esta busca."
-                : "Nenhum pedido neste filtro. Registre uma venda no PDV Express."}
+                ? "Nenhum pedido encontrado para esta busca no período selecionado."
+                : "Nenhum pedido neste período e filtro. Registre uma venda no PDV Express."}
             </p>
             <PdvDrawer>
               <Button variant="outline">

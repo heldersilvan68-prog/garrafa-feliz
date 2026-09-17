@@ -21,3 +21,8 @@
 - [x] Corrigir saldo líquido e estorno entre PDV, cliente e estoque
 - [x] Adicionar saldo, histórico e devolução manual ao perfil do cliente
 - [x] Adicionar detalhamento clicável de clientes com cascos na rua
+
+# Período e busca em Vendas
+- [x] Restaurar o seletor de período com Hoje como padrão
+- [x] Incluir a opção Ontem
+- [x] Limitar busca, abas, pagamentos e totais ao período selecionado
