@@ -18,7 +18,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { AppProviders } from "@/components/app-providers";
 
 const CHUNK_RECOVERY_SCRIPT = `(() => {
-  const pattern = /Failed to fetch dynamically imported module|Importing a module script failed|ChunkLoadError/i;
+  const pattern = /Failed to fetch dynamically imported module|Importing a module script failed|ChunkLoadError|use(?:Auth|Caixa|Pedidos|Clientes|Estoque|Configuracoes|Despesas|Entregadores) precisa estar dentro de .*Provider/i;
   const recover = (value) => {
     const message = value instanceof Error ? value.message : String(value || "");
     if (!pattern.test(message)) return;
@@ -64,7 +64,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   useEffect(() => {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
 
-    if (/Failed to fetch dynamically imported module|Importing a module script failed|ChunkLoadError/i.test(error.message)) {
+    if (/Failed to fetch dynamically imported module|Importing a module script failed|ChunkLoadError|use(?:Auth|Caixa|Pedidos|Clientes|Estoque|Configuracoes|Despesas|Entregadores) precisa estar dentro de .*Provider/i.test(error.message)) {
       const key = `aquaerp:chunk-reload:${window.location.pathname}`;
       const lastAttempt = Number(window.sessionStorage.getItem(key) || 0);
       if (Date.now() - lastAttempt >= 60_000) {
