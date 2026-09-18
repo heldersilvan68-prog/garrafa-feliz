@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Bike, Clock, MapPin, Package, Recycle, Wallet } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -13,6 +14,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { ImprimirComprovante } from "@/components/pedidos/comprovante-pedido";
 import { Separator } from "@/components/ui/separator";
 import { brl } from "@/lib/erp";
+import { supabase } from "@/integrations/supabase/client";
+import { paraItemPedido, type ItemPedidoRow } from "@/lib/mapeadores";
 import { isoLocal, TIMEZONE } from "@/lib/periodo";
 import { LABEL_MODO } from "@/lib/vasilhames";
 import {
@@ -42,11 +45,25 @@ export function DetalhesPedidoDialog({
   children: ReactNode;
 }) {
   const [aberto, setAberto] = useState(false);
+  const { data: itensBanco } = useQuery({
+    queryKey: ["pedido-itens", pedido.id],
+    enabled: aberto,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("order_items")
+        .select("*")
+        .eq("order_id", pedido.id)
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return (data as ItemPedidoRow[]).map(paraItemPedido);
+    },
+  });
+  const itens = itensBanco ?? pedido.itens;
   const parcelas = parcelasDe(pedido);
   const totalPago = parcelas.reduce((s, x) => s + x.valor, 0);
 
   // Galões de 20L que geram troca de vasilhame (refil = troca casco a casco).
-  const galoesRefil = pedido.itens
+  const galoesRefil = itens
     .filter((i) => i.retornavel && i.modo === "refil")
     .reduce((s, i) => s + i.qtd, 0);
   const pendentes = Math.max(0, galoesRefil - pedido.vaziosRecolhidos);
@@ -82,7 +99,7 @@ export function DetalhesPedidoDialog({
                 <Package className="size-4" /> Produtos
               </h3>
               <div className="flex flex-col gap-1.5 rounded-xl border border-border p-3">
-                {pedido.itens.map((i, idx) => (
+                {itens.map((i, idx) => (
                   <div
                     key={`${i.produtoId}-${i.modo}-${i.embalagem}-${idx}`}
                     className="flex items-start justify-between gap-3 text-sm"
@@ -105,6 +122,11 @@ export function DetalhesPedidoDialog({
                     </span>
                   </div>
                 ))}
+                {itens.length === 0 && (
+                  <p className="py-2 text-sm text-destructive">
+                    Os itens desta venda não foram encontrados no banco de dados.
+                  </p>
+                )}
                 <Separator className="my-1" />
                 {linha("Total do pedido", brl(pedido.total))}
               </div>

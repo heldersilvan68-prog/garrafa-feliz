@@ -26,3 +26,8 @@
 - [x] Restaurar o seletor de período com Hoje como padrão
 - [x] Incluir a opção Ontem
 - [x] Limitar busca, abas, pagamentos e totais ao período selecionado
+
+# Integridade da finalização de vendas
+- [x] Gravar pedido, itens e pagamentos em uma única operação segura
+- [x] Calcular e salvar galões de troca diretamente do carrinho
+- [x] Recarregar os itens do banco ao abrir o detalhe da venda
