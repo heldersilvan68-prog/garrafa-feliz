@@ -96,6 +96,8 @@ export type Pedido = {
   valesCredito: number;
   /** Vales (galões) resgatados do saldo do cliente nesta venda. */
   valesResgatados: number;
+  /** Quantidade de galões retornáveis vendidos na modalidade troca de refil. */
+  galoesTrocaRefil: number;
   vaziosRecolhidos: number;
 
   entregador: string;
