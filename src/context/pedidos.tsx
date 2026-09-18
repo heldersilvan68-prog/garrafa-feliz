@@ -13,7 +13,10 @@ import {
 import type { FormaPagamento, Pedido, StatusPedido } from "@/lib/pedidos";
 import type { Database } from "@/integrations/supabase/types";
 
-type NovoPedido = Omit<Pedido, "id" | "numero" | "criadoEm" | "status"> & {
+type NovoPedido = Omit<
+  Pedido,
+  "id" | "numero" | "criadoEm" | "status" | "galoesTrocaRefil"
+> & {
   /** Status inicial — vendas de balcão já entram como concluídas. */
   status?: StatusPedido;
 };
