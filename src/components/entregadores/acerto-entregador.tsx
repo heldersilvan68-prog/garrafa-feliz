@@ -74,7 +74,6 @@ export function AcertoEntregador() {
     () =>
       pedidos.filter(
         (p) =>
-          p.entregador === selecionado && p.status === "em-rota" && p.criadoEm.slice(0, 10) === dia,
           p.entregador === selecionado && p.status === "em-rota" && mesmoDia(p.criadoEm, dia),
       ),
     [pedidos, selecionado, dia],
