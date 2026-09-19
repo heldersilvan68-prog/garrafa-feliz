@@ -10,7 +10,7 @@ import {
   type PagamentoPedidoRow,
   type PedidoRow,
 } from "@/lib/mapeadores";
-import type { FormaPagamento, Pedido, StatusPedido } from "@/lib/pedidos";
+import { quantidadeItemPedido, type FormaPagamento, type Pedido, type StatusPedido } from "@/lib/pedidos";
 import type { Database } from "@/integrations/supabase/types";
 
 type NovoPedido = Omit<
@@ -83,6 +83,9 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
     mutationFn: async (dados: NovoPedido): Promise<Pedido> => {
       if (!userId) throw new Error("Sessão expirada");
       if (dados.itens.length === 0) throw new Error("O pedido precisa ter pelo menos um item");
+      if (dados.itens.some((item) => quantidadeItemPedido(item) <= 0)) {
+        throw new Error("Todos os itens precisam ter quantidade maior que zero");
+      }
       const numero = pedidos.reduce((m, p) => Math.max(m, p.numero), 1000) + 1;
       // O refil nasce do próprio carrinho e é enviado junto com o pedido.
       const galoesTrocaRefil = dados.itens
@@ -198,6 +201,10 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
       }
 
       if (dados.itens) {
+        if (dados.itens.length === 0) throw new Error("O pedido precisa ter pelo menos um item");
+        if (dados.itens.some((item) => quantidadeItemPedido(item) <= 0)) {
+          throw new Error("Todos os itens precisam ter quantidade maior que zero");
+        }
         const { error: erroDelete } = await supabase
           .from("order_items")
           .delete()

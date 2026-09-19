@@ -2,7 +2,14 @@ import type { Produto } from "@/lib/erp";
 import type { Cliente } from "@/lib/clientes";
 import type { Despesa } from "@/lib/despesas";
 import { CATEGORIA_TAXA_CARTAO, CORES_CATEGORIA } from "@/lib/despesas";
-import { fiadoEmAberto, valorEmAberto, valorFaturado, valorPorForma, type Pedido } from "@/lib/pedidos";
+import {
+  fiadoEmAberto,
+  quantidadeItemPedido,
+  valorEmAberto,
+  valorFaturado,
+  valorPorForma,
+  type Pedido,
+} from "@/lib/pedidos";
 import { lucroLiquido as calcLucroLiquido } from "@/lib/financas";
 import {
   INICIO_TUDO,
@@ -158,11 +165,12 @@ export function calcularResumo(
   const recolhidos = ativos.reduce((s, p) => s + p.vaziosRecolhidos, 0);
   const vasilhamesNaRua = Math.max(0, vendidosRetornaveis - recolhidos);
 
-  // Volume vendido hoje: unidades por produto nos pedidos do dia atual.
+  // Volume vendido hoje: unidades por produto apenas nos pedidos concluídos de hoje.
   const mapaVolume = new Map<string, number>();
-  for (const p of ativos.filter((x) => diaDoPedido(x) === hojeIso)) {
+  for (const p of ativos.filter((x) => x.status === "concluido" && diaDoPedido(x) === hojeIso)) {
     for (const i of p.itens) {
-      mapaVolume.set(i.nome, (mapaVolume.get(i.nome) ?? 0) + i.qtd);
+      const quantidade = quantidadeItemPedido(i);
+      if (quantidade > 0) mapaVolume.set(i.nome, (mapaVolume.get(i.nome) ?? 0) + quantidade);
     }
   }
   const volumeHoje = [...mapaVolume.entries()]

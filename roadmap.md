@@ -31,3 +31,8 @@
 - [x] Gravar pedido, itens e pagamentos em uma única operação segura
 - [x] Calcular e salvar galões de troca diretamente do carrinho
 - [x] Recarregar os itens do banco ao abrir o detalhe da venda
+
+# Contagem de volumes e vasilhames
+- [x] Impedir itens sem quantidade positiva na gravação
+- [x] Somar somente pedidos concluídos no Volume Vendido Hoje
+- [x] Padronizar a soma de retornáveis no acerto do entregador
