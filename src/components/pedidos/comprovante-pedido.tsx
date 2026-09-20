@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { Printer } from "lucide-react";
+import { Loader2, Printer } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { brl } from "@/lib/erp";
 import { TIMEZONE } from "@/lib/periodo";
@@ -9,6 +10,8 @@ import { parcelasDe, rotuloItemPedido, totalItemPedido, type Pedido } from "@/li
 import { useConfiguracoes, IMPRESSAO_PADRAO } from "@/context/configuracoes";
 import { useClientes } from "@/context/clientes";
 import { mascaraTelefone } from "@/lib/clientes";
+import { supabase } from "@/integrations/supabase/client";
+import { paraItemPedido, type ItemPedidoRow } from "@/lib/mapeadores";
 
 const EMPRESA_PADRAO = "PK DISTRIBUIDORA";
 const ENDERECO_PADRAO = "AV LUIZ VIANA FILHO 285";
@@ -208,6 +211,8 @@ export function ImprimirComprovante({
   onPrinted?: () => void;
 }) {
   const [montado, setMontado] = useState(false);
+  const [carregando, setCarregando] = useState(false);
+  const [pedidoImpressao, setPedidoImpressao] = useState<Pedido | null>(null);
 
   useEffect(() => {
     const fim = () => setMontado(false);
@@ -215,27 +220,56 @@ export function ImprimirComprovante({
     return () => window.removeEventListener("afterprint", fim);
   }, []);
 
-  const imprimir = useCallback(() => {
-    setMontado(true);
-    // Aguarda o cupom entrar no DOM antes de abrir a caixa de impressão.
-    requestAnimationFrame(() =>
-      requestAnimationFrame(() => {
-        window.print();
-        // Fecha o modal chamador logo após acionar a impressão.
-        onPrinted?.();
-      }),
-    );
-  }, [onPrinted]);
+  const imprimir = useCallback(async () => {
+    setCarregando(true);
+    try {
+      // A impressão sempre consulta os itens persistidos, evitando cupons apenas com o total.
+      const { data, error } = await supabase
+        .from("order_items")
+        .select("*")
+        .eq("order_id", pedido.id)
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+
+      const itens = (data as ItemPedidoRow[]).map(paraItemPedido);
+      if (itens.length === 0 || itens.some((item) => item.qtd <= 0 || !item.nome.trim())) {
+        toast.error("Não foi possível imprimir: os itens do pedido estão incompletos.");
+        return;
+      }
+
+      setPedidoImpressao({ ...pedido, itens });
+      setMontado(true);
+      // Aguarda o cupom atualizado entrar no DOM antes de abrir a caixa de impressão.
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => {
+          window.print();
+          // Fecha o modal chamador logo após acionar a impressão.
+          onPrinted?.();
+        }),
+      );
+    } catch {
+      toast.error("Não foi possível carregar os itens para impressão. Tente novamente.");
+    } finally {
+      setCarregando(false);
+    }
+  }, [onPrinted, pedido]);
 
   return (
     <>
-      <Button type="button" variant={variant} className={className} onClick={imprimir}>
-        <Printer className="size-4" /> {rotulo}
+      <Button
+        type="button"
+        variant={variant}
+        className={className}
+        onClick={imprimir}
+        disabled={carregando}
+      >
+        {carregando ? <Loader2 className="size-4 animate-spin" /> : <Printer className="size-4" />}
+        {carregando ? "Carregando itens..." : rotulo}
       </Button>
-      {montado && typeof document !== "undefined"
+      {montado && pedidoImpressao && typeof document !== "undefined"
         ? createPortal(
             <div id="area-comprovante">
-              <Cupom pedido={pedido} />
+              <Cupom pedido={pedidoImpressao} />
             </div>,
             document.body,
           )
