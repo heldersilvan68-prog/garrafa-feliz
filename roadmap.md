@@ -36,3 +36,9 @@
 - [x] Impedir itens sem quantidade positiva na gravação
 - [x] Somar somente pedidos concluídos no Volume Vendido Hoje
 - [x] Padronizar a soma de retornáveis no acerto do entregador
+
+# Impressão e reparo retroativo de itens
+- [x] Recarregar e validar os itens antes de imprimir qualquer comprovante
+- [x] Impedir impressão de pedidos sem discriminação de produtos
+- [x] Reparar quantidades inválidas nos pedidos de ontem e hoje
+- [x] Confirmar recálculo de volumes, vasilhames e itens do entregador
