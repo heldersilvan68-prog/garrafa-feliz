@@ -10,13 +10,10 @@ import {
   type PagamentoPedidoRow,
   type PedidoRow,
 } from "@/lib/mapeadores";
-import { quantidadeItemPedido, type FormaPagamento, type Pedido, type StatusPedido } from "@/lib/pedidos";
+import type { FormaPagamento, Pedido, StatusPedido } from "@/lib/pedidos";
 import type { Database } from "@/integrations/supabase/types";
 
-type NovoPedido = Omit<
-  Pedido,
-  "id" | "numero" | "criadoEm" | "status" | "galoesTrocaRefil"
-> & {
+type NovoPedido = Omit<Pedido, "id" | "numero" | "criadoEm" | "status"> & {
   /** Status inicial — vendas de balcão já entram como concluídas. */
   status?: StatusPedido;
 };
@@ -82,36 +79,11 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
   const criarMut = useMutation({
     mutationFn: async (dados: NovoPedido): Promise<Pedido> => {
       if (!userId) throw new Error("Sessão expirada");
-      if (dados.itens.length === 0) throw new Error("O pedido precisa ter pelo menos um item");
-      if (dados.itens.some((item) => quantidadeItemPedido(item) <= 0)) {
-        throw new Error("Todos os itens precisam ter quantidade maior que zero");
-      }
       const numero = pedidos.reduce((m, p) => Math.max(m, p.numero), 1000) + 1;
-      // O refil nasce do próprio carrinho e é enviado junto com o pedido.
-      const galoesTrocaRefil = dados.itens
-        .filter((item) => item.retornavel && item.modo === "refil")
-        .reduce((total, item) => total + item.qtd, 0);
-      const itensPayload = dados.itens.map((i) => ({
-        product_id: i.produtoId || null,
-        nome: i.nome,
-        qtd: i.qtd,
-        preco_unit: i.precoUnit,
-        embalagem: i.embalagem ?? null,
-        quantidade_embalagens: i.quantidadeEmbalagens ?? null,
-        preco_embalagem: i.precoEmbalagem ?? null,
-        rotulo_embalagem: i.rotuloEmbalagem ?? null,
-        retornavel: i.retornavel,
-        modo: i.modo,
-      }));
-      const pagamentosPayload = dados.pagamentos.map((x) => ({
-        forma: x.forma,
-        valor: x.valor,
-      }));
-
-      // A função grava pedido, itens e pagamentos na mesma transação. Se qualquer
-      // item falhar, o pedido inteiro é desfeito e não aparece como venda concluída.
-      const { data: criado, error } = await supabase.rpc("create_order_with_items", {
-        _order: {
+      const { data: criado, error } = await supabase
+        .from("orders")
+        .insert({
+          user_id: userId,
           numero,
           client_id: dados.clienteId || null,
           cliente_nome: dados.clienteNome,
@@ -125,25 +97,53 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
           valor_fiado: dados.valorFiado ?? 0,
           troco_para: dados.trocoPara ?? null,
           vazios_recolhidos: dados.vaziosRecolhidos,
-          galoes_troca_refil: galoesTrocaRefil,
           desconto: dados.desconto ?? 0,
           vales_credito: dados.valesCredito ?? 0,
           vales_resgatados: dados.valesResgatados ?? 0,
-          status: dados.status ?? "pendente",
+          ...(dados.status ? { status: dados.status } : {}),
           entregador: dados.entregador,
           observacao: dados.observacao ?? null,
-        },
-        _items: itensPayload,
-        _payments: pagamentosPayload,
-      });
+        })
+        .select("*")
+        .single();
       if (error) throw error;
-      if (!criado) throw new Error("A venda não retornou confirmação de gravação");
+
+      if (dados.itens.length > 0) {
+        const { error: erroItens } = await supabase.from("order_items").insert(
+          dados.itens.map((i) => ({
+            user_id: userId,
+            order_id: (criado as PedidoRow).id,
+            product_id: i.produtoId || null,
+            nome: i.nome,
+            qtd: i.qtd,
+            preco_unit: i.precoUnit,
+            embalagem: i.embalagem ?? null,
+            quantidade_embalagens: i.quantidadeEmbalagens ?? null,
+            preco_embalagem: i.precoEmbalagem ?? null,
+            rotulo_embalagem: i.rotuloEmbalagem ?? null,
+            retornavel: i.retornavel,
+            modo: i.modo,
+          })),
+        );
+        if (erroItens) throw erroItens;
+      }
+
+      if (dados.pagamentos.length > 0) {
+        const { error: erroPagos } = await supabase.from("order_payments").insert(
+          dados.pagamentos.map((x) => ({
+            user_id: userId,
+            order_id: (criado as PedidoRow).id,
+            forma: x.forma,
+            valor: x.valor,
+          })),
+        );
+        if (erroPagos) throw erroPagos;
+      }
 
       return {
         ...paraPedido(criado as PedidoRow, []),
         itens: dados.itens,
         pagamentos: dados.pagamentos,
-        galoesTrocaRefil,
       };
     },
     onSuccess: invalidar,
@@ -172,10 +172,6 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
       if (dados.trocoPara !== undefined) linha["troco_para"] = dados.trocoPara ?? null;
       if (dados.vaziosRecolhidos !== undefined)
         linha["vazios_recolhidos"] = dados.vaziosRecolhidos;
-      if (dados.itens !== undefined)
-        linha["galoes_troca_refil"] = dados.itens
-          .filter((item) => item.retornavel && item.modo === "refil")
-          .reduce((total, item) => total + item.qtd, 0);
       if (dados.entregador !== undefined) linha["entregador"] = dados.entregador;
       if (dados.status !== undefined) linha["status"] = dados.status;
       if (dados.observacao !== undefined) linha["observacao"] = dados.observacao ?? null;
@@ -201,10 +197,6 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
       }
 
       if (dados.itens) {
-        if (dados.itens.length === 0) throw new Error("O pedido precisa ter pelo menos um item");
-        if (dados.itens.some((item) => quantidadeItemPedido(item) <= 0)) {
-          throw new Error("Todos os itens precisam ter quantidade maior que zero");
-        }
         const { error: erroDelete } = await supabase
           .from("order_items")
           .delete()

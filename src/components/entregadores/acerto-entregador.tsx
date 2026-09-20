@@ -27,7 +27,6 @@ import {
   dinheiroRecebido,
   entregasDoEntregador,
   hojeISO,
-  mesmoDia,
   unidadesRetornaveis,
   vaziosRecolhidos,
 } from "@/lib/caixa";
@@ -74,7 +73,7 @@ export function AcertoEntregador() {
     () =>
       pedidos.filter(
         (p) =>
-          p.entregador === selecionado && p.status === "em-rota" && mesmoDia(p.criadoEm, dia),
+          p.entregador === selecionado && p.status === "em-rota" && p.criadoEm.slice(0, 10) === dia,
       ),
     [pedidos, selecionado, dia],
   );

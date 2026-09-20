@@ -4,13 +4,12 @@
  * exatamente esta lógica de intervalo para que os números batam entre módulos.
  */
 
-export type PeriodoId = "hoje" | "ontem" | "mes" | "7d" | "30d" | "tudo" | "custom";
+export type PeriodoId = "hoje" | "mes" | "7d" | "30d" | "tudo" | "custom";
 
 export type Faixa = { inicio: string; fim: string };
 
 export const PERIODOS: { id: PeriodoId; label: string }[] = [
   { id: "hoje", label: "Hoje" },
-  { id: "ontem", label: "Ontem" },
   { id: "mes", label: "Mês atual" },
   { id: "7d", label: "Últimos 7 dias" },
   { id: "30d", label: "Últimos 30 dias" },
@@ -81,10 +80,6 @@ export function faixaPeriodo(
     case "hoje": {
       const hojeStr = isoLocal(hoje);
       return { inicio: hojeStr, fim: hojeStr };
-    }
-    case "ontem": {
-      const ontem = menos(1);
-      return { inicio: ontem, fim: ontem };
     }
     case "7d":
       return { inicio: menos(6), fim };

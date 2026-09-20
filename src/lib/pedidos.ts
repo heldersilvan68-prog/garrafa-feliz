@@ -43,16 +43,6 @@ export type ItemPedido = {
   modo: ModoVenda;
 };
 
-/** Quantidade física válida registrada no item; dados antigos inválidos não entram nos totais. */
-export const quantidadeItemPedido = (item: Pick<ItemPedido, "qtd">) =>
-  Number.isFinite(item.qtd) && item.qtd > 0 ? item.qtd : 0;
-
-/** Soma as unidades físicas dos itens de um pedido, com filtro opcional. */
-export const somarItensPedido = (
-  pedido: Pick<Pedido, "itens">,
-  incluir: (item: ItemPedido) => boolean = () => true,
-) => pedido.itens.filter(incluir).reduce((total, item) => total + quantidadeItemPedido(item), 0);
-
 /** Total registrado da linha, sem ratear o preço do fardo em unidades avulsas. */
 export const totalItemPedido = (i: ItemPedido) => {
   const valor =
@@ -106,8 +96,6 @@ export type Pedido = {
   valesCredito: number;
   /** Vales (galões) resgatados do saldo do cliente nesta venda. */
   valesResgatados: number;
-  /** Quantidade de galões retornáveis vendidos na modalidade troca de refil. */
-  galoesTrocaRefil: number;
   vaziosRecolhidos: number;
 
   entregador: string;

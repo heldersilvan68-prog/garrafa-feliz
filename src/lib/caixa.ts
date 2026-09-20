@@ -1,5 +1,5 @@
 import { isoLocal } from "@/lib/periodo";
-import { parcelasDe, somarItensPedido, type FormaPagamento, type Pedido } from "@/lib/pedidos";
+import { parcelasDe, type FormaPagamento, type Pedido } from "@/lib/pedidos";
 
 export type TipoMovimento = "sangria" | "suprimento" | "recebimento";
 
@@ -100,9 +100,10 @@ export const entregasDoEntregador = (pedidos: Pedido[], entregador: string, dia:
   );
 
 export const unidadesRetornaveis = (pedidos: Pedido[]) =>
-  pedidos
-    .filter((pedido) => pedido.status !== "cancelado")
-    .reduce((total, pedido) => total + somarItensPedido(pedido, (item) => item.retornavel), 0);
+  pedidos.reduce(
+    (s, p) => s + p.itens.filter((i) => i.retornavel).reduce((a, i) => a + i.qtd, 0),
+    0,
+  );
 
 export const vaziosRecolhidos = (pedidos: Pedido[]) =>
   pedidos.reduce((s, p) => s + p.vaziosRecolhidos, 0);

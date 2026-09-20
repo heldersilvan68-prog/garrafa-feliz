@@ -142,11 +142,6 @@ export const paraPedido = (
   desconto: num(r.desconto),
   valesCredito: r.vales_credito ?? 0,
   valesResgatados: r.vales_resgatados ?? 0,
-  galoesTrocaRefil:
-    r.galoes_troca_refil ??
-    itens
-      .filter((i) => i.retornavel && i.modo === "refil")
-      .reduce((s, i) => s + i.qtd, 0),
   vaziosRecolhidos: r.vazios_recolhidos,
   entregador: r.entregador,
   status: r.status as StatusPedido,
