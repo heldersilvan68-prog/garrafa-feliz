@@ -205,9 +205,10 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
           .delete()
           .eq("order_id", id);
         if (erroDelete) throw erroDelete;
-        if (dados.itens.length > 0) {
+        const itensValidados = await resolverProdutos(userId, dados.itens);
+        if (itensValidados.length > 0) {
           const { error: erroInsert } = await supabase.from("order_items").insert(
-            dados.itens.map((i) => ({
+            itensValidados.map((i) => ({
               user_id: userId,
               order_id: id,
               product_id: i.produtoId || null,
@@ -224,10 +225,12 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
           );
           if (erroInsert) {
             console.error("[Pedidos] Falha do Supabase ao atualizar order_items", erroInsert);
+            toast.error(`Erro ao salvar itens: ${erroInsert.message}`);
             throw erroInsert;
           }
         }
       }
+
     },
     "Não foi possível atualizar o pedido",
   );
