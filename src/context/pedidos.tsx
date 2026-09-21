@@ -32,7 +32,36 @@ type Ctx = {
   darBaixa: (id: string, forma: FormaPagamento, converterParcelas?: boolean) => void;
 };
 
+type ItemPedido = NovoPedido["itens"][number];
+
+/**
+ * Garante que cada item aponte para um produto existente da conta logada.
+ * Quando o vínculo estiver nulo ou inválido, busca o produto pelo nome antes
+ * de gravar; sem correspondência, o item é salvo sem vínculo de produto.
+ */
+async function resolverProdutos(userId: string, itens: ItemPedido[]): Promise<ItemPedido[]> {
+  if (itens.length === 0) return [];
+  const { data, error } = await supabase.from("products").select("id, nome").eq("user_id", userId);
+  if (error) {
+    console.error("[Pedidos] Falha ao validar produtos dos itens", error);
+    throw error;
+  }
+  const produtos = (data ?? []) as { id: string; nome: string }[];
+  const chave = (v: string) => v.trim().toLocaleLowerCase("pt-BR");
+  const existentes = new Set(produtos.map((p) => p.id));
+  const porNome = new Map(produtos.map((p) => [chave(p.nome), p.id]));
+  return itens.map((item) => {
+    const id = (item.produtoId ?? "").trim();
+    if (id && existentes.has(id)) return { ...item, produtoId: id };
+    const alternativo = porNome.get(chave(item.nome ?? ""));
+    if (alternativo) return { ...item, produtoId: alternativo };
+    console.warn("[Pedidos] Produto não encontrado para o item", { nome: item.nome, id });
+    return { ...item, produtoId: "" };
+  });
+}
+
 const PedidosContext = createContext<Ctx | null>(null);
+
 
 export function PedidosProvider({ children }: { children: ReactNode }) {
   const { userId } = useAuth();
@@ -108,9 +137,10 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
         .single();
       if (error) throw error;
 
-      if (dados.itens.length > 0) {
+      const itensValidados = await resolverProdutos(userId, dados.itens);
+      if (itensValidados.length > 0) {
         const { error: erroItens } = await supabase.from("order_items").insert(
-          dados.itens.map((i) => ({
+          itensValidados.map((i) => ({
             user_id: userId,
             order_id: (criado as PedidoRow).id,
             product_id: i.produtoId || null,
@@ -127,9 +157,11 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
         );
         if (erroItens) {
           console.error("[PDV] Falha do Supabase ao inserir order_items", erroItens);
+          toast.error(`Erro ao salvar itens: ${erroItens.message}`);
           throw erroItens;
         }
       }
+
 
       if (dados.pagamentos.length > 0) {
         const { error: erroPagos } = await supabase.from("order_payments").insert(
@@ -145,9 +177,10 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
 
       return {
         ...paraPedido(criado as PedidoRow, []),
-        itens: dados.itens,
+        itens: itensValidados,
         pagamentos: dados.pagamentos,
       };
+
     },
     onSuccess: invalidar,
     onError: (e: Error) => toast.error(`Não foi possível criar o pedido: ${e.message}`),
