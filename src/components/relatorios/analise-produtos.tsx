@@ -15,7 +15,6 @@ import { usePeriodo } from "@/hooks/use-periodo";
 import { useEstoque } from "@/context/estoque";
 import { usePedidos } from "@/context/pedidos";
 import { brl, custoUnidades, rotuloEstoque, unidPorFardo } from "@/lib/erp";
-import { totalItemPedido } from "@/lib/pedidos";
 import { dentroFaixa, rotuloFaixa } from "@/lib/periodo";
 import { baixarCSV } from "@/lib/relatorios";
 
@@ -33,24 +32,14 @@ export function AnaliseProdutos() {
         const upf = unidPorFardo(p);
         let qtd = 0;
         let faturamento = 0;
-        let custoVendido = 0;
         for (const ped of validos) {
           for (const i of ped.itens) {
             if (i.produtoId !== p.id) continue;
             qtd += i.qtd;
-            faturamento += totalItemPedido(i);
-            custoVendido +=
-              i.embalagem === "fardo" && (i.quantidadeEmbalagens ?? 0) > 0
-                ? (i.quantidadeEmbalagens ?? 0) *
-                  (p.precoCustoFardo > 0
-                    ? p.precoCustoFardo
-                    : custoUnidades(p, unidPorFardo(p)))
-                : custoUnidades(p, i.qtd);
+            faturamento += i.qtd * i.precoUnit;
           }
         }
-        faturamento = Math.round(faturamento * 100) / 100;
-        custoVendido = Math.round(custoVendido * 100) / 100;
-        const lucro = Math.round((faturamento - custoVendido) * 100) / 100;
+        const lucro = faturamento - custoUnidades(p, qtd);
         const repor = Math.max(0, (p.estoqueMinimo || 0) - (p.estoqueCheio || 0));
         return {
           id: p.id,

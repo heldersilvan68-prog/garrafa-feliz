@@ -1,16 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
-import { AlertTriangle, ArrowDownLeft, Boxes, ExternalLink, Plus, Recycle, Undo2 } from "lucide-react";
+import { useMemo } from "react";
+import { AlertTriangle, ArrowDownLeft, Boxes, Plus, Recycle, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ClienteDetalhes } from "@/components/cliente-detalhes";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import {
   Table,
   TableBody,
@@ -29,8 +21,6 @@ import { useClientes } from "@/context/clientes";
 import { useEstoque } from "@/context/estoque";
 import { brl } from "@/lib/erp";
 import { LABEL_MOV, resumoVasilhames } from "@/lib/vasilhames";
-import { saldoVasilhamesPedido } from "@/lib/vasilhames";
-import { usePedidos } from "@/context/pedidos";
 
 export const Route = createFileRoute("/_authenticated/vasilhames")({
   head: () => ({
@@ -63,9 +53,6 @@ function Vasilhames() {
     emTransitoFonte,
   } = useEstoque();
   const { clientes } = useClientes();
-  const { pedidos } = usePedidos();
-  const [listaRuaAberta, setListaRuaAberta] = useState(false);
-  const [clienteDetalheId, setClienteDetalheId] = useState<string | null>(null);
   const retornaveis = useMemo(() => produtos.filter((p) => p.retornavel), [produtos]);
   const naRua = useMemo(
     () => clientes.reduce((s, c) => s + (c.vasilhamesRua ?? 0), 0),
@@ -75,26 +62,6 @@ function Vasilhames() {
   const emTransitoSeguro = emTransitoFonte;
 
   const r = resumoVasilhames(produtos, naRua, emTransitoSeguro);
-
-  const clientesNaRua = useMemo(
-    () =>
-      clientes
-        .filter((cliente) => (cliente.vasilhamesRua ?? 0) > 0)
-        .map((cliente) => {
-          const ultimo = pedidos
-            .filter(
-              (pedido) =>
-                pedido.clienteId === cliente.id &&
-                pedido.status !== "cancelado" &&
-                saldoVasilhamesPedido(pedido.itens, pedido.vaziosRecolhidos) > 0,
-            )
-            .sort((a, b) => new Date(b.criadoEm).getTime() - new Date(a.criadoEm).getTime())[0];
-          return { cliente, ultimoEmprestimo: ultimo?.criadoEm };
-        })
-        .sort((a, b) => (b.cliente.vasilhamesRua ?? 0) - (a.cliente.vasilhamesRua ?? 0)),
-    [clientes, pedidos],
-  );
-  const clienteDetalhe = clientes.find((cliente) => cliente.id === clienteDetalheId) ?? null;
 
   const cards = [
     {
@@ -159,24 +126,7 @@ function Vasilhames() {
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {cards.map((c) => (
-          <Card
-            key={c.titulo}
-            className={
-              c.titulo === "Vasilhames na Rua"
-                ? "cursor-pointer border-primary/30 shadow-[var(--shadow-card)] transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                : "shadow-[var(--shadow-card)]"
-            }
-            role={c.titulo === "Vasilhames na Rua" ? "button" : undefined}
-            tabIndex={c.titulo === "Vasilhames na Rua" ? 0 : undefined}
-            onClick={c.titulo === "Vasilhames na Rua" ? () => setListaRuaAberta(true) : undefined}
-            onKeyDown={
-              c.titulo === "Vasilhames na Rua"
-                ? (evento) => {
-                    if (evento.key === "Enter" || evento.key === " ") setListaRuaAberta(true);
-                  }
-                : undefined
-            }
-          >
+          <Card key={c.titulo} className="shadow-[var(--shadow-card)]">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">{c.titulo}</CardTitle>
             </CardHeader>
@@ -187,72 +137,6 @@ function Vasilhames() {
           </Card>
         ))}
       </div>
-
-      <Dialog open={listaRuaAberta} onOpenChange={setListaRuaAberta}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>Clientes com vasilhames na rua</DialogTitle>
-            <DialogDescription>
-              {r.naRua} casco(s) pendente(s) com {clientesNaRua.length} cliente(s).
-            </DialogDescription>
-          </DialogHeader>
-          <div className="overflow-x-auto rounded-lg border border-border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead>Telefone</TableHead>
-                  <TableHead className="text-right">Cascos</TableHead>
-                  <TableHead>Último empréstimo</TableHead>
-                  <TableHead className="text-right">Perfil</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {clientesNaRua.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-                      Nenhum cliente possui cascos pendentes.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  clientesNaRua.map(({ cliente, ultimoEmprestimo }) => (
-                    <TableRow key={cliente.id}>
-                      <TableCell className="font-medium">{cliente.nome}</TableCell>
-                      <TableCell>{cliente.telefone || "—"}</TableCell>
-                      <TableCell className="text-right font-semibold tabular-nums">
-                        {cliente.vasilhamesRua ?? 0}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap text-muted-foreground">
-                        {ultimoEmprestimo
-                          ? new Date(ultimoEmprestimo).toLocaleString("pt-BR")
-                          : "Registro anterior"}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          aria-label={`Abrir perfil de ${cliente.nome}`}
-                          onClick={() => setClienteDetalheId(cliente.id)}
-                        >
-                          <ExternalLink className="size-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <ClienteDetalhes
-        cliente={clienteDetalhe}
-        aberto={clienteDetalhe !== null}
-        onOpenChange={(aberto) => {
-          if (!aberto) setClienteDetalheId(null);
-        }}
-      />
 
       <Card className="shadow-[var(--shadow-card)]">
         <CardHeader>

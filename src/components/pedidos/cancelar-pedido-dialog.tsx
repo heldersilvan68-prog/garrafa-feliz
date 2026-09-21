@@ -19,7 +19,6 @@ import { useEstoque } from "@/context/estoque";
 import { usePedidos } from "@/context/pedidos";
 import { brl } from "@/lib/erp";
 import { MOTIVOS_CANCELAMENTO, saldoFiadoCliente, type Pedido } from "@/lib/pedidos";
-import { saldoVasilhamesPedido } from "@/lib/vasilhames";
 
 export function CancelarPedidoDialog({
   pedido,
@@ -77,12 +76,12 @@ export function CancelarPedidoDialog({
         if (deltaVales !== 0) await ajustarVales(pedido.clienteId, deltaVales);
 
         // 5) Cascos que ficaram na rua nesta venda voltam a não pertencer ao cliente.
-        const deltaVasilhames = saldoVasilhamesPedido(
-          pedido.itens,
-          pedido.vaziosRecolhidos,
-        );
-        if (deltaVasilhames !== 0) {
-          await ajustarVasilhames(pedido.clienteId, -deltaVasilhames);
+        const cascosNaRua =
+          pedido.itens
+            .filter((i) => i.retornavel && i.modo === "refil")
+            .reduce((t, i) => t + i.qtd, 0) - pedido.vaziosRecolhidos;
+        if (cascosNaRua > 0) {
+          await ajustarVasilhames(pedido.clienteId, -cascosNaRua);
         }
       }
 

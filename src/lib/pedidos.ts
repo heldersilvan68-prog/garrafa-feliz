@@ -30,42 +30,9 @@ export type ItemPedido = {
   nome: string;
   qtd: number;
   precoUnit: number;
-  /** Embalagem efetivamente vendida. `qtd` continua em unidades para o estoque. */
-  embalagem?: "un" | "fardo";
-  /** Quantidade comercial de fardos/caixas fechadas. */
-  quantidadeEmbalagens?: number;
-  /** Preço exato praticado por fardo/caixa. */
-  precoEmbalagem?: number;
-  /** Nome exibido da embalagem: Fardo, Caixa ou Pacote. */
-  rotuloEmbalagem?: string;
   retornavel: boolean;
   /** Regra de vasilhame aplicada na venda (retornáveis). */
   modo: ModoVenda;
-};
-
-/** Total registrado da linha, sem ratear o preço do fardo em unidades avulsas. */
-export const totalItemPedido = (i: ItemPedido) => {
-  const valor =
-    i.embalagem === "fardo" &&
-    (i.quantidadeEmbalagens ?? 0) > 0 &&
-    i.precoEmbalagem !== undefined
-      ? (i.quantidadeEmbalagens ?? 0) * i.precoEmbalagem
-      : i.qtd * i.precoUnit;
-  return Math.round(valor * 100) / 100;
-};
-
-export const quantidadeComercialItem = (i: ItemPedido) =>
-  i.embalagem === "fardo" && (i.quantidadeEmbalagens ?? 0) > 0
-    ? i.quantidadeEmbalagens ?? 0
-    : i.qtd;
-
-export const rotuloItemPedido = (i: ItemPedido) => {
-  if (i.embalagem === "fardo" && (i.quantidadeEmbalagens ?? 0) > 0) {
-    const qtd = i.quantidadeEmbalagens ?? 0;
-    const embalagem = i.rotuloEmbalagem || "Fardo";
-    return `${qtd}x ${i.nome} (${embalagem})`;
-  }
-  return `${i.qtd}x ${i.nome}`;
 };
 
 /** Uma parcela do recebimento da venda (pagamento fracionado). */
@@ -77,9 +44,6 @@ export type Pedido = {
   clienteId: string;
   clienteNome: string;
   telefone: string;
-  /** Endereço específico desta entrega; não altera o cadastro do cliente. */
-  enderecoEntrega: string;
-  /** Endereço do cliente copiado no momento da venda (compatibilidade). */
   endereco: string;
   bairro: string;
   itens: ItemPedido[];
@@ -159,7 +123,7 @@ export const MOTIVOS_CANCELAMENTO = [
 ];
 
 export const resumoItens = (itens: ItemPedido[]) =>
-  itens.map(rotuloItemPedido).join(", ");
+  itens.map((i) => `${i.qtd}x ${i.nome}`).join(", ");
 
 export const tempoDecorrido = (iso: string) => {
   const min = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
@@ -179,9 +143,7 @@ export const brlSimples = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 export const reciboWhatsApp = (p: Pedido) => {
-  const linhas = p.itens.map(
-    (i) => `• ${rotuloItemPedido(i)} — ${brlSimples(totalItemPedido(i))}`,
-  );
+  const linhas = p.itens.map((i) => `• ${i.qtd}x ${i.nome} — ${brlSimples(i.qtd * i.precoUnit)}`);
   const texto = [
     `Olá ${p.clienteNome}! Segue o comprovante do seu pedido #${p.numero}:`,
     ...linhas,

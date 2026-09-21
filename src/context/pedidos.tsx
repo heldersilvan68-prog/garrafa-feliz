@@ -34,7 +34,6 @@ type Ctx = {
 
 const PedidosContext = createContext<Ctx | null>(null);
 
-
 export function PedidosProvider({ children }: { children: ReactNode }) {
   const { userId } = useAuth();
   const queryClient = useQueryClient();
@@ -90,7 +89,6 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
           cliente_nome: dados.clienteNome,
           telefone: dados.telefone,
           endereco: dados.endereco,
-          endereco_entrega: dados.enderecoEntrega,
           bairro: dados.bairro,
           total: dados.total,
           pagamento: dados.pagamento,
@@ -118,21 +116,12 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
             nome: i.nome,
             qtd: i.qtd,
             preco_unit: i.precoUnit,
-            embalagem: i.embalagem ?? null,
-            quantidade_embalagens: i.quantidadeEmbalagens ?? null,
-            preco_embalagem: i.precoEmbalagem ?? null,
-            rotulo_embalagem: i.rotuloEmbalagem ?? null,
             retornavel: i.retornavel,
             modo: i.modo,
           })),
         );
-        if (erroItens) {
-          console.error("[PDV] Falha do Supabase ao inserir order_items", erroItens);
-          toast.error(`Erro ao salvar itens: ${erroItens.message}`);
-          throw erroItens;
-        }
+        if (erroItens) throw erroItens;
       }
-
 
       if (dados.pagamentos.length > 0) {
         const { error: erroPagos } = await supabase.from("order_payments").insert(
@@ -146,12 +135,20 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
         if (erroPagos) throw erroPagos;
       }
 
+      if (dados.vaziosRecolhidos > 0) {
+        await supabase.from("returnable_movements").insert({
+          user_id: userId,
+          order_id: (criado as PedidoRow).id,
+          tipo: "recolhido" as const,
+          qtd: dados.vaziosRecolhidos,
+        });
+      }
+
       return {
         ...paraPedido(criado as PedidoRow, []),
         itens: dados.itens,
         pagamentos: dados.pagamentos,
       };
-
     },
     onSuccess: invalidar,
     onError: (e: Error) => toast.error(`Não foi possível criar o pedido: ${e.message}`),
@@ -169,8 +166,6 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
       if (dados.clienteNome !== undefined) linha["cliente_nome"] = dados.clienteNome;
       if (dados.telefone !== undefined) linha["telefone"] = dados.telefone;
       if (dados.endereco !== undefined) linha["endereco"] = dados.endereco;
-      if (dados.enderecoEntrega !== undefined)
-        linha["endereco_entrega"] = dados.enderecoEntrega;
       if (dados.bairro !== undefined) linha["bairro"] = dados.bairro;
       if (dados.total !== undefined) linha["total"] = dados.total;
       if (dados.pagamento !== undefined) linha["pagamento"] = dados.pagamento;
@@ -218,22 +213,13 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
               nome: i.nome,
               qtd: i.qtd,
               preco_unit: i.precoUnit,
-              embalagem: i.embalagem ?? null,
-              quantidade_embalagens: i.quantidadeEmbalagens ?? null,
-              preco_embalagem: i.precoEmbalagem ?? null,
-              rotulo_embalagem: i.rotuloEmbalagem ?? null,
               retornavel: i.retornavel,
               modo: i.modo,
             })),
           );
-          if (erroInsert) {
-            console.error("[Pedidos] Falha do Supabase ao atualizar order_items", erroInsert);
-            toast.error(`Erro ao salvar itens: ${erroInsert.message}`);
-            throw erroInsert;
-          }
+          if (erroInsert) throw erroInsert;
         }
       }
-
     },
     "Não foi possível atualizar o pedido",
   );

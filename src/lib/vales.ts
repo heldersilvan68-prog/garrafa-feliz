@@ -1,6 +1,6 @@
 /** Histórico de vales (galões pré-pagos) derivado dos pedidos.
  *  Fonte única: `valesCredito` (pacote comprado) e `valesResgatados` (retirada). */
-import { totalItemPedido, valorPorForma, type Pedido } from "@/lib/pedidos";
+import { valorPorForma, type Pedido } from "@/lib/pedidos";
 
 export type TipoLancamentoVale = "compra" | "resgate";
 
@@ -29,7 +29,7 @@ export const LABEL_LANCAMENTO_VALE: Record<TipoLancamentoVale, string> = {
 const valorPacote = (p: Pedido) =>
   p.itens
     .filter((i) => /pacote de vales/i.test(i.nome))
-    .reduce((s, i) => s + totalItemPedido(i), 0);
+    .reduce((s, i) => s + i.qtd * i.precoUnit, 0);
 
 /** Todos os lançamentos de vales dos pedidos válidos, do mais recente ao mais antigo. */
 export function lancamentosVale(pedidos: Pedido[]): LancamentoVale[] {

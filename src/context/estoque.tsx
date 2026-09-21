@@ -45,11 +45,7 @@ type Ctx = {
     qtd: number;
   }) => Promise<void>;
   devolucaoCliente: (produtoId: string, qtd: number, clienteId?: string) => Promise<void>;
-  baixaVenda: (
-    itens: ItemBaixa[],
-    vaziosRecolhidos: number,
-    vinculo?: { clienteId?: string; pedidoId?: string; numeroPedido?: number },
-  ) => Promise<void>;
+  baixaVenda: (itens: ItemBaixa[], vaziosRecolhidos: number) => void;
   estornarVenda: (itens: ItemBaixa[], vaziosRecolhidos: number) => Promise<void>;
 };
 
@@ -128,7 +124,6 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
   const logar = async (dados: {
     produtoId?: string;
     clienteId?: string;
-    pedidoId?: string;
     tipo: TipoMovVasilhame;
     qtd: number;
     motivo?: string;
@@ -146,7 +141,6 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
       user_id: userId,
       product_id: dados.produtoId ?? null,
       client_id: dados.clienteId ?? null,
-      order_id: dados.pedidoId ?? null,
       tipo: dados.tipo,
       qtd: dados.qtd,
       motivo: dados.motivo ?? null,
@@ -441,12 +435,7 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
   );
 
   // Vendas (Se for água completa ou casco vendido, REDUZ o patrimônio)
-  const aplicarVenda = async (
-    itens: ItemBaixa[],
-    vaziosRecolhidos: number,
-    sinal: 1 | -1,
-    vinculo?: { clienteId?: string; pedidoId?: string; numeroPedido?: number },
-  ) => {
+  const aplicarVenda = async (itens: ItemBaixa[], vaziosRecolhidos: number, sinal: 1 | -1) => {
     const modoDe = (i: ItemBaixa): ModoVenda => {
       const p = produtos.find((x) => x.id === i.produtoId);
       return p?.retornavel ? (i.modo ?? "refil") : "refil";
@@ -506,14 +495,12 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
       if (p.retornavel) {
         await logar({
           produtoId: p.id,
-          clienteId: vinculo?.clienteId,
-          pedidoId: vinculo?.pedidoId,
           tipo: sinal === 1 ? (modo === "refil" ? "recolhido" : modo === "casco" ? "venda_casco" : "venda_completa") : "estorno",
           qtd: item.qtd,
           motivo:
             sinal === 1
-              ? `Venda #${vinculo?.numeroPedido ?? "—"} (${modo}) · ${p.nome}`
-              : `Estorno da venda #${vinculo?.numeroPedido ?? "—"} (${modo}) · ${p.nome}`,
+              ? `Venda (${modo}) · ${p.nome}`
+              : `Estorno de venda cancelada (${modo}) · ${p.nome}`,
           deltaCheio,
           deltaVazio,
           deltaPatrimonio,
@@ -536,13 +523,8 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
   };
 
 
-  const baixaMut = useMutacao<{
-    itens: ItemBaixa[];
-    vaziosRecolhidos: number;
-    vinculo?: { clienteId?: string; pedidoId?: string; numeroPedido?: number };
-  }>(
-    async ({ itens, vaziosRecolhidos, vinculo }) =>
-      aplicarVenda(itens, vaziosRecolhidos, 1, vinculo),
+  const baixaMut = useMutacao<{ itens: ItemBaixa[]; vaziosRecolhidos: number }>(
+    async ({ itens, vaziosRecolhidos }) => aplicarVenda(itens, vaziosRecolhidos, 1),
     "Não foi possível atualizar o estoque",
   );
 
@@ -578,8 +560,7 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
         devolucaoMut.mutateAsync({ produtoId, qtd, clienteId }).then(() => undefined),
       estornarVenda: (itens, vaziosRecolhidos) =>
         estornoMut.mutateAsync({ itens, vaziosRecolhidos }).then(() => undefined),
-       baixaVenda: (itens, vaziosRecolhidos, vinculo) =>
-         baixaMut.mutateAsync({ itens, vaziosRecolhidos, vinculo }).then(() => undefined),
+      baixaVenda: (itens, vaziosRecolhidos) => baixaMut.mutate({ itens, vaziosRecolhidos }),
     }),
     [produtos, movimentos, movimentosQuery.fetchNextPage, movimentosQuery.hasNextPage, movimentosQuery.isFetchingNextPage, emTransitoFonte, isLoading, salvarMut.mutate, removerMut.mutate, entradaMut.mutate, vaziosMut.mutate, comprarMut.mutateAsync, retornoMut.mutateAsync, avariaMut.mutateAsync, devolucaoMut.mutateAsync, estornoMut.mutateAsync, baixaMut.mutate],
   );
