@@ -2,6 +2,7 @@ import { createContext, useContext, useMemo, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { buscarTodos } from "@/lib/supabase-paginado";
 import { useAuth } from "@/hooks/use-auth";
 import { paraCaixa, type CaixaRow, type MovimentoRow } from "@/lib/mapeadores";
 import {
