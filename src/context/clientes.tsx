@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { mapearClientes, type ClienteRow, type CompraRow } from "@/lib/mapeadores";
 import { ordenarPorCodigo, type Cliente } from "@/lib/clientes";
 import { isoLocal } from "@/lib/periodo";
+import { buscarTodos } from "@/lib/supabase-paginado";
 
 type Ctx = {
   clientes: Cliente[];
@@ -44,16 +45,20 @@ export function ClientesProvider({ children }: { children: ReactNode }) {
     queryKey: ["clientes", userId],
     enabled: !!userId,
     queryFn: async () => {
-      const [{ data: linhas, error }, { data: compras, error: erroCompras }] = await Promise.all([
-        supabase.from("clients").select("*").order("nome", { ascending: true }),
-        supabase.from("client_purchases").select("*"),
+      const [linhas, compras] = await Promise.all([
+        buscarTodos<ClienteRow>((de, ate) =>
+          supabase
+            .from("clients")
+            .select("*")
+            .order("nome", { ascending: true })
+            .range(de, ate),
+        ),
+        buscarTodos<CompraRow>((de, ate) =>
+          supabase.from("client_purchases").select("*").range(de, ate),
+        ),
       ]);
-      if (error) throw error;
-      if (erroCompras) throw erroCompras;
       // Ordem global: código numérico crescente (1, 2, 3... 10, 11).
-      return ordenarPorCodigo(
-        mapearClientes(linhas as ClienteRow[], (compras ?? []) as CompraRow[]),
-      );
+      return ordenarPorCodigo(mapearClientes(linhas, compras));
     },
   });
 
