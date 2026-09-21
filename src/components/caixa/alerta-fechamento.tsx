@@ -26,7 +26,8 @@ const paraMinutos = (hhmm: string) => {
  * "Horário limite de fechamento" definido nas Configurações.
  */
 export function AlertaFechamentoCaixa() {
-  const { caixaAberto } = useCaixa();
+  const caixa = useCaixaOpcional();
+  const caixaAberto = caixa?.caixaAberto;
   const { config } = useConfiguracoes();
   const [agora, setAgora] = useState(() => minutosAgora());
 
