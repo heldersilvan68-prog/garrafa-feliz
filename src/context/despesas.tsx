@@ -32,13 +32,15 @@ export function DespesasProvider({ children }: { children: ReactNode }) {
     enabled: !!userId,
     queryFn: async () => {
       const [despesas, categorias] = await Promise.all([
-        supabase.from("expenses").select("*").order("data", { ascending: false }),
+        // Leitura paginada: o Data API corta em 1000 linhas por consulta.
+        buscarTodos<DespesaRow>((de, ate) =>
+          supabase.from("expenses").select("*").order("data", { ascending: false }).range(de, ate),
+        ),
         supabase.from("expense_categories").select("*").order("nome"),
       ]);
-      if (despesas.error) throw despesas.error;
       if (categorias.error) throw categorias.error;
       return {
-        despesas: ((despesas.data ?? []) as DespesaRow[]).map(paraDespesa),
+        despesas: despesas.map(paraDespesa),
         categorias: (categorias.data ?? []).map((c) => ({
           id: c.id,
           nome: c.nome,
