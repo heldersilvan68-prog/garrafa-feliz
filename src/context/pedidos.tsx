@@ -148,7 +148,7 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
 
       return {
         ...paraPedido(criado as PedidoRow, []),
-        itens: itensValidados,
+        itens: dados.itens,
         pagamentos: dados.pagamentos,
       };
 
@@ -209,10 +209,9 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
           .delete()
           .eq("order_id", id);
         if (erroDelete) throw erroDelete;
-        const itensValidados = await resolverProdutos(userId, dados.itens);
-        if (itensValidados.length > 0) {
+        if (dados.itens.length > 0) {
           const { error: erroInsert } = await supabase.from("order_items").insert(
-            itensValidados.map((i) => ({
+            dados.itens.map((i) => ({
               user_id: userId,
               order_id: id,
               product_id: i.produtoId || null,
