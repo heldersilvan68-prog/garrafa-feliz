@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { AlertTriangle, ChevronRight } from "lucide-react";
-import { useCaixa } from "@/context/caixa";
+import { useCaixaOpcional } from "@/context/caixa";
 import { useConfiguracoes } from "@/context/configuracoes";
 
 /** Minutos desde a meia-noite no fuso da operação (America/Bahia). */
