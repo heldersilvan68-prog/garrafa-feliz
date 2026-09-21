@@ -2,6 +2,7 @@ import { createContext, useContext, useMemo, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { buscarTodos } from "@/lib/supabase-paginado";
 import { useAuth } from "@/hooks/use-auth";
 import {
   paraPedido,
@@ -42,23 +43,32 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
     queryKey: ["pedidos", userId],
     enabled: !!userId,
     queryFn: async () => {
-      const [
-        { data: linhas, error },
-        { data: itens, error: erroItens },
-        { data: pagos, error: erroPagos },
-      ] = await Promise.all([
-        supabase.from("orders").select("*").order("created_at", { ascending: false }),
-        supabase.from("order_items").select("*"),
-        supabase.from("order_payments").select("*"),
+      // Leitura paginada: o Data API corta em 1000 linhas e os itens/pagamentos
+      // mais recentes eram descartados, zerando volumes e parcelas.
+      const [linhas, itens, pagos] = await Promise.all([
+        buscarTodos<PedidoRow>((de, ate) =>
+          supabase
+            .from("orders")
+            .select("*")
+            .order("created_at", { ascending: false })
+            .range(de, ate),
+        ),
+        buscarTodos<ItemPedidoRow>((de, ate) =>
+          supabase
+            .from("order_items")
+            .select("*")
+            .order("created_at", { ascending: false })
+            .range(de, ate),
+        ),
+        buscarTodos<PagamentoPedidoRow>((de, ate) =>
+          supabase
+            .from("order_payments")
+            .select("*")
+            .order("created_at", { ascending: false })
+            .range(de, ate),
+        ),
       ]);
-      if (error) throw error;
-      if (erroItens) throw erroItens;
-      if (erroPagos) throw erroPagos;
-      return mapearPedidos(
-        linhas as PedidoRow[],
-        (itens ?? []) as ItemPedidoRow[],
-        (pagos ?? []) as PagamentoPedidoRow[],
-      );
+      return mapearPedidos(linhas, itens, pagos);
     },
   });
 
