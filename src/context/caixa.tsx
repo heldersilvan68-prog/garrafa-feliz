@@ -2,6 +2,7 @@ import { createContext, useContext, useMemo, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { buscarTodos } from "@/lib/supabase-paginado";
 import { useAuth } from "@/hooks/use-auth";
 import { paraCaixa, type CaixaRow, type MovimentoRow } from "@/lib/mapeadores";
 import {
@@ -47,20 +48,25 @@ export function CaixaProvider({ children }: { children: ReactNode }) {
     queryKey: ["caixa", userId],
     enabled: !!userId,
     queryFn: async () => {
-      const [caixas, movimentos, regras, vales, pagamentos] = await Promise.all([
+      const [caixas, movimentosTodos, regras, vales, pagamentos] = await Promise.all([
         supabase.from("cash_registers").select("*").order("aberto_em", { ascending: false }),
-        supabase.from("cash_movements").select("*"),
+        // Leitura paginada: o Data API corta em 1000 linhas por consulta.
+        buscarTodos<MovimentoRow>((de, ate) =>
+          supabase
+            .from("cash_movements")
+            .select("*")
+            .order("created_at", { ascending: false })
+            .range(de, ate),
+        ),
         supabase.from("commission_rules").select("*").order("entregador"),
         supabase.from("commission_advances").select("*").order("created_at", { ascending: false }),
         supabase.from("commission_payments").select("*").order("created_at", { ascending: false }),
       ]);
-      for (const r of [caixas, movimentos, regras, vales, pagamentos]) {
+      for (const r of [caixas, regras, vales, pagamentos]) {
         if (r.error) throw r.error;
       }
       return {
-        caixas: ((caixas.data ?? []) as CaixaRow[]).map((c) =>
-          paraCaixa(c, (movimentos.data ?? []) as MovimentoRow[]),
-        ),
+        caixas: ((caixas.data ?? []) as CaixaRow[]).map((c) => paraCaixa(c, movimentosTodos)),
         regras: (regras.data ?? []).map((r) => ({
           entregador: r.entregador,
           porUnidade: Number(r.por_unidade),
