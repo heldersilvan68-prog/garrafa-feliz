@@ -165,6 +165,7 @@ async function migrar(userId: string) {
         cliente_nome: pedido.clienteNome,
         telefone: pedido.telefone,
         endereco: pedido.endereco,
+        endereco_entrega: pedido.enderecoEntrega ?? pedido.endereco,
         bairro: pedido.bairro,
         total: pedido.total,
         pagamento: pedido.pagamento,
@@ -194,6 +195,10 @@ async function migrar(userId: string) {
           nome: i.nome,
           qtd: i.qtd,
           preco_unit: i.precoUnit,
+          embalagem: i.embalagem ?? null,
+          quantidade_embalagens: i.quantidadeEmbalagens ?? null,
+          preco_embalagem: i.precoEmbalagem ?? null,
+          rotulo_embalagem: i.rotuloEmbalagem ?? null,
           retornavel: i.retornavel,
         })),
       );

@@ -44,11 +44,18 @@ import {
   precoPorModo,
   totalComPromocao,
   unidPorFardo,
+  rotuloEmbalagem,
 } from "@/lib/erp";
 import { BALCAO } from "@/lib/entregadores";
-import { resumoItens, type FormaPagamento, type ItemPedido, type Pedido } from "@/lib/pedidos";
+import {
+  resumoItens,
+  totalItemPedido,
+  type FormaPagamento,
+  type ItemPedido,
+  type Pedido,
+} from "@/lib/pedidos";
 import { ImprimirComprovante } from "@/components/pedidos/comprovante-pedido";
-import { LABEL_MODO, type ModoVenda } from "@/lib/vasilhames";
+import { LABEL_MODO, saldoVasilhamesPedido, type ModoVenda } from "@/lib/vasilhames";
 
 type Parcela = { forma: FormaPagamento; valor: string };
 
@@ -142,7 +149,11 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
   const precoPadrao = (id: string) => {
     const p = produtos.find((x) => x.id === id);
     if (!p) return 0;
-    if (embalagemDe(id) === "fardo") return getDadosMedidaProduto(p).vendaPadrao;
+    if (embalagemDe(id) === "fardo") {
+      return p.precoFardo > 0
+        ? p.precoFardo
+        : Math.round(p.precoVenda * unidPorFardo(p) * 100) / 100;
+    }
     if (p.retornavel) return precoPorModo(p, modos[id] ?? "refil");
     return p.precoVenda;
   };
@@ -235,9 +246,27 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
     nome: l.nome,
     qtd: l.qtd,
     // Preço negociado apenas nesta venda — não altera o cadastro do produto.
-    // Fardo fechado: o valor digitado é do fardo, convertido por unidade.
-    // Atacado: aplica combos fechados + unidades avulsas progressivamente.
+    // O rateio abaixo existe somente para compatibilidade com módulos antigos;
+    // o total oficial do fardo usa quantidadeEmbalagens × precoEmbalagem.
     precoUnit: l.qtd > 0 ? totalLinha(l) / l.qtd : 0,
+    embalagem: l.embalagem,
+    quantidadeEmbalagens:
+      l.embalagem === "fardo"
+        ? Math.max(
+            1,
+            Math.round(
+              l.qtd /
+                unidPorFardo(produtos.find((p) => p.id === l.produtoId) ?? ({} as never)),
+            ),
+          )
+        : undefined,
+    precoEmbalagem: l.embalagem === "fardo" ? l.preco : undefined,
+    rotuloEmbalagem:
+      l.embalagem === "fardo"
+        ? rotuloEmbalagem(
+            produtos.find((p) => p.id === l.produtoId)?.unidade,
+          ).singular.replace(/^./, (c) => c.toUpperCase())
+        : undefined,
     retornavel: l.retornavel,
     modo: l.modo,
   }));
@@ -260,8 +289,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
       : [];
   const itens: ItemPedido[] = [...itensFisicos, ...itemPacote];
 
-  const subtotal =
-    Math.round(itens.reduce((s, i) => s + i.qtd * i.precoUnit, 0) * 100) / 100;
+  const subtotal = Math.round(itens.reduce((s, i) => s + totalItemPedido(i), 0) * 100) / 100;
   const descontoAplicado = Math.min(Math.max(0, desconto), subtotal);
   const total = Math.round((subtotal - descontoAplicado) * 100) / 100;
   // Só as trocas de refil geram devolução de vasilhame vazio.
@@ -326,7 +354,15 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
   const selecionar = (id: string) => {
     const c = clientes.find((x) => x.id === id);
     setClienteId(id);
-    setEndereco(c?.endereco ?? "");
+    const enderecoPadrao = c
+      ? [c.endereco?.trim(), c.bairro?.trim()]
+          .filter((parte, indice, partes) =>
+            indice === 0 || !partes[0]?.toLocaleLowerCase("pt-BR").includes(parte?.toLocaleLowerCase("pt-BR") ?? ""),
+          )
+          .filter(Boolean)
+          .join(", ")
+      : "";
+    setEndereco(enderecoPadrao);
     setBusca(c ? rotuloCliente(c) : "");
     setListaAberta(false);
   };
@@ -371,7 +407,9 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
       clienteId: cliente?.id ?? "",
       clienteNome: cliente?.nome ?? CONSUMIDOR_FINAL,
       telefone: cliente?.telefone ?? "",
-      endereco: endereco || cliente?.endereco || "",
+      // O endereço principal continua intacto; a edição vale somente para esta entrega.
+      endereco: cliente?.endereco ?? endereco,
+      enderecoEntrega: endereco.trim() || cliente?.endereco || "",
       bairro: cliente ? bairroDe(cliente) : "",
       itens,
       pagamentos: parcelas
@@ -392,9 +430,10 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
       });
 
       // Pacote de vales não baixa estoque físico — só os itens de produto.
-      baixaVenda(
+      await baixaVenda(
         itensFisicos.map((i) => ({ produtoId: i.produtoId, qtd: i.qtd, modo: i.modo })),
         nVazios,
+        { clienteId: cliente?.id, pedidoId: pedido.id, numeroPedido: pedido.numero },
       );
       if (cliente) {
         if (valesVendidos > 0) await ajustarVales(cliente.id, valesVendidos);
@@ -402,9 +441,9 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
         registrarCompra(cliente.id, resumoItens(itens), total, hojeISO());
         // Débito lançado exatamente igual ao valor informado como fiado.
         if (valorFiado > 0) ajustarDivida(cliente.id, valorFiado);
-        // Cascos que saíram e não voltaram ficam na conta do cliente.
-        const naRua = Math.max(0, qtdRetornavel - nVazios);
-        if (naRua > 0) void ajustarVasilhames(cliente.id, naRua);
+        // Saldo líquido: uma devolução excedente também baixa empréstimos antigos.
+        const deltaVasilhames = saldoVasilhamesPedido(itensFisicos, nVazios);
+        if (deltaVasilhames !== 0) await ajustarVasilhames(cliente.id, deltaVasilhames);
       }
 
       // Taxa da maquininha entra como despesa financeira do dia da venda.

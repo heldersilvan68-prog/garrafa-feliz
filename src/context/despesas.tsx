@@ -2,7 +2,6 @@ import { createContext, useContext, useMemo, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { buscarTodos } from "@/lib/supabase-paginado";
 import { useAuth } from "@/hooks/use-auth";
 import { paraDespesa, type DespesaRow } from "@/lib/mapeadores";
 import type { Despesa } from "@/lib/despesas";
@@ -32,15 +31,13 @@ export function DespesasProvider({ children }: { children: ReactNode }) {
     enabled: !!userId,
     queryFn: async () => {
       const [despesas, categorias] = await Promise.all([
-        // Leitura paginada: o Data API corta em 1000 linhas por consulta.
-        buscarTodos<DespesaRow>((de, ate) =>
-          supabase.from("expenses").select("*").order("data", { ascending: false }).range(de, ate),
-        ),
+        supabase.from("expenses").select("*").order("data", { ascending: false }),
         supabase.from("expense_categories").select("*").order("nome"),
       ]);
+      if (despesas.error) throw despesas.error;
       if (categorias.error) throw categorias.error;
       return {
-        despesas: despesas.map(paraDespesa),
+        despesas: ((despesas.data ?? []) as DespesaRow[]).map(paraDespesa),
         categorias: (categorias.data ?? []).map((c) => ({
           id: c.id,
           nome: c.nome,

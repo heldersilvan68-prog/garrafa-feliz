@@ -2,7 +2,6 @@ import { createContext, useContext, useMemo, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { buscarTodos } from "@/lib/supabase-paginado";
 import { useAuth } from "@/hooks/use-auth";
 import {
   paraPedido,
@@ -43,32 +42,23 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
     queryKey: ["pedidos", userId],
     enabled: !!userId,
     queryFn: async () => {
-      // Leitura paginada: o Data API corta em 1000 linhas e os itens/pagamentos
-      // mais recentes eram descartados, zerando volumes e parcelas.
-      const [linhas, itens, pagos] = await Promise.all([
-        buscarTodos<PedidoRow>((de, ate) =>
-          supabase
-            .from("orders")
-            .select("*")
-            .order("created_at", { ascending: false })
-            .range(de, ate),
-        ),
-        buscarTodos<ItemPedidoRow>((de, ate) =>
-          supabase
-            .from("order_items")
-            .select("*")
-            .order("created_at", { ascending: false })
-            .range(de, ate),
-        ),
-        buscarTodos<PagamentoPedidoRow>((de, ate) =>
-          supabase
-            .from("order_payments")
-            .select("*")
-            .order("created_at", { ascending: false })
-            .range(de, ate),
-        ),
+      const [
+        { data: linhas, error },
+        { data: itens, error: erroItens },
+        { data: pagos, error: erroPagos },
+      ] = await Promise.all([
+        supabase.from("orders").select("*").order("created_at", { ascending: false }),
+        supabase.from("order_items").select("*"),
+        supabase.from("order_payments").select("*"),
       ]);
-      return mapearPedidos(linhas, itens, pagos);
+      if (error) throw error;
+      if (erroItens) throw erroItens;
+      if (erroPagos) throw erroPagos;
+      return mapearPedidos(
+        linhas as PedidoRow[],
+        (itens ?? []) as ItemPedidoRow[],
+        (pagos ?? []) as PagamentoPedidoRow[],
+      );
     },
   });
 
@@ -99,6 +89,7 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
           cliente_nome: dados.clienteNome,
           telefone: dados.telefone,
           endereco: dados.endereco,
+          endereco_entrega: dados.enderecoEntrega,
           bairro: dados.bairro,
           total: dados.total,
           pagamento: dados.pagamento,
@@ -126,6 +117,10 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
             nome: i.nome,
             qtd: i.qtd,
             preco_unit: i.precoUnit,
+            embalagem: i.embalagem ?? null,
+            quantidade_embalagens: i.quantidadeEmbalagens ?? null,
+            preco_embalagem: i.precoEmbalagem ?? null,
+            rotulo_embalagem: i.rotuloEmbalagem ?? null,
             retornavel: i.retornavel,
             modo: i.modo,
           })),
@@ -143,15 +138,6 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
           })),
         );
         if (erroPagos) throw erroPagos;
-      }
-
-      if (dados.vaziosRecolhidos > 0) {
-        await supabase.from("returnable_movements").insert({
-          user_id: userId,
-          order_id: (criado as PedidoRow).id,
-          tipo: "recolhido" as const,
-          qtd: dados.vaziosRecolhidos,
-        });
       }
 
       return {
@@ -176,6 +162,8 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
       if (dados.clienteNome !== undefined) linha["cliente_nome"] = dados.clienteNome;
       if (dados.telefone !== undefined) linha["telefone"] = dados.telefone;
       if (dados.endereco !== undefined) linha["endereco"] = dados.endereco;
+      if (dados.enderecoEntrega !== undefined)
+        linha["endereco_entrega"] = dados.enderecoEntrega;
       if (dados.bairro !== undefined) linha["bairro"] = dados.bairro;
       if (dados.total !== undefined) linha["total"] = dados.total;
       if (dados.pagamento !== undefined) linha["pagamento"] = dados.pagamento;
@@ -223,6 +211,10 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
               nome: i.nome,
               qtd: i.qtd,
               preco_unit: i.precoUnit,
+              embalagem: i.embalagem ?? null,
+              quantidade_embalagens: i.quantidadeEmbalagens ?? null,
+              preco_embalagem: i.precoEmbalagem ?? null,
+              rotulo_embalagem: i.rotuloEmbalagem ?? null,
               retornavel: i.retornavel,
               modo: i.modo,
             })),

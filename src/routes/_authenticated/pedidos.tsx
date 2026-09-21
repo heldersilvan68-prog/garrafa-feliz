@@ -9,6 +9,7 @@ import {
   Pencil,
   BadgeDollarSign,
   Plus,
+  Search,
   Truck,
   XCircle,
 } from "lucide-react";
@@ -22,6 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FiltroPeriodo } from "@/components/filtro-periodo";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePedidos } from "@/context/pedidos";
 import { usePeriodo } from "@/hooks/use-periodo";
@@ -80,6 +82,26 @@ const STATUS_BADGE: Record<StatusPedido, "default" | "secondary" | "destructive"
   cancelado: "destructive",
 };
 
+const normalizarBusca = (valor: string) =>
+  valor
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("pt-BR")
+    .trim();
+
+const pedidoCorrespondeBusca = (pedido: Pedido, termo: string) => {
+  const busca = normalizarBusca(termo).replace(/^#/, "");
+  if (!busca) return true;
+
+  return [
+    String(pedido.numero),
+    pedido.clienteNome,
+    pedido.entregador,
+    pedido.enderecoEntrega,
+    pedido.endereco,
+  ].some((valor) => normalizarBusca(valor ?? "").includes(busca));
+};
+
 const PedidoCard = memo(function PedidoCard({ pedido }: { pedido: Pedido }) {
   const { alterarStatus } = usePedidos();
   const avancar = proximoStatus(pedido.status);
@@ -99,10 +121,7 @@ const PedidoCard = memo(function PedidoCard({ pedido }: { pedido: Pedido }) {
           <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
             <MapPin className="size-3.5 shrink-0" />
             <span className="truncate">
-              {pedido.endereco}
-              {pedido.bairro && !pedido.endereco.includes(pedido.bairro)
-                ? ` — ${pedido.bairro}`
-                : ""}
+              {pedido.enderecoEntrega}
             </span>
           </p>
         </div>
@@ -205,6 +224,7 @@ function PedidosPage() {
   const { pedidos } = usePedidos();
   const [filtro, setFiltro] = useState<Filtro>("todos");
   const [filtroForma, setFiltroForma] = useState<FiltroForma>("especie");
+  const [busca, setBusca] = useState("");
   const [limiteVisivel, setLimiteVisivel] = useState(50);
   const periodo = usePeriodo("hoje");
 
@@ -213,28 +233,36 @@ function PedidosPage() {
     [pedidos, periodo.faixa],
   );
 
+  const pesquisados = useMemo(
+    () => doPeriodo.filter((pedido) => pedidoCorrespondeBusca(pedido, busca)),
+    [busca, doPeriodo],
+  );
+
   const porForma = (forma: FiltroForma) =>
-    doPeriodo.filter(
+    pesquisados.filter(
       (p) =>
         p.status !== "cancelado" &&
         parcelasDe(p).some((x) => FORMAS_GRUPO[forma].includes(x.forma)),
     );
 
   const lista = useMemo(() => {
-    if (filtro === "todos") return doPeriodo;
+    if (filtro === "todos") return pesquisados;
     if (filtro === "por-forma") return porForma(filtroForma);
-    return doPeriodo.filter((p) => p.status === filtro);
+    return pesquisados.filter((p) => p.status === filtro);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filtro, filtroForma, doPeriodo]);
+  }, [filtro, filtroForma, pesquisados]);
 
-  useEffect(() => setLimiteVisivel(50), [filtro, filtroForma, periodo.faixa.inicio, periodo.faixa.fim]);
+  useEffect(
+    () => setLimiteVisivel(50),
+    [busca, filtro, filtroForma, periodo.faixa.inicio, periodo.faixa.fim],
+  );
 
   const listaVisivel = useMemo(() => lista.slice(0, limiteVisivel), [lista, limiteVisivel]);
 
   const contar = (s: Filtro) => {
-    if (s === "todos") return doPeriodo.length;
+    if (s === "todos") return pesquisados.length;
     if (s === "por-forma") return porForma(filtroForma).length;
-    return doPeriodo.filter((p) => p.status === s).length;
+    return pesquisados.filter((p) => p.status === s).length;
   };
 
   const faturamento = doPeriodo
@@ -265,14 +293,30 @@ function PedidosPage() {
             {doPeriodo.length} pedido(s) no período · {brl(faturamento)} em vendas
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="grid w-full gap-2 sm:w-auto sm:grid-cols-[auto_minmax(20rem,26rem)] sm:items-end">
           <FiltroPeriodo estado={periodo} />
-          <PdvDrawer>
-            <Button size="lg">
-              <Plus className="size-4" />
-              Nova venda / Pedido express
-            </Button>
-          </PdvDrawer>
+          <div className="grid gap-2">
+            <PdvDrawer>
+              <Button size="lg" className="w-full">
+                <Plus className="size-4" />
+                Nova venda / Pedido express
+              </Button>
+            </PdvDrawer>
+            <div className="relative">
+              <Search
+                aria-hidden="true"
+                className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+              />
+              <Input
+                type="search"
+                value={busca}
+                onChange={(evento) => setBusca(evento.target.value)}
+                placeholder="Buscar por número do pedido, nome ou endereço..."
+                aria-label="Buscar vendas por número do pedido, cliente, entregador ou endereço"
+                className="pl-9"
+              />
+            </div>
+          </div>
         </div>
       </header>
 
@@ -306,7 +350,9 @@ function PedidosPage() {
           <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
             <Truck className="size-8 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">
-              Nenhum pedido neste filtro. Registre uma venda no PDV Express.
+              {busca
+                ? "Nenhum pedido encontrado para esta busca."
+                : "Nenhum pedido neste filtro. Registre uma venda no PDV Express."}
             </p>
             <PdvDrawer>
               <Button variant="outline">

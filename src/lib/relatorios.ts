@@ -1,6 +1,6 @@
 /** Utilitários de relatórios: exportação (CSV / impressão) e rankings.
  *  Toda a lógica de período vive em @/lib/periodo (fonte única). */
-import type { Pedido } from "@/lib/pedidos";
+import { totalItemPedido, type Pedido } from "@/lib/pedidos";
 
 export {
   PERIODOS,
@@ -18,7 +18,7 @@ export function maisVendidos(pedidos: Pedido[]) {
     for (const i of p.itens) {
       const atual = mapa.get(i.nome) ?? { nome: i.nome, qtd: 0, valor: 0 };
       atual.qtd += i.qtd;
-      atual.valor += i.qtd * i.precoUnit;
+      atual.valor += totalItemPedido(i);
       mapa.set(i.nome, atual);
     }
   }

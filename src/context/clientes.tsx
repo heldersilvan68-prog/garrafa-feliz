@@ -2,7 +2,6 @@ import { createContext, useContext, useMemo, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { buscarTodos } from "@/lib/supabase-paginado";
 import { useAuth } from "@/hooks/use-auth";
 import { mapearClientes, type ClienteRow, type CompraRow } from "@/lib/mapeadores";
 import { ordenarPorCodigo, type Cliente } from "@/lib/clientes";
@@ -45,21 +44,16 @@ export function ClientesProvider({ children }: { children: ReactNode }) {
     queryKey: ["clientes", userId],
     enabled: !!userId,
     queryFn: async () => {
-      // Leitura paginada: o Data API corta em 1000 linhas por consulta.
-      const [linhas, compras] = await Promise.all([
-        buscarTodos<ClienteRow>((de, ate) =>
-          supabase.from("clients").select("*").order("nome", { ascending: true }).range(de, ate),
-        ),
-        buscarTodos<CompraRow>((de, ate) =>
-          supabase
-            .from("client_purchases")
-            .select("*")
-            .order("data", { ascending: false })
-            .range(de, ate),
-        ),
+      const [{ data: linhas, error }, { data: compras, error: erroCompras }] = await Promise.all([
+        supabase.from("clients").select("*").order("nome", { ascending: true }),
+        supabase.from("client_purchases").select("*"),
       ]);
+      if (error) throw error;
+      if (erroCompras) throw erroCompras;
       // Ordem global: código numérico crescente (1, 2, 3... 10, 11).
-      return ordenarPorCodigo(mapearClientes(linhas, compras));
+      return ordenarPorCodigo(
+        mapearClientes(linhas as ClienteRow[], (compras ?? []) as CompraRow[]),
+      );
     },
   });
 
