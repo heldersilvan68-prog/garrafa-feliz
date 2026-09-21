@@ -137,9 +137,10 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
         .single();
       if (error) throw error;
 
-      if (dados.itens.length > 0) {
+      const itensValidados = await resolverProdutos(userId, dados.itens);
+      if (itensValidados.length > 0) {
         const { error: erroItens } = await supabase.from("order_items").insert(
-          dados.itens.map((i) => ({
+          itensValidados.map((i) => ({
             user_id: userId,
             order_id: (criado as PedidoRow).id,
             product_id: i.produtoId || null,
@@ -156,9 +157,11 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
         );
         if (erroItens) {
           console.error("[PDV] Falha do Supabase ao inserir order_items", erroItens);
+          toast.error(`Erro ao salvar itens: ${erroItens.message}`);
           throw erroItens;
         }
       }
+
 
       if (dados.pagamentos.length > 0) {
         const { error: erroPagos } = await supabase.from("order_payments").insert(
