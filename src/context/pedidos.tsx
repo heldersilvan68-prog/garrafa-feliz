@@ -177,9 +177,10 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
 
       return {
         ...paraPedido(criado as PedidoRow, []),
-        itens: dados.itens,
+        itens: itensValidados,
         pagamentos: dados.pagamentos,
       };
+
     },
     onSuccess: invalidar,
     onError: (e: Error) => toast.error(`Não foi possível criar o pedido: ${e.message}`),
