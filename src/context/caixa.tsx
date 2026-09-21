@@ -209,3 +209,8 @@ export function useCaixa() {
   if (!ctx) throw new Error("useCaixa precisa estar dentro de CaixaProvider");
   return ctx;
 }
+
+/** Versão tolerante: retorna null fora do provider (para banners/avisos). */
+export function useCaixaOpcional() {
+  return useContext(CaixaContext);
+}

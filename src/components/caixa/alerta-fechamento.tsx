@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { AlertTriangle, ChevronRight } from "lucide-react";
-import { useCaixa } from "@/context/caixa";
+import { useCaixaOpcional } from "@/context/caixa";
 import { useConfiguracoes } from "@/context/configuracoes";
 
 /** Minutos desde a meia-noite no fuso da operação (America/Bahia). */
@@ -26,7 +26,8 @@ const paraMinutos = (hhmm: string) => {
  * "Horário limite de fechamento" definido nas Configurações.
  */
 export function AlertaFechamentoCaixa() {
-  const { caixaAberto } = useCaixa();
+  const caixa = useCaixaOpcional();
+  const caixaAberto = caixa?.caixaAberto;
   const { config } = useConfiguracoes();
   const [agora, setAgora] = useState(() => minutosAgora());
 
