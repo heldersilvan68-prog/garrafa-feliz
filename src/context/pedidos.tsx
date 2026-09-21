@@ -125,7 +125,10 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
             modo: i.modo,
           })),
         );
-        if (erroItens) throw erroItens;
+        if (erroItens) {
+          console.error("[PDV] Falha do Supabase ao inserir order_items", erroItens);
+          throw erroItens;
+        }
       }
 
       if (dados.pagamentos.length > 0) {
@@ -219,7 +222,10 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
               modo: i.modo,
             })),
           );
-          if (erroInsert) throw erroInsert;
+          if (erroInsert) {
+            console.error("[Pedidos] Falha do Supabase ao atualizar order_items", erroInsert);
+            throw erroInsert;
+          }
         }
       }
     },

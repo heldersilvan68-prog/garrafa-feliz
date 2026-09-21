@@ -466,6 +466,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
       limpar();
       setAberto(false);
     } catch (e) {
+      console.error("[PDV] Resposta exata ao salvar o pedido", e);
       toast.error(e instanceof Error ? e.message : "Não foi possível criar o pedido.");
     } finally {
       setIsSubmitting(false);
