@@ -486,38 +486,50 @@ export type Database = {
       order_items: {
         Row: {
           created_at: string
+          embalagem: string | null
           id: string
           modo: string
           nome: string
           order_id: string
+          preco_embalagem: number | null
           preco_unit: number
           product_id: string | null
           qtd: number
+          quantidade_embalagens: number | null
           retornavel: boolean
+          rotulo_embalagem: string | null
           user_id: string
         }
         Insert: {
           created_at?: string
+          embalagem?: string | null
           id?: string
           modo?: string
           nome?: string
           order_id: string
+          preco_embalagem?: number | null
           preco_unit?: number
           product_id?: string | null
           qtd?: number
+          quantidade_embalagens?: number | null
           retornavel?: boolean
+          rotulo_embalagem?: string | null
           user_id: string
         }
         Update: {
           created_at?: string
+          embalagem?: string | null
           id?: string
           modo?: string
           nome?: string
           order_id?: string
+          preco_embalagem?: number | null
           preco_unit?: number
           product_id?: string | null
           qtd?: number
+          quantidade_embalagens?: number | null
           retornavel?: boolean
+          rotulo_embalagem?: string | null
           user_id?: string
         }
         Relationships: [
@@ -581,8 +593,10 @@ export type Database = {
           created_at: string
           desconto: number
           endereco: string
+          endereco_entrega: string | null
           entregador: string
           forma_baixa: Database["public"]["Enums"]["payment_method"] | null
+          galoes_troca_refil: number
           id: string
           legacy_id: string | null
           motivo_cancelamento: string | null
@@ -611,8 +625,10 @@ export type Database = {
           created_at?: string
           desconto?: number
           endereco?: string
+          endereco_entrega?: string | null
           entregador?: string
           forma_baixa?: Database["public"]["Enums"]["payment_method"] | null
+          galoes_troca_refil?: number
           id?: string
           legacy_id?: string | null
           motivo_cancelamento?: string | null
@@ -641,8 +657,10 @@ export type Database = {
           created_at?: string
           desconto?: number
           endereco?: string
+          endereco_entrega?: string | null
           entregador?: string
           forma_baixa?: Database["public"]["Enums"]["payment_method"] | null
+          galoes_troca_refil?: number
           id?: string
           legacy_id?: string | null
           motivo_cancelamento?: string | null
@@ -1023,6 +1041,47 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_order_with_items: {
+        Args: { _items: Json; _order: Json; _payments?: Json }
+        Returns: {
+          bairro: string
+          cash_register_id: string | null
+          client_id: string | null
+          cliente_nome: string
+          created_at: string
+          desconto: number
+          endereco: string
+          endereco_entrega: string | null
+          entregador: string
+          forma_baixa: Database["public"]["Enums"]["payment_method"] | null
+          galoes_troca_refil: number
+          id: string
+          legacy_id: string | null
+          motivo_cancelamento: string | null
+          numero: number
+          obs_cancelamento: string | null
+          observacao: string | null
+          pagamento: Database["public"]["Enums"]["payment_method"]
+          pago: boolean
+          pago_em: string | null
+          status: Database["public"]["Enums"]["order_status"]
+          telefone: string
+          total: number
+          troco_para: number | null
+          updated_at: string
+          user_id: string
+          vales_credito: number
+          vales_resgatados: number
+          valor_fiado: number
+          vazios_recolhidos: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "orders"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
