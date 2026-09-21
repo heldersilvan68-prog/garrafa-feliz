@@ -10,6 +10,7 @@ import {
   type PagamentoPedidoRow,
   type PedidoRow,
 } from "@/lib/mapeadores";
+import { buscarTodos } from "@/lib/supabase-paginado";
 import type { FormaPagamento, Pedido, StatusPedido } from "@/lib/pedidos";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -42,23 +43,22 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
     queryKey: ["pedidos", userId],
     enabled: !!userId,
     queryFn: async () => {
-      const [
-        { data: linhas, error },
-        { data: itens, error: erroItens },
-        { data: pagos, error: erroPagos },
-      ] = await Promise.all([
-        supabase.from("orders").select("*").order("created_at", { ascending: false }),
-        supabase.from("order_items").select("*"),
-        supabase.from("order_payments").select("*"),
+      const [linhas, itens, pagos] = await Promise.all([
+        buscarTodos<PedidoRow>((de, ate) =>
+          supabase
+            .from("orders")
+            .select("*")
+            .order("created_at", { ascending: false })
+            .range(de, ate),
+        ),
+        buscarTodos<ItemPedidoRow>((de, ate) =>
+          supabase.from("order_items").select("*").range(de, ate),
+        ),
+        buscarTodos<PagamentoPedidoRow>((de, ate) =>
+          supabase.from("order_payments").select("*").range(de, ate),
+        ),
       ]);
-      if (error) throw error;
-      if (erroItens) throw erroItens;
-      if (erroPagos) throw erroPagos;
-      return mapearPedidos(
-        linhas as PedidoRow[],
-        (itens ?? []) as ItemPedidoRow[],
-        (pagos ?? []) as PagamentoPedidoRow[],
-      );
+      return mapearPedidos(linhas, itens, pagos);
     },
   });
 

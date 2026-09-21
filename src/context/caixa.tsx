@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { paraCaixa, type CaixaRow, type MovimentoRow } from "@/lib/mapeadores";
+import { buscarTodos } from "@/lib/supabase-paginado";
 import {
   hojeISO,
   type Caixa,
@@ -47,33 +48,34 @@ export function CaixaProvider({ children }: { children: ReactNode }) {
     queryKey: ["caixa", userId],
     enabled: !!userId,
     queryFn: async () => {
-      const [caixas, movimentos, regras, vales, pagamentos] = await Promise.all([
+      const [caixasRes, movimentos, regrasRes, valesRes, pagamentosRes] = await Promise.all([
         supabase.from("cash_registers").select("*").order("aberto_em", { ascending: false }),
-        supabase.from("cash_movements").select("*"),
+        buscarTodos<MovimentoRow>((de, ate) =>
+          supabase.from("cash_movements").select("*").range(de, ate),
+        ),
         supabase.from("commission_rules").select("*").order("entregador"),
         supabase.from("commission_advances").select("*").order("created_at", { ascending: false }),
         supabase.from("commission_payments").select("*").order("created_at", { ascending: false }),
       ]);
-      for (const r of [caixas, movimentos, regras, vales, pagamentos]) {
-        if (r.error) throw r.error;
-      }
+      if (caixasRes.error) throw caixasRes.error;
+      if (regrasRes.error) throw regrasRes.error;
+      if (valesRes.error) throw valesRes.error;
+      if (pagamentosRes.error) throw pagamentosRes.error;
       return {
-        caixas: ((caixas.data ?? []) as CaixaRow[]).map((c) =>
-          paraCaixa(c, (movimentos.data ?? []) as MovimentoRow[]),
-        ),
-        regras: (regras.data ?? []).map((r) => ({
+        caixas: ((caixasRes.data ?? []) as CaixaRow[]).map((c) => paraCaixa(c, movimentos)),
+        regras: (regrasRes.data ?? []).map((r) => ({
           entregador: r.entregador,
           porUnidade: Number(r.por_unidade),
           percentual: Number(r.percentual),
         })) as RegraComissao[],
-        vales: (vales.data ?? []).map((v) => ({
+        vales: (valesRes.data ?? []).map((v) => ({
           id: v.id,
           entregador: v.entregador,
           valor: Number(v.valor),
           motivo: v.motivo,
           em: v.created_at,
         })) as Vale[],
-        pagamentos: (pagamentos.data ?? []).map((p) => ({
+        pagamentos: (pagamentosRes.data ?? []).map((p) => ({
           id: p.id,
           entregador: p.entregador,
           valor: Number(p.valor),

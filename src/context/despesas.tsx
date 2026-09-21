@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { paraDespesa, type DespesaRow } from "@/lib/mapeadores";
+import { buscarTodos } from "@/lib/supabase-paginado";
 import type { Despesa } from "@/lib/despesas";
 
 type NovaDespesa = Omit<Despesa, "id" | "criadoEm">;
@@ -30,15 +31,20 @@ export function DespesasProvider({ children }: { children: ReactNode }) {
     queryKey: ["despesas", userId],
     enabled: !!userId,
     queryFn: async () => {
-      const [despesas, categorias] = await Promise.all([
-        supabase.from("expenses").select("*").order("data", { ascending: false }),
+      const [despesasArr, categoriasRes] = await Promise.all([
+        buscarTodos<DespesaRow>((de, ate) =>
+          supabase
+            .from("expenses")
+            .select("*")
+            .order("data", { ascending: false })
+            .range(de, ate),
+        ),
         supabase.from("expense_categories").select("*").order("nome"),
       ]);
-      if (despesas.error) throw despesas.error;
-      if (categorias.error) throw categorias.error;
+      if (categoriasRes.error) throw categoriasRes.error;
       return {
-        despesas: ((despesas.data ?? []) as DespesaRow[]).map(paraDespesa),
-        categorias: (categorias.data ?? []).map((c) => ({
+        despesas: despesasArr.map(paraDespesa),
+        categorias: (categoriasRes.data ?? []).map((c) => ({
           id: c.id,
           nome: c.nome,
           cor: c.cor,
