@@ -21,3 +21,7 @@
 - [x] Corrigir saldo líquido e estorno entre PDV, cliente e estoque
 - [x] Adicionar saldo, histórico e devolução manual ao perfil do cliente
 - [x] Adicionar detalhamento clicável de clientes com cascos na rua
+
+# Diagnóstico de itens do pedido
+- [x] Auditar permissões, políticas, colunas e gatilhos de order_items
+- [x] Registrar no console a resposta exata em falhas de gravação do PDV
