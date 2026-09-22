@@ -438,7 +438,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
       if (cliente) {
         if (valesVendidos > 0) await ajustarVales(cliente.id, valesVendidos);
         if (valesResgatados > 0) await ajustarVales(cliente.id, -valesResgatados);
-        registrarCompra(cliente.id, resumoItens(itens), total, hojeISO());
+        registrarCompra(cliente.id, resumoItens(itens), total, hojeISO(), pedido.id);
         // Débito lançado exatamente igual ao valor informado como fiado.
         if (valorFiado > 0) ajustarDivida(cliente.id, valorFiado);
         // Saldo líquido: uma devolução excedente também baixa empréstimos antigos.

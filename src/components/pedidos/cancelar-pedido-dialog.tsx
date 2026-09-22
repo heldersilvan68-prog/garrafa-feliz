@@ -30,7 +30,7 @@ export function CancelarPedidoDialog({
 }) {
   const { cancelar, pedidos } = usePedidos();
   const { estornarVenda } = useEstoque();
-  const { definirDivida, ajustarVasilhames, ajustarVales } = useClientes();
+  const { definirDivida, ajustarVasilhames, ajustarVales, removerCompraPorPedido } = useClientes();
   const { despesas, removerDespesa } = useDespesas();
   const [aberto, setAberto] = useState(false);
   const [motivo, setMotivo] = useState(MOTIVOS_CANCELAMENTO[0]!);
@@ -91,6 +91,9 @@ export function CancelarPedidoDialog({
         (d) => d.descricao === `Taxa de cartão — Pedido #${pedido.numero}`,
       );
       if (taxa) removerDespesa(taxa.id);
+
+      // 7) Remove do histórico de compras do cliente a compra vinculada a este pedido.
+      await removerCompraPorPedido(pedido.id);
 
       toast.info(`Pedido #${pedido.numero} cancelado — ${motivo}`);
       setAberto(false);

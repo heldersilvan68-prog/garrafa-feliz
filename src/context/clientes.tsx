@@ -13,7 +13,9 @@ type Ctx = {
   carregando: boolean;
   salvar: (c: Cliente) => void;
   remover: (id: string) => void;
-  registrarCompra: (id: string, descricao: string, valor: number, data: string) => void;
+  registrarCompra: (id: string, descricao: string, valor: number, data: string, pedidoId?: string) => void;
+  /** Remove do histórico a compra vinculada a um pedido (usado no cancelamento). */
+  removerCompraPorPedido: (pedidoId: string) => Promise<void>;
   ajustarDivida: (id: string, delta: number) => void;
   /** Define o saldo devedor exato do cliente (sincronização com os fiados em aberto). */
   definirDivida: (id: string, valor: number) => Promise<void>;
@@ -107,11 +109,12 @@ export function ClientesProvider({ children }: { children: ReactNode }) {
     descricao: string;
     valor: number;
     data: string;
-  }>(async ({ id, descricao, valor, data }) => {
+    pedidoId?: string;
+  }>(async ({ id, descricao, valor, data, pedidoId }) => {
     if (!userId) throw new Error("Sessão expirada");
     const { error } = await supabase
       .from("client_purchases")
-      .insert({ user_id: userId, client_id: id, descricao, valor, data });
+      .insert({ user_id: userId, client_id: id, descricao, valor, data, order_id: pedidoId ?? null });
     if (error) throw error;
     const { error: erroCliente } = await supabase
       .from("clients")
@@ -119,6 +122,14 @@ export function ClientesProvider({ children }: { children: ReactNode }) {
       .eq("id", id);
     if (erroCliente) throw erroCliente;
   }, "Não foi possível registrar a compra");
+
+  const removerCompraPorPedidoMut = useMutacao<string>(async (pedidoId) => {
+    const { error } = await supabase
+      .from("client_purchases")
+      .delete()
+      .eq("order_id", pedidoId);
+    if (error) throw error;
+  }, "Não foi possível remover a compra do histórico");
 
   const dividaMut = useMutacao<{ id: string; delta: number }>(async ({ id, delta }) => {
     const atual = clientes.find((c) => c.id === id)?.divida ?? 0;
@@ -187,8 +198,10 @@ export function ClientesProvider({ children }: { children: ReactNode }) {
       carregando: isLoading,
       salvar: (c) => salvarMut.mutate(c),
       remover: (id) => removerMut.mutate(id),
-      registrarCompra: (id, descricao, valorCompra, data) =>
-        compraMut.mutate({ id, descricao, valor: valorCompra, data }),
+      registrarCompra: (id, descricao, valorCompra, data, pedidoId) =>
+        compraMut.mutate({ id, descricao, valor: valorCompra, data, pedidoId }),
+      removerCompraPorPedido: (pedidoId) =>
+        removerCompraPorPedidoMut.mutateAsync(pedidoId).then(() => undefined),
       ajustarDivida: (id, delta) => dividaMut.mutate({ id, delta }),
       definirDivida: (id, valorDivida) =>
         definirDividaMut.mutateAsync({ id, valor: valorDivida }).then(() => undefined),
@@ -197,7 +210,7 @@ export function ClientesProvider({ children }: { children: ReactNode }) {
       ajustarVales: (id, delta) => valesMut.mutateAsync({ id, delta }).then(() => undefined),
       importar: (lista) => importarMut.mutateAsync(lista),
     }),
-    [clientes, isLoading, salvarMut.mutate, removerMut.mutate, compraMut.mutate, dividaMut.mutate, definirDividaMut.mutateAsync, vasilhamesMut.mutateAsync, valesMut.mutateAsync, importarMut.mutateAsync],
+    [clientes, isLoading, salvarMut.mutate, removerMut.mutate, compraMut.mutate, removerCompraPorPedidoMut.mutateAsync, dividaMut.mutate, definirDividaMut.mutateAsync, vasilhamesMut.mutateAsync, valesMut.mutateAsync, importarMut.mutateAsync],
   );
 
   return (
