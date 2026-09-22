@@ -109,11 +109,12 @@ export function ClientesProvider({ children }: { children: ReactNode }) {
     descricao: string;
     valor: number;
     data: string;
-  }>(async ({ id, descricao, valor, data }) => {
+    pedidoId?: string;
+  }>(async ({ id, descricao, valor, data, pedidoId }) => {
     if (!userId) throw new Error("Sessão expirada");
     const { error } = await supabase
       .from("client_purchases")
-      .insert({ user_id: userId, client_id: id, descricao, valor, data });
+      .insert({ user_id: userId, client_id: id, descricao, valor, data, order_id: pedidoId ?? null });
     if (error) throw error;
     const { error: erroCliente } = await supabase
       .from("clients")
@@ -121,6 +122,14 @@ export function ClientesProvider({ children }: { children: ReactNode }) {
       .eq("id", id);
     if (erroCliente) throw erroCliente;
   }, "Não foi possível registrar a compra");
+
+  const removerCompraPorPedidoMut = useMutacao<string>(async (pedidoId) => {
+    const { error } = await supabase
+      .from("client_purchases")
+      .delete()
+      .eq("order_id", pedidoId);
+    if (error) throw error;
+  }, "Não foi possível remover a compra do histórico");
 
   const dividaMut = useMutacao<{ id: string; delta: number }>(async ({ id, delta }) => {
     const atual = clientes.find((c) => c.id === id)?.divida ?? 0;
