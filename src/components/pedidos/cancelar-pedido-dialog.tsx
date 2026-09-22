@@ -30,7 +30,7 @@ export function CancelarPedidoDialog({
 }) {
   const { cancelar, pedidos } = usePedidos();
   const { estornarVenda } = useEstoque();
-  const { definirDivida, ajustarVasilhames, ajustarVales } = useClientes();
+  const { definirDivida, ajustarVasilhames, ajustarVales, removerCompraPorPedido } = useClientes();
   const { despesas, removerDespesa } = useDespesas();
   const [aberto, setAberto] = useState(false);
   const [motivo, setMotivo] = useState(MOTIVOS_CANCELAMENTO[0]!);

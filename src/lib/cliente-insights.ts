@@ -127,7 +127,11 @@ export const linkWhatsAppSugerido = (c: Cliente, produto?: string) =>
   `https://wa.me/${c.telefone}?text=${encodeURIComponent(mensagemSugerida(c, produto))}`;
 
 export const pedidosDoCliente = (pedidos: Pedido[], c: Cliente) =>
-  pedidos.filter((p) => p.clienteId === c.id || p.clienteNome === c.nome);
+  pedidos.filter(
+    (p) =>
+      p.status !== "cancelado" &&
+      (p.clienteId === c.id || p.clienteNome === c.nome),
+  );
 
 export const demonstrativoDebito = (c: Cliente, compras: Compra[], saldo: number) => {
   const linhas = compras
