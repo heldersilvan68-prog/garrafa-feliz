@@ -13,7 +13,9 @@ type Ctx = {
   carregando: boolean;
   salvar: (c: Cliente) => void;
   remover: (id: string) => void;
-  registrarCompra: (id: string, descricao: string, valor: number, data: string) => void;
+  registrarCompra: (id: string, descricao: string, valor: number, data: string, pedidoId?: string) => void;
+  /** Remove do histórico a compra vinculada a um pedido (usado no cancelamento). */
+  removerCompraPorPedido: (pedidoId: string) => Promise<void>;
   ajustarDivida: (id: string, delta: number) => void;
   /** Define o saldo devedor exato do cliente (sincronização com os fiados em aberto). */
   definirDivida: (id: string, valor: number) => Promise<void>;
