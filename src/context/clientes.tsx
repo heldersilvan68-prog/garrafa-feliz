@@ -198,8 +198,10 @@ export function ClientesProvider({ children }: { children: ReactNode }) {
       carregando: isLoading,
       salvar: (c) => salvarMut.mutate(c),
       remover: (id) => removerMut.mutate(id),
-      registrarCompra: (id, descricao, valorCompra, data) =>
-        compraMut.mutate({ id, descricao, valor: valorCompra, data }),
+      registrarCompra: (id, descricao, valorCompra, data, pedidoId) =>
+        compraMut.mutate({ id, descricao, valor: valorCompra, data, pedidoId }),
+      removerCompraPorPedido: (pedidoId) =>
+        removerCompraPorPedidoMut.mutateAsync(pedidoId).then(() => undefined),
       ajustarDivida: (id, delta) => dividaMut.mutate({ id, delta }),
       definirDivida: (id, valorDivida) =>
         definirDividaMut.mutateAsync({ id, valor: valorDivida }).then(() => undefined),
