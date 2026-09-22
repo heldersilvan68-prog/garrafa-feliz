@@ -210,7 +210,7 @@ export function ClientesProvider({ children }: { children: ReactNode }) {
       ajustarVales: (id, delta) => valesMut.mutateAsync({ id, delta }).then(() => undefined),
       importar: (lista) => importarMut.mutateAsync(lista),
     }),
-    [clientes, isLoading, salvarMut.mutate, removerMut.mutate, compraMut.mutate, dividaMut.mutate, definirDividaMut.mutateAsync, vasilhamesMut.mutateAsync, valesMut.mutateAsync, importarMut.mutateAsync],
+    [clientes, isLoading, salvarMut.mutate, removerMut.mutate, compraMut.mutate, removerCompraPorPedidoMut.mutateAsync, dividaMut.mutate, definirDividaMut.mutateAsync, vasilhamesMut.mutateAsync, valesMut.mutateAsync, importarMut.mutateAsync],
   );
 
   return (
