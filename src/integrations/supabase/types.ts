@@ -179,6 +179,7 @@ export type Database = {
           data: string
           descricao: string
           id: string
+          order_id: string | null
           user_id: string
           valor: number
         }
@@ -188,6 +189,7 @@ export type Database = {
           data?: string
           descricao?: string
           id?: string
+          order_id?: string | null
           user_id: string
           valor?: number
         }
@@ -197,6 +199,7 @@ export type Database = {
           data?: string
           descricao?: string
           id?: string
+          order_id?: string | null
           user_id?: string
           valor?: number
         }
@@ -206,6 +209,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_purchases_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
             referencedColumns: ["id"]
           },
         ]
