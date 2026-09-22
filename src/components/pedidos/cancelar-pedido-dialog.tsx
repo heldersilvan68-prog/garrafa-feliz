@@ -92,6 +92,9 @@ export function CancelarPedidoDialog({
       );
       if (taxa) removerDespesa(taxa.id);
 
+      // 7) Remove do histórico de compras do cliente a compra vinculada a este pedido.
+      await removerCompraPorPedido(pedido.id);
+
       toast.info(`Pedido #${pedido.numero} cancelado — ${motivo}`);
       setAberto(false);
       setObs("");
