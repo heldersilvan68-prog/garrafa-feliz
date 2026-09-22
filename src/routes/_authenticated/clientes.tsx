@@ -292,8 +292,7 @@ function ClientesPage() {
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium">{rotuloCliente(c)}</p>
                 <p className="text-xs text-muted-foreground">
-                  Previsto para {formatarData(proximaCompra(c))} ·{" "}
-                  {diasRestantes(c) < 0 ? `${Math.abs(diasRestantes(c))} dia(s) de atraso` : "hoje"}
+                  Previsto para {formatarData(proximaCompra(c))} · hoje
                 </p>
               </div>
               <div className="flex shrink-0 items-center gap-2">
