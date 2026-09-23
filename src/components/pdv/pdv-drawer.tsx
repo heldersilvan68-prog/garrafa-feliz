@@ -80,7 +80,7 @@ const CONSUMIDOR_FINAL = "Consumidor Final / Balcão";
 
 export function PdvDrawer({ children }: { children: ReactNode }) {
   const { produtos, baixaVenda } = useEstoque();
-  const { clientes, registrarCompra, ajustarDivida, ajustarVasilhames, ajustarVales } =
+  const { clientes, registrarCompra, ajustarDivida, ajustarVasilhames, ajustarVales, ajustarCredito } =
     useClientes();
   const { criar } = usePedidos();
   const { caixaAberto } = useCaixa();
@@ -111,6 +111,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
   const [trocoPara, setTrocoPara] = useState("");
   // Desconto manual aplicado sobre o total da venda.
   const [desconto, setDesconto] = useState(0);
+  const [usarCredito, setUsarCredito] = useState(true);
   const [listaAberta, setListaAberta] = useState(false);
   const [entregador, setEntregador] = useState<string>(BALCAO);
   // Pacote de vales: entrada financeira que gera crédito, sem baixa de estoque.
@@ -291,7 +292,13 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
 
   const subtotal = Math.round(itens.reduce((s, i) => s + totalItemPedido(i), 0) * 100) / 100;
   const descontoAplicado = Math.min(Math.max(0, desconto), subtotal);
-  const total = Math.round((subtotal - descontoAplicado) * 100) / 100;
+  // Crédito em R$ do cliente (troco deixado em pedidos anteriores) abate o total.
+  const saldoCredito = cliente?.saldoCredito ?? 0;
+  const creditoAplicado =
+    usarCredito && saldoCredito > 0
+      ? Math.round(Math.min(saldoCredito, subtotal - descontoAplicado) * 100) / 100
+      : 0;
+  const total = Math.round((subtotal - descontoAplicado - creditoAplicado) * 100) / 100;
   // Só as trocas de refil geram devolução de vasilhame vazio.
   const qtdRetornavel = itensFisicos
     .filter((i) => i.retornavel && i.modo === "refil")
@@ -342,6 +349,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
     setVaziosEditado(false);
     setTrocoPara("");
     setDesconto(0);
+    setUsarCredito(true);
     setListaAberta(false);
     setPacoteQtd("");
     setPacoteValorUnit("");
@@ -416,7 +424,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
         .filter((x) => (Number(x.valor) || 0) > 0)
         .map((x) => ({ forma: x.forma, valor: Number(x.valor) })),
       total,
-      desconto: descontoAplicado,
+      desconto: Math.round((descontoAplicado + creditoAplicado) * 100) / 100,
       pagamento,
       pago: valorFiado === 0,
       valorFiado,
@@ -436,6 +444,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
         { clienteId: cliente?.id, pedidoId: pedido.id, numeroPedido: pedido.numero },
       );
       if (cliente) {
+        if (creditoAplicado > 0) await ajustarCredito(cliente.id, -creditoAplicado);
         if (valesVendidos > 0) await ajustarVales(cliente.id, valesVendidos);
         if (valesResgatados > 0) await ajustarVales(cliente.id, -valesResgatados);
         registrarCompra(cliente.id, resumoItens(itens), total, hojeISO(), pedido.id);
@@ -934,6 +943,17 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                       onValor={setDesconto}
                     />
                   </div>
+                  {saldoCredito > 0 && (
+                    <label className="flex items-center gap-1.5 text-xs">
+                      <input
+                        type="checkbox"
+                        className="accent-primary"
+                        checked={usarCredito}
+                        onChange={(e) => setUsarCredito(e.target.checked)}
+                      />
+                      Usar crédito do cliente ({brl(saldoCredito)})
+                    </label>
+                  )}
                 </div>
               </div>
 
@@ -1035,6 +1055,12 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                     <span className="tabular-nums text-destructive">
                       − {brl(descontoAplicado)}
                     </span>
+                  </div>
+                )}
+                {creditoAplicado > 0 && (
+                  <div className="mb-1 flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Crédito do cliente</span>
+                    <span className="tabular-nums text-success">− {brl(creditoAplicado)}</span>
                   </div>
                 )}
                 <div className="flex items-center justify-between">

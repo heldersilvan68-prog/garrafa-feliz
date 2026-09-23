@@ -363,6 +363,11 @@ function ClientesPage() {
                       PENDENTE
                     </Badge>
                   )}
+                  {(c.saldoCredito ?? 0) > 0 && (
+                    <Badge variant="outline" className="border-success text-success">
+                      Crédito: {brl(c.saldoCredito ?? 0)}
+                    </Badge>
+                  )}
                   <Badge variant={(c.valesSaldo ?? 0) > 0 ? "default" : "secondary"}>
                     Saldo: {c.valesSaldo ?? 0} vales
                   </Badge>
