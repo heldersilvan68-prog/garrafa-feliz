@@ -1,0 +1,1 @@
+ALTER TABLE public.clients ADD COLUMN IF NOT EXISTS saldo_credito numeric NOT NULL DEFAULT 0;

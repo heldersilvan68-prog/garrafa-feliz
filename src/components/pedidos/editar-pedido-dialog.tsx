@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
@@ -49,7 +50,7 @@ export function EditarPedidoDialog({
 }) {
   const { produtos } = useEstoque();
   const { atualizar, pedidos } = usePedidos();
-  const { definirDivida } = useClientes();
+  const { definirDivida, ajustarCredito } = useClientes();
   const { opcoes } = useEntregadores();
 
   const [aberto, setAberto] = useState(false);
@@ -60,6 +61,7 @@ export function EditarPedidoDialog({
   const [trocoPara, setTrocoPara] = useState(pedido.trocoPara ? String(pedido.trocoPara) : "");
   const [vazios, setVazios] = useState(String(pedido.vaziosRecolhidos));
   const [entregador, setEntregador] = useState(pedido.entregador);
+  const [lancarCredito, setLancarCredito] = useState(false);
 
   const opcoesEntregador = [...new Set([...opcoes, pedido.entregador].filter(Boolean))];
 
@@ -74,6 +76,9 @@ export function EditarPedidoDialog({
     setTrocoPara(pedido.trocoPara ? String(pedido.trocoPara) : "");
     setVazios(String(pedido.vaziosRecolhidos));
     setEntregador(pedido.entregador);
+    setLancarCredito(
+      parcelasDe(pedido).reduce((s, x) => s + x.valor, 0) - pedido.total > 0.009,
+    );
   }, [aberto, pedido]);
 
   const itens: ItemPedido[] = produtos
@@ -112,6 +117,12 @@ export function EditarPedidoDialog({
         .filter((x) => x.forma === "Fiado")
         .reduce((s, x) => s + (Number(x.valor) || 0), 0) * 100,
     ) / 100;
+  const excedente = restante < -0.009 ? Math.abs(restante) : 0;
+  // Excedente já creditado em edições anteriores deste pedido (evita crédito em dobro).
+  const excedenteAnterior = Math.max(
+    0,
+    Math.round((parcelasDe(pedido).reduce((s, x) => s + x.valor, 0) - pedido.total) * 100) / 100,
+  );
   const dinheiroInformado = parcelas.some((x) => x.forma === "Dinheiro");
   const formaPrincipal =
     [...parcelas]
@@ -134,7 +145,15 @@ export function EditarPedidoDialog({
       toast.error("O pedido precisa ter pelo menos um produto.");
       return;
     }
-    if (Math.abs(restante) > 0.009) {
+    if (excedente > 0 && lancarCredito && !pedido.clienteId) {
+      toast.error("Crédito exige um cliente cadastrado no pedido.");
+      return;
+    }
+    if (excedente > 0 && lancarCredito && excedente > pago - valorFiado + 0.009) {
+      toast.error("O excedente não pode vir de parcela em fiado.");
+      return;
+    }
+    if (restante > 0.009 || (excedente > 0 && !lancarCredito)) {
       toast.error(
         restante > 0
           ? `Falta distribuir ${brl(restante)} entre as formas de pagamento.`
@@ -163,6 +182,13 @@ export function EditarPedidoDialog({
         .filter((p) => p.clienteId === pedido.clienteId && p.id !== pedido.id)
         .reduce((s, p) => s + valorEmAberto(p), 0);
       definirDivida(pedido.clienteId, outros + valorFiado);
+      // Troco lançado como crédito: só a diferença em relação ao já creditado antes.
+      const novoExcedente = excedente > 0 && lancarCredito ? excedente : 0;
+      const delta = Math.round((novoExcedente - excedenteAnterior) * 100) / 100;
+      if (Math.abs(delta) > 0.009) {
+        void ajustarCredito(pedido.clienteId, delta);
+        if (delta > 0) toast.success(`${brl(delta)} lançado como crédito para ${pedido.clienteNome}`);
+      }
     }
 
     toast.success(`Pedido #${pedido.numero} atualizado — ${brl(total)}`);
@@ -361,6 +387,25 @@ export function EditarPedidoDialog({
                   Saldo restante: <span className="tabular-nums">{brl(restante)}</span>
                 </span>
               </div>
+              {excedente > 0 && (
+                <label className="flex items-start gap-2 rounded-lg border border-primary/40 bg-primary/5 p-3 text-sm">
+                  <Checkbox
+                    checked={lancarCredito}
+                    onCheckedChange={(v) => setLancarCredito(v === true)}
+                    disabled={!pedido.clienteId}
+                    className="mt-0.5"
+                  />
+                  <span>
+                    Lançar valor excedente (troco) de <strong>{brl(excedente)}</strong> como crédito
+                    no saldo do cliente
+                    {!pedido.clienteId && (
+                      <span className="block text-xs text-muted-foreground">
+                        Disponível apenas para pedidos com cliente cadastrado.
+                      </span>
+                    )}
+                  </span>
+                </label>
+              )}
             </div>
 
             {dinheiroInformado && (

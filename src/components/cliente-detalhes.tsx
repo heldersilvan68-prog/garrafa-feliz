@@ -295,6 +295,11 @@ export function ClienteDetalhes({
                   rotulo="Saldo em aberto / Fiado"
                   valor={brl(dados.saldo)}
                 />
+                <Linha
+                  icone={<Wallet className="size-4" />}
+                  rotulo="Crédito disponível"
+                  valor={brl(cliente.saldoCredito ?? 0)}
+                />
               </CardContent>
             </Card>
           </div>

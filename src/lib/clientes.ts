@@ -20,6 +20,7 @@ export type Cliente = {
   criadoEm?: string; // ISO yyyy-mm-dd
   divida?: number; // saldo em aberto (fiado / caderneta)
   vasilhamesRua?: number; // cascos emprestados pendentes de devolução
+  saldoCredito?: number; // crédito em R$ (valor pago a mais) para abater nas próximas compras
   valesSaldo?: number; // galões já pagos em pacote de vales e ainda não retirados
   consumoMedioDias: number; // dias por galão/fardo
   ultimaCompra: string; // ISO yyyy-mm-dd

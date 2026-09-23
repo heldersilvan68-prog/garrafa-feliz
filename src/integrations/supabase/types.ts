@@ -234,6 +234,7 @@ export type Database = {
           legacy_id: string | null
           limite_fiado: number
           nome: string
+          saldo_credito: number
           telefone: string
           ultima_compra: string | null
           updated_at: string
@@ -254,6 +255,7 @@ export type Database = {
           legacy_id?: string | null
           limite_fiado?: number
           nome: string
+          saldo_credito?: number
           telefone?: string
           ultima_compra?: string | null
           updated_at?: string
@@ -274,6 +276,7 @@ export type Database = {
           legacy_id?: string | null
           limite_fiado?: number
           nome?: string
+          saldo_credito?: number
           telefone?: string
           ultima_compra?: string | null
           updated_at?: string

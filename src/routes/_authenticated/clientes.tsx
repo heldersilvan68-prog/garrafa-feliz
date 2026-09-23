@@ -1,3 +1,4 @@
+import { brl } from "@/lib/erp";
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import {
@@ -361,6 +362,11 @@ function ClientesPage() {
                   {(c.divida ?? 0) > 0 && (
                     <Badge variant="destructive" className="font-semibold tracking-wide">
                       PENDENTE
+                    </Badge>
+                  )}
+                  {(c.saldoCredito ?? 0) > 0 && (
+                    <Badge variant="outline" className="border-success text-success">
+                      Crédito: {brl(c.saldoCredito ?? 0)}
                     </Badge>
                   )}
                   <Badge variant={(c.valesSaldo ?? 0) > 0 ? "default" : "secondary"}>

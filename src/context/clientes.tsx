@@ -23,6 +23,8 @@ type Ctx = {
   ajustarVasilhames: (id: string, delta: number) => Promise<void>;
   /** Ajusta o saldo de vales do cliente (positivo = comprou pacote, negativo = resgatou). */
   ajustarVales: (id: string, delta: number) => Promise<void>;
+  /** Ajusta o crédito em R$ do cliente (positivo = crédito, negativo = utilizado). */
+  ajustarCredito: (id: string, delta: number) => Promise<void>;
   /** Importa clientes em lote (planilha CSV), preservando código e data de cadastro. */
   importar: (lista: ClienteImportado[]) => Promise<number>;
 };
@@ -166,6 +168,18 @@ export function ClientesProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
   }, "Não foi possível atualizar o saldo de vales");
 
+  const creditoMut = useMutacao<{ id: string; delta: number }>(async ({ id, delta }) => {
+    const { data, error: e1 } = await supabase.from("clients").select("*").eq("id", id).single();
+    if (e1) throw e1;
+    const atual = Number((data as { saldo_credito?: number }).saldo_credito ?? 0);
+    const novo = Math.max(0, Math.round((atual + delta) * 100) / 100);
+    const { error } = await supabase
+      .from("clients")
+      .update({ saldo_credito: novo } as never)
+      .eq("id", id);
+    if (error) throw error;
+  }, "Não foi possível atualizar o crédito do cliente");
+
   const importarMut = useMutation({
     mutationFn: async (lista: ClienteImportado[]) => {
       if (!userId) throw new Error("Sessão expirada");
@@ -208,9 +222,10 @@ export function ClientesProvider({ children }: { children: ReactNode }) {
       ajustarVasilhames: (id, delta) =>
         vasilhamesMut.mutateAsync({ id, delta }).then(() => undefined),
       ajustarVales: (id, delta) => valesMut.mutateAsync({ id, delta }).then(() => undefined),
+      ajustarCredito: (id, delta) => creditoMut.mutateAsync({ id, delta }).then(() => undefined),
       importar: (lista) => importarMut.mutateAsync(lista),
     }),
-    [clientes, isLoading, salvarMut.mutate, removerMut.mutate, compraMut.mutate, removerCompraPorPedidoMut.mutateAsync, dividaMut.mutate, definirDividaMut.mutateAsync, vasilhamesMut.mutateAsync, valesMut.mutateAsync, importarMut.mutateAsync],
+    [clientes, isLoading, salvarMut.mutate, removerMut.mutate, compraMut.mutate, removerCompraPorPedidoMut.mutateAsync, dividaMut.mutate, definirDividaMut.mutateAsync, vasilhamesMut.mutateAsync, valesMut.mutateAsync, creditoMut.mutateAsync, importarMut.mutateAsync],
   );
 
   return (
