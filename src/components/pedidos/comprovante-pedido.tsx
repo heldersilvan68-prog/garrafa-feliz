@@ -193,7 +193,7 @@ function Cupom({ pedido }: { pedido: Pedido }) {
   );
 }
 
-/** Cria (uma vez) um iframe oculto usado só para imprimir, na mesma página. */
+/** Cria um iframe invisível no DOM da página, usado exclusivamente na impressão. */
 function criarIframe() {
   const el = document.createElement("iframe");
   el.setAttribute("aria-hidden", "true");
@@ -206,16 +206,18 @@ function criarIframe() {
   el.style.border = "0";
   el.style.visibility = "hidden";
   document.body.appendChild(el);
-  const doc = el.contentDocument!;
-  doc.open();
-  doc.write(
-    '<!doctype html><html><head><meta charset="utf-8"><style>' +
-      "html,body{margin:0;padding:0;background:#fff;color:#000;}" +
-      "@media print{@page{margin:0;}}" +
-      "#area-comprovante{position:static!important;left:auto!important;top:auto!important;}" +
-      "</style></head><body></body></html>",
-  );
-  doc.close();
+  const doc = el.contentDocument;
+  if (!doc) {
+    el.remove();
+    return null;
+  }
+
+  doc.documentElement.innerHTML =
+    '<head><meta charset="utf-8"><style>' +
+    "html,body{margin:0;padding:0;background:#fff;color:#000;}" +
+    "@media print{@page{margin:0;}}" +
+    "#area-comprovante{position:static!important;left:auto!important;top:auto!important;}" +
+    "</style></head><body></body>";
   // Reaproveita os estilos do app (classes .cupom) dentro do iframe.
   for (const node of Array.from(
     document.querySelectorAll('style, link[rel="stylesheet"]'),
@@ -252,8 +254,9 @@ export function ImprimirComprovante({
 
   const imprimir = useCallback(() => {
     if (typeof document === "undefined") return;
-    if (!iframeRef.current) iframeRef.current = criarIframe();
-    const doc = iframeRef.current.contentDocument;
+    iframeRef.current?.remove();
+    iframeRef.current = criarIframe();
+    const doc = iframeRef.current?.contentDocument;
     if (!doc) return;
     setAlvo(doc.body);
     // Aguarda o cupom entrar no DOM do iframe antes de imprimir.
