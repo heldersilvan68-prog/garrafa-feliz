@@ -76,7 +76,9 @@ export function EditarPedidoDialog({
     setTrocoPara(pedido.trocoPara ? String(pedido.trocoPara) : "");
     setVazios(String(pedido.vaziosRecolhidos));
     setEntregador(pedido.entregador);
-    setLancarCredito(false);
+    setLancarCredito(
+      parcelasDe(pedido).reduce((s, x) => s + x.valor, 0) - pedido.total > 0.009,
+    );
   }, [aberto, pedido]);
 
   const itens: ItemPedido[] = produtos
