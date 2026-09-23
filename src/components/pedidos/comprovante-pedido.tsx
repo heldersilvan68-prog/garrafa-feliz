@@ -212,6 +212,7 @@ function criarIframe() {
     '<!doctype html><html><head><meta charset="utf-8"><style>' +
       "html,body{margin:0;padding:0;background:#fff;color:#000;}" +
       "@media print{@page{margin:0;}}" +
+      "#area-comprovante{position:static!important;left:auto!important;top:auto!important;}" +
       "</style></head><body></body></html>",
   );
   doc.close();
