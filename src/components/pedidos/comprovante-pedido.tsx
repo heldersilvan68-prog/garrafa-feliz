@@ -259,9 +259,24 @@ export function ImprimirComprovante({
     // Aguarda o cupom entrar no DOM do iframe antes de imprimir.
     requestAnimationFrame(() =>
       requestAnimationFrame(() => {
-        const win = iframeRef.current?.contentWindow;
-        win?.focus();
-        win?.print();
+        const iframe = iframeRef.current;
+        const win = iframe?.contentWindow;
+        if (!iframe || !win) return;
+
+        // Remove o iframe após a impressão (ou ao fechar o diálogo de impressão),
+        // garantindo o fluxo 100% invisível, sem abas nem vestígios no DOM.
+        const limpar = () => {
+          iframe.remove();
+          iframeRef.current = null;
+          setAlvo(null);
+        };
+        win.onafterprint = limpar;
+        // Fallback para navegadores que não disparam "afterprint" no iframe.
+        const timer = window.setTimeout(limpar, 60_000);
+        win.addEventListener("afterprint", () => window.clearTimeout(timer), { once: true });
+
+        win.focus();
+        win.print();
         // Fecha o modal chamador logo após acionar a impressão.
         onPrinted?.();
       }),
