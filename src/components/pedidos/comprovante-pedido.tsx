@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -193,7 +193,39 @@ function Cupom({ pedido }: { pedido: Pedido }) {
   );
 }
 
-/** Botão que monta o cupom e dispara a impressão nativa do navegador. */
+/** Cria (uma vez) um iframe oculto usado só para imprimir, na mesma página. */
+function criarIframe() {
+  const el = document.createElement("iframe");
+  el.setAttribute("aria-hidden", "true");
+  el.title = "Impressão de comprovante";
+  el.style.position = "fixed";
+  el.style.right = "0";
+  el.style.bottom = "0";
+  el.style.width = "0";
+  el.style.height = "0";
+  el.style.border = "0";
+  el.style.visibility = "hidden";
+  document.body.appendChild(el);
+  const doc = el.contentDocument!;
+  doc.open();
+  doc.write(
+    '<!doctype html><html><head><meta charset="utf-8"><style>' +
+      "html,body{margin:0;padding:0;background:#fff;color:#000;}" +
+      "@media print{@page{margin:0;}}" +
+      "#area-comprovante{position:static!important;left:auto!important;top:auto!important;}" +
+      "</style></head><body></body></html>",
+  );
+  doc.close();
+  // Reaproveita os estilos do app (classes .cupom) dentro do iframe.
+  for (const node of Array.from(
+    document.querySelectorAll('style, link[rel="stylesheet"]'),
+  )) {
+    doc.head.appendChild(node.cloneNode(true));
+  }
+  return el;
+}
+
+/** Botão que monta o cupom num iframe oculto e dispara a impressão imediata. */
 export function ImprimirComprovante({
   pedido,
   variant = "outline",
@@ -207,20 +239,29 @@ export function ImprimirComprovante({
   rotulo?: string;
   onPrinted?: () => void;
 }) {
-  const [montado, setMontado] = useState(false);
+  const [alvo, setAlvo] = useState<HTMLElement | null>(null);
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
-  useEffect(() => {
-    const fim = () => setMontado(false);
-    window.addEventListener("afterprint", fim);
-    return () => window.removeEventListener("afterprint", fim);
-  }, []);
+  useEffect(
+    () => () => {
+      iframeRef.current?.remove();
+      iframeRef.current = null;
+    },
+    [],
+  );
 
   const imprimir = useCallback(() => {
-    setMontado(true);
-    // Aguarda o cupom entrar no DOM antes de abrir a caixa de impressão.
+    if (typeof document === "undefined") return;
+    if (!iframeRef.current) iframeRef.current = criarIframe();
+    const doc = iframeRef.current.contentDocument;
+    if (!doc) return;
+    setAlvo(doc.body);
+    // Aguarda o cupom entrar no DOM do iframe antes de imprimir.
     requestAnimationFrame(() =>
       requestAnimationFrame(() => {
-        window.print();
+        const win = iframeRef.current?.contentWindow;
+        win?.focus();
+        win?.print();
         // Fecha o modal chamador logo após acionar a impressão.
         onPrinted?.();
       }),
@@ -232,12 +273,12 @@ export function ImprimirComprovante({
       <Button type="button" variant={variant} className={className} onClick={imprimir}>
         <Printer className="size-4" /> {rotulo}
       </Button>
-      {montado && typeof document !== "undefined"
+      {alvo
         ? createPortal(
             <div id="area-comprovante">
               <Cupom pedido={pedido} />
             </div>,
-            document.body,
+            alvo,
           )
         : null}
     </>
