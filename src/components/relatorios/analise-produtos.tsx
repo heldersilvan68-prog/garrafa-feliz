@@ -10,21 +10,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { FiltroPeriodo } from "@/components/filtro-periodo";
-import { usePeriodo } from "@/hooks/use-periodo";
 import { useEstoque } from "@/context/estoque";
 import { usePedidos } from "@/context/pedidos";
 import { brl, custoUnidades, rotuloEstoque, unidPorFardo } from "@/lib/erp";
 import { totalItemPedido } from "@/lib/pedidos";
-import { dentroFaixa, rotuloFaixa } from "@/lib/periodo";
+import { dentroFaixa, rotuloFaixa, type Faixa } from "@/lib/periodo";
 import { baixarCSV } from "@/lib/relatorios";
 
 /** Relatório operacional: giro por produto, lucro bruto e necessidade de reposição. */
-export function AnaliseProdutos() {
+export function AnaliseProdutos({ faixa }: { faixa: Faixa }) {
   const { produtos } = useEstoque();
   const { pedidos } = usePedidos();
-  const periodoEstado = usePeriodo("hoje");
-  const faixa = periodoEstado.faixa;
 
   const linhas = useMemo(() => {
     const validos = pedidos.filter((p) => p.status !== "cancelado" && dentroFaixa(p.criadoEm, faixa));
@@ -124,8 +120,7 @@ export function AnaliseProdutos() {
             Giro, lucro bruto e necessidade de compra — período: {rotuloFaixa(faixa)}.
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-wrap items-end gap-3">
-          <FiltroPeriodo estado={periodoEstado} comRotulos className="flex-1 min-w-[240px]" />
+        <CardContent className="flex flex-wrap items-center justify-end gap-3">
           <Button variant="outline" onClick={exportar}>
             <FileSpreadsheet className="size-4" /> Exportar CSV
           </Button>
