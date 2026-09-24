@@ -96,22 +96,15 @@ function RelatoriosPage() {
 
   const periodoEstado = usePeriodo("hoje");
   const faixa = periodoEstado.faixa;
-  const [status, setStatus] = useState<"todos" | StatusPedido>("todos");
-  const [forma, setForma] = useState<string>("todas");
 
   // Mesmos KPIs do Dashboard/Financeiro: nenhum cálculo paralelo aqui.
   const { resumo } = useResumo(faixa);
 
   const filtrados = useMemo(
-    () =>
-      pedidos.filter(
-        (p) =>
-          dentroFaixa(p.criadoEm, faixa) &&
-          (status === "todos" ? true : p.status === status) &&
-          (forma === "todas" ? true : p.pagamento === forma),
-      ),
-    [pedidos, faixa, status, forma],
+    () => pedidos.filter((p) => dentroFaixa(p.criadoEm, faixa)),
+    [pedidos, faixa],
   );
+
 
   const metricas = useMemo(() => {
     const validos = filtrados.filter((p) => p.status !== "cancelado");
