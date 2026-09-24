@@ -250,60 +250,47 @@ function RelatoriosPage() {
 
 
   return (
-    <div className="flex flex-col gap-6 print:gap-4">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
+    <div className="flex flex-col gap-4 print:gap-3">
+      <header className="flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
           <h1 className="text-2xl font-semibold tracking-tight">Relatórios gerenciais</h1>
           <p className="text-sm text-muted-foreground">
             Período: {rotuloFaixa(faixa)} · dados em tempo real do banco
           </p>
         </div>
-        <Button variant="outline" onClick={imprimir} className="print:hidden">
-          <Printer className="size-4" /> Imprimir / PDF
-        </Button>
+        <div className="flex flex-wrap items-center gap-2 print:hidden">
+          <FiltroPeriodo estado={periodoEstado} />
+          <Select value={status} onValueChange={(v) => setStatus(v as typeof status)}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos os status</SelectItem>
+              {(Object.keys(STATUS_PEDIDO_LABEL) as StatusPedido[]).map((s) => (
+                <SelectItem key={s} value={s}>
+                  {STATUS_PEDIDO_LABEL[s]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={forma} onValueChange={setForma}>
+            <SelectTrigger className="w-[150px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todas">Todas as formas</SelectItem>
+              {formasFiltro.map((f) => (
+                <SelectItem key={f} value={f}>
+                  {f}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button variant="outline" onClick={imprimir}>
+            <Printer className="size-4" /> Imprimir / PDF
+          </Button>
+        </div>
       </header>
-
-      <Card className="print:hidden">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Filtros globais</CardTitle>
-          <CardDescription>Período, status do pedido e forma de pagamento.</CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-3 md:grid-cols-4">
-          <FiltroPeriodo estado={periodoEstado} comRotulos className="md:col-span-2" />
-          <div className="grid gap-2">
-            <Label>Status</Label>
-            <Select value={status} onValueChange={(v) => setStatus(v as typeof status)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos</SelectItem>
-                {(Object.keys(STATUS_PEDIDO_LABEL) as StatusPedido[]).map((s) => (
-                  <SelectItem key={s} value={s}>
-                    {STATUS_PEDIDO_LABEL[s]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid gap-2">
-            <Label>Forma de pagamento</Label>
-            <Select value={forma} onValueChange={setForma}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todas">Todas</SelectItem>
-                {formasFiltro.map((f) => (
-                  <SelectItem key={f} value={f}>
-                    {f}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
 
       <Tabs defaultValue="vendas">
         <TabsList className="print:hidden">
