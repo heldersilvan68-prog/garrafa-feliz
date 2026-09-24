@@ -96,22 +96,15 @@ function RelatoriosPage() {
 
   const periodoEstado = usePeriodo("hoje");
   const faixa = periodoEstado.faixa;
-  const [status, setStatus] = useState<"todos" | StatusPedido>("todos");
-  const [forma, setForma] = useState<string>("todas");
 
   // Mesmos KPIs do Dashboard/Financeiro: nenhum cálculo paralelo aqui.
   const { resumo } = useResumo(faixa);
 
   const filtrados = useMemo(
-    () =>
-      pedidos.filter(
-        (p) =>
-          dentroFaixa(p.criadoEm, faixa) &&
-          (status === "todos" ? true : p.status === status) &&
-          (forma === "todas" ? true : p.pagamento === forma),
-      ),
-    [pedidos, faixa, status, forma],
+    () => pedidos.filter((p) => dentroFaixa(p.criadoEm, faixa)),
+    [pedidos, faixa],
   );
+
 
   const metricas = useMemo(() => {
     const validos = filtrados.filter((p) => p.status !== "cancelado");
@@ -260,32 +253,6 @@ function RelatoriosPage() {
         </div>
         <div className="ml-auto flex flex-nowrap items-center gap-2 print:hidden">
           <FiltroPeriodo estado={periodoEstado} />
-          <Select value={status} onValueChange={(v) => setStatus(v as typeof status)}>
-            <SelectTrigger className="w-[140px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todos">Todos os status</SelectItem>
-              {(Object.keys(STATUS_PEDIDO_LABEL) as StatusPedido[]).map((s) => (
-                <SelectItem key={s} value={s}>
-                  {STATUS_PEDIDO_LABEL[s]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={forma} onValueChange={setForma}>
-            <SelectTrigger className="w-[150px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todas">Todas as formas</SelectItem>
-              {formasFiltro.map((f) => (
-                <SelectItem key={f} value={f}>
-                  {f}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
           <Button variant="outline" onClick={imprimir}>
             <Printer className="size-4" /> Imprimir / PDF
           </Button>
