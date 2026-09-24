@@ -251,14 +251,14 @@ function RelatoriosPage() {
 
   return (
     <div className="flex flex-col gap-4 print:gap-3">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div className="min-w-0">
+      <header className="flex flex-nowrap items-center gap-3">
+        <div className="min-w-0 flex-shrink-0">
           <h1 className="text-2xl font-semibold tracking-tight">Relatórios gerenciais</h1>
           <p className="text-sm text-muted-foreground">
             Período: {rotuloFaixa(faixa)} · dados em tempo real do banco
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2 print:hidden">
+        <div className="ml-auto flex flex-nowrap items-center gap-2 print:hidden">
           <FiltroPeriodo estado={periodoEstado} />
           <Select value={status} onValueChange={(v) => setStatus(v as typeof status)}>
             <SelectTrigger className="w-[140px]">
