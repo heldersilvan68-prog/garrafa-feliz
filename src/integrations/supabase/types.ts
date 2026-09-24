@@ -172,6 +172,44 @@ export type Database = {
         }
         Relationships: []
       }
+      client_credit_entries: {
+        Row: {
+          client_id: string
+          created_at: string
+          forma: string
+          id: string
+          observacao: string | null
+          user_id: string
+          valor: number
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          forma: string
+          id?: string
+          observacao?: string | null
+          user_id: string
+          valor: number
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          forma?: string
+          id?: string
+          observacao?: string | null
+          user_id?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_credit_entries_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_purchases: {
         Row: {
           client_id: string
