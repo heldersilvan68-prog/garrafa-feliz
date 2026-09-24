@@ -118,7 +118,9 @@ export function EntradaEstoqueDialog({
   const [totalManual, setTotalManual] = useState<number | null>(null);
   const [data, setData] = useState(hojeISO());
   const [fornecedor, setFornecedor] = useState("");
-  const [forma, setForma] = useState<string>("PIX");
+  const [pagamentos, setPagamentos] = useState<{ forma: string; valor: number }[]>([
+    { forma: "PIX", valor: 0 },
+  ]);
   const [vencimento, setVencimento] = useState(hojeISO());
 
   const produto = produtos.find((p) => p.id === id);
@@ -128,11 +130,16 @@ export function EntradaEstoqueDialog({
   const rotuloUn = medida?.principal === "fardo" ? medida.rotulo.singular : "un.";
   const quantidade = Math.max(0, Math.floor(Number(qtd) || 0));
   const unidadesInternas = quantidade * fator;
-  const prazo = aPrazo(forma);
   const total =
     totalManual !== null
       ? totalManual
       : Math.round(quantidade * custo * 100) / 100;
+  // Com uma única forma, ela assume o total automaticamente.
+  const partes =
+    pagamentos.length === 1 ? [{ forma: pagamentos[0].forma, valor: total }] : pagamentos;
+  const prazo = partes.some((p) => aPrazo(p.forma) && p.valor > 0);
+  const diferenca =
+    Math.round((total - partes.reduce((s, p) => s + (p.valor || 0), 0)) * 100) / 100;
 
   // Preenche o custo padrão conforme a unidade de medida cadastrada no produto.
   useEffect(() => {
@@ -152,12 +159,17 @@ export function EntradaEstoqueDialog({
       toast.error("Informe um produto e uma quantidade válida.");
       return;
     }
+    if (total > 0 && diferenca !== 0) {
+      toast.error("A soma das formas de pagamento deve ser igual ao valor total da compra.");
+      return;
+    }
     entradaEstoque(id, unidadesInternas, {
       custoUnitario: fator > 1 ? Math.round((custo / fator) * 100) / 100 : custo,
       valorTotal: total,
       data,
       fornecedor: fornecedor.trim() || undefined,
-      forma,
+      forma: partes.length === 1 ? partes[0].forma : partes.map((p) => p.forma).join(" + "),
+      pagamentos: partes,
       vencimento: prazo ? vencimento : undefined,
     });
     toast.success(
@@ -259,20 +271,74 @@ export function EntradaEstoqueDialog({
             ))}
           </datalist>
 
-          <Campo label="Forma de pagamento">
-            <Select value={forma} onValueChange={setForma}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione" />
-              </SelectTrigger>
-              <SelectContent>
-                {FORMAS_COMPRA.map((f) => (
-                  <SelectItem key={f} value={f}>
-                    {f}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Campo>
+          <div className="grid gap-2 sm:col-span-2">
+            <Label>Formas de pagamento</Label>
+            {pagamentos.map((pg, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <Select
+                  value={pg.forma}
+                  onValueChange={(v) =>
+                    setPagamentos((l) => l.map((x, j) => (j === i ? { ...x, forma: v } : x)))
+                  }
+                >
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {FORMAS_COMPRA.map((f) => (
+                      <SelectItem key={f} value={f}>
+                        {f}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <div className="w-40">
+                  <InputMoeda
+                    valor={pagamentos.length === 1 ? total : pg.valor}
+                    onValor={(n) =>
+                      setPagamentos((l) => l.map((x, j) => (j === i ? { ...x, valor: n } : x)))
+                    }
+                  />
+                </div>
+                {pagamentos.length > 1 && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setPagamentos((l) => l.filter((_, j) => j !== i))}
+                  >
+                    Remover
+                  </Button>
+                )}
+              </div>
+            ))}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="justify-self-start"
+              onClick={() =>
+                setPagamentos((l) => {
+                  const base =
+                    l.length === 1 ? [{ ...l[0], valor: total }] : l;
+                  const usado = base.reduce((s, x) => s + x.valor, 0);
+                  return [
+                    ...base,
+                    { forma: "Dinheiro", valor: Math.max(0, Math.round((total - usado) * 100) / 100) },
+                  ];
+                })
+              }
+            >
+              + Adicionar outra forma de pagamento
+            </Button>
+            {diferenca !== 0 && (
+              <p className="text-xs font-medium text-destructive">
+                {diferenca > 0
+                  ? `Faltam ${brl(diferenca)} para fechar o total da compra.`
+                  : `A soma excede o total da compra em ${brl(-diferenca)}.`}
+              </p>
+            )}
+          </div>
 
           {prazo && (
             <Campo label="Vencimento do boleto" htmlFor="vencimento">
@@ -286,9 +352,7 @@ export function EntradaEstoqueDialog({
           )}
 
           <p className="text-xs text-muted-foreground sm:col-span-2">
-            {prazo
-              ? `O estoque sobe agora e ${brl(total)} entra em Contas a Pagar com vencimento em ${vencimento.split("-").reverse().join("/")}.`
-              : `O estoque sobe agora e ${brl(total)} é lançado como despesa paga na categoria "${CATEGORIA_COMPRA_MERCADORIA}".`}
+            {`O estoque sobe agora. Dinheiro sai do Saldo em Espécie (Gaveta); PIX/Cartão/Transferência saem do Saldo em Conta / Digital${prazo ? "; Boleto entra em Contas a Pagar" : ""}.`}
           </p>
         </div>
 

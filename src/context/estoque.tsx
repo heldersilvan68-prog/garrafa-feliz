@@ -22,6 +22,8 @@ export type CompraEntrada = {
   /** Descrição/categoria alternativa (ex.: custo de envase). */
   descricao?: string;
   categoria?: string;
+  /** Pagamento dividido: uma despesa é lançada por forma. */
+  pagamentos?: { forma: string; valor: number }[];
 };
 
 type Ctx = {
@@ -196,36 +198,49 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
       categoriaId = nova?.id ?? null;
     }
 
-    const forma = prazo
-      ? "Boleto"
-      : compra.forma === "Dinheiro"
-        ? "Dinheiro do Caixa"
-        : compra.forma;
+    const partes =
+      compra.pagamentos && compra.pagamentos.length > 0
+        ? compra.pagamentos.filter((x) => x.valor > 0)
+        : [{ forma: compra.forma, valor: compra.valorTotal }];
 
-    const { data: despesa, error } = await supabase
-      .from("expenses")
-      .insert({
-        user_id: userId,
-        descricao: compra.descricao ?? `Compra de mercadoria · ${qtd} un. ${produto.nome}`,
-        categoria: nomeCategoria,
-        category_id: categoriaId,
-        valor: compra.valorTotal,
-        data: prazo ? (compra.vencimento || compra.data) : compra.data,
-        forma,
-        status: prazo ? "Pendente" : "Pago",
-        observacoes: [
-          compra.fornecedor ? `Fornecedor: ${compra.fornecedor}` : null,
-          `Custo unitário: ${compra.custoUnitario}`,
-          `Entrada em ${compra.data}`,
-        ]
-          .filter(Boolean)
-          .join(" · "),
-      })
-      .select("id")
-      .single();
-    if (error) throw error;
+    let primeiroId: string | undefined;
+    for (const parte of partes) {
+      const prazoParte = aPrazo(parte.forma);
+      const forma = prazoParte
+        ? "Boleto"
+        : parte.forma === "Dinheiro"
+          ? "Dinheiro do Caixa"
+          : parte.forma;
+      const { data: despesa, error } = await supabase
+        .from("expenses")
+        .insert({
+          user_id: userId,
+          descricao:
+            (compra.descricao ?? `Compra de mercadoria · ${qtd} un. ${produto.nome}`) +
+            (partes.length > 1 ? ` (${parte.forma})` : ""),
+          categoria: nomeCategoria,
+          category_id: categoriaId,
+          valor: Math.round(parte.valor * 100) / 100,
+          data: prazoParte ? compra.vencimento || compra.data : compra.data,
+          forma,
+          status: prazoParte ? "Pendente" : "Pago",
+          observacoes: [
+            compra.fornecedor ? `Fornecedor: ${compra.fornecedor}` : null,
+            `Custo unitário: ${compra.custoUnitario}`,
+            `Entrada em ${compra.data}`,
+            partes.length > 1 ? `Pagamento dividido (${partes.length} formas)` : null,
+          ]
+            .filter(Boolean)
+            .join(" · "),
+        })
+        .select("id")
+        .single();
+      if (error) throw error;
+      primeiroId ??= despesa?.id;
+    }
+    void prazo;
     queryClient.invalidateQueries({ queryKey: ["despesas"] });
-    return despesa?.id;
+    return primeiroId;
   };
 
   const salvarMut = useMutacao<Produto>(async (p) => {
