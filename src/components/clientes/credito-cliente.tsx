@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { Plus, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,6 +37,8 @@ type Lancamento = {
   forma: string;
   observacao: string | null;
   created_at: string;
+  estornado_em: string | null;
+  motivo_estorno: string | null;
 };
 
 export function CreditoCliente({ cliente }: { cliente: Cliente }) {
@@ -49,6 +51,8 @@ export function CreditoCliente({ cliente }: { cliente: Cliente }) {
   const [forma, setForma] = useState<Forma>("PIX");
   const [obs, setObs] = useState("");
   const [salvando, setSalvando] = useState(false);
+  const [estornando, setEstornando] = useState<Lancamento | null>(null);
+  const [motivoEstorno, setMotivoEstorno] = useState("");
 
   const chave = ["creditos-cliente", cliente.id];
   const { data: extrato = [] } = useQuery({
@@ -98,6 +102,40 @@ export function CreditoCliente({ cliente }: { cliente: Cliente }) {
     }
   };
 
+  const confirmarEstorno = async () => {
+    const l = estornando;
+    if (!l) return;
+    const motivo = motivoEstorno.trim();
+    if (!motivo) return toast.error("Informe o motivo do estorno.");
+    if (!caixaAberto) return toast.error("Abra o caixa para registrar o estorno.");
+    const v = Number(l.valor);
+    if ((cliente.saldoCredito ?? 0) + 0.009 < v)
+      return toast.error("O cliente já usou parte deste crédito; saldo insuficiente para estornar.");
+    setSalvando(true);
+    try {
+      const { error } = await supabase
+        .from("client_credit_entries" as never)
+        .update({ estornado_em: new Date().toISOString(), motivo_estorno: motivo } as never)
+        .eq("id", l.id)
+        .is("estornado_em", null);
+      if (error) throw error;
+      await ajustarCredito(cliente.id, -v);
+      if (l.forma === "Dinheiro") {
+        registrarMovimento("sangria", v, `Estorno de crédito — ${cliente.nome} (Dinheiro) · ${motivo}`);
+      } else {
+        registrarMovimento("recebimento", -v, `Estorno de crédito — ${cliente.nome} (${l.forma}) · ${motivo}`);
+      }
+      queryClient.invalidateQueries({ queryKey: chave });
+      toast.success(`Crédito de ${brl(v)} estornado.`);
+      setEstornando(null);
+      setMotivoEstorno("");
+    } catch (e) {
+      toast.error(`Não foi possível estornar: ${(e as Error).message}`);
+    } finally {
+      setSalvando(false);
+    }
+  };
+
   return (
     <Card className="shadow-[var(--shadow-card)]">
       <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
@@ -130,10 +168,41 @@ export function CreditoCliente({ cliente }: { cliente: Cliente }) {
                   {l.observacao && (
                     <p className="break-words text-xs text-muted-foreground">{l.observacao}</p>
                   )}
+                  {l.estornado_em && (
+                    <p className="break-words text-xs text-destructive">
+                      Estornado em{" "}
+                      {new Date(l.estornado_em).toLocaleString("pt-BR", {
+                        timeZone: "America/Bahia",
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                      {l.motivo_estorno ? ` · ${l.motivo_estorno}` : ""}
+                    </p>
+                  )}
                 </div>
-                <span className="font-semibold tabular-nums text-success">
-                  + {brl(Number(l.valor))}
-                </span>
+                <div className="flex shrink-0 flex-col items-end gap-1">
+                  <span
+                    className={`font-semibold tabular-nums ${l.estornado_em ? "text-muted-foreground line-through" : "text-success"}`}
+                  >
+                    + {brl(Number(l.valor))}
+                  </span>
+                  {!l.estornado_em && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 px-2 text-xs"
+                      onClick={() => {
+                        setMotivoEstorno("");
+                        setEstornando(l);
+                      }}
+                    >
+                      <Undo2 className="size-3" /> Estornar
+                    </Button>
+                  )}
+                </div>
               </li>
             ))}
           </ul>
@@ -186,6 +255,34 @@ export function CreditoCliente({ cliente }: { cliente: Cliente }) {
             </Button>
             <Button onClick={confirmar} disabled={salvando}>
               {salvando ? "Salvando..." : "Confirmar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!estornando} onOpenChange={(o) => !o && setEstornando(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Estornar crédito</DialogTitle>
+            <DialogDescription>
+              {estornando &&
+                `${brl(Number(estornando.valor))} (${estornando.forma}) sai do caixa de hoje e do saldo de ${cliente.nome}.`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-1.5">
+            <Label>Motivo do estorno</Label>
+            <Textarea
+              placeholder="Ex.: Lançado em duplicidade"
+              value={motivoEstorno}
+              onChange={(e) => setMotivoEstorno(e.target.value)}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEstornando(null)}>
+              Cancelar
+            </Button>
+            <Button variant="destructive" onClick={confirmarEstorno} disabled={salvando}>
+              {salvando ? "Estornando..." : "Confirmar estorno"}
             </Button>
           </DialogFooter>
         </DialogContent>
