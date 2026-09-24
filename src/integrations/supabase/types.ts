@@ -176,8 +176,10 @@ export type Database = {
         Row: {
           client_id: string
           created_at: string
+          estornado_em: string | null
           forma: string
           id: string
+          motivo_estorno: string | null
           observacao: string | null
           user_id: string
           valor: number
@@ -185,8 +187,10 @@ export type Database = {
         Insert: {
           client_id: string
           created_at?: string
+          estornado_em?: string | null
           forma: string
           id?: string
+          motivo_estorno?: string | null
           observacao?: string | null
           user_id: string
           valor: number
@@ -194,8 +198,10 @@ export type Database = {
         Update: {
           client_id?: string
           created_at?: string
+          estornado_em?: string | null
           forma?: string
           id?: string
+          motivo_estorno?: string | null
           observacao?: string | null
           user_id?: string
           valor?: number
