@@ -648,7 +648,7 @@ function RelatoriosPage() {
         </TabsContent>
 
         <TabsContent value="produtos" className="mt-4">
-          <AnaliseProdutos />
+          <AnaliseProdutos faixa={faixa} />
         </TabsContent>
 
         <TabsContent value="clientes" className="mt-4 flex flex-col gap-4">
