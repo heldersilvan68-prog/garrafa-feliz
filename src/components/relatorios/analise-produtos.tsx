@@ -120,8 +120,7 @@ export function AnaliseProdutos({ faixa }: { faixa: Faixa }) {
             Giro, lucro bruto e necessidade de compra — período: {rotuloFaixa(faixa)}.
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-wrap items-end gap-3">
-          <FiltroPeriodo estado={periodoEstado} comRotulos className="flex-1 min-w-[240px]" />
+        <CardContent className="flex flex-wrap items-center justify-end gap-3">
           <Button variant="outline" onClick={exportar}>
             <FileSpreadsheet className="size-4" /> Exportar CSV
           </Button>
