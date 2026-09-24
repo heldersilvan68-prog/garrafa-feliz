@@ -260,32 +260,6 @@ function RelatoriosPage() {
         </div>
         <div className="ml-auto flex flex-nowrap items-center gap-2 print:hidden">
           <FiltroPeriodo estado={periodoEstado} />
-          <Select value={status} onValueChange={(v) => setStatus(v as typeof status)}>
-            <SelectTrigger className="w-[140px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todos">Todos os status</SelectItem>
-              {(Object.keys(STATUS_PEDIDO_LABEL) as StatusPedido[]).map((s) => (
-                <SelectItem key={s} value={s}>
-                  {STATUS_PEDIDO_LABEL[s]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={forma} onValueChange={setForma}>
-            <SelectTrigger className="w-[150px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todas">Todas as formas</SelectItem>
-              {formasFiltro.map((f) => (
-                <SelectItem key={f} value={f}>
-                  {f}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
           <Button variant="outline" onClick={imprimir}>
             <Printer className="size-4" /> Imprimir / PDF
           </Button>
