@@ -20,6 +20,13 @@ export type ChegadaCarga = {
   formaPerda: string;
   retornados: number;
   data: string;
+  /** Pagamentos divididos (uma parte por forma). */
+  pagamentosEnvase?: { forma: string; valor: number }[];
+  pagamentosPerda?: { forma: string; valor: number }[];
+  /** Compra opcional de vasilhames novos junto com a carga. */
+  novos?: number;
+  valorNovos?: number;
+  pagamentosNovos?: { forma: string; valor: number }[];
 };
 import { CATEGORIA_COMPRA_MERCADORIA, CATEGORIA_ENVASE } from "@/lib/despesas";
 
@@ -600,15 +607,21 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
       if (!p) throw new Error("Produto não encontrado");
       const quebrados = Math.max(0, Math.floor(c.quebrados));
       const retornados = Math.max(0, Math.floor(c.retornados));
-      const recebidos = c.enviados - quebrados - retornados;
+      const novos = Math.max(0, Math.floor(c.novos ?? 0));
+      const avulsa = c.enviados <= 0;
+      const recebidos = avulsa ? 0 : c.enviados - quebrados - retornados;
       if (recebidos < 0) throw new Error("Avarias + retornos excedem a quantidade da carga");
       const r2 = (n: number) => Math.round(n * 100) / 100;
       const valorFinal = r2(Math.max(0, recebidos * c.custoEnvase));
 
+      // Avaria avulsa (sem carga): sai do depósito — primeiro vazios, depois cheios.
+      const quebraVazio = avulsa ? Math.min(quebrados, p.estoqueVazio) : 0;
+      const quebraCheio = avulsa ? Math.min(quebrados - quebraVazio, p.estoqueCheio) : 0;
+
       await patch(p.id, {
-        estoque_cheio: p.estoqueCheio + recebidos,
-        estoque_vazio: p.estoqueVazio + retornados,
-        patrimonio_cascos: Math.max(0, (p.patrimonioCascos || 0) - quebrados),
+        estoque_cheio: p.estoqueCheio + recebidos - quebraCheio,
+        estoque_vazio: p.estoqueVazio + (avulsa ? 0 : retornados) + novos - quebraVazio,
+        patrimonio_cascos: Math.max(0, (p.patrimonioCascos || 0) - quebrados + novos),
       });
 
       if (recebidos > 0) {
@@ -622,6 +635,7 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
                 vencimento: aPrazo(c.forma) ? c.vencimento : undefined,
                 categoria: CATEGORIA_ENVASE,
                 descricao: `Custo de envase · ${recebidos} un. ${p.nome}`,
+                pagamentos: c.pagamentosEnvase,
               })
             : undefined;
         await logar({
@@ -632,7 +646,35 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
           deltaCheio: recebidos,
           custoUnitario: c.custoEnvase,
           valorTotal: valorFinal,
-          formaPagamento: c.forma,
+          formaPagamento: c.pagamentosEnvase?.map((x) => x.forma).join(" + ") || c.forma,
+          despesaId,
+        });
+      }
+
+      if (novos > 0) {
+        const valorNovos = r2(c.valorNovos ?? 0);
+        const despesaId =
+          valorNovos > 0
+            ? await lancarCompra(p, novos, {
+                custoUnitario: r2(valorNovos / novos),
+                valorTotal: valorNovos,
+                data: c.data,
+                forma: c.pagamentosNovos?.[0]?.forma ?? "PIX",
+                categoria: "Compra de Vasilhames",
+                descricao: `Compra de vasilhames novos · ${novos} un. ${p.nome}`,
+                pagamentos: c.pagamentosNovos,
+              })
+            : undefined;
+        await logar({
+          produtoId: p.id,
+          tipo: "compra",
+          qtd: novos,
+          motivo: `Compra de vasilhames novos · ${p.nome}`,
+          deltaVazio: novos,
+          deltaPatrimonio: novos,
+          custoUnitario: r2(valorNovos / novos),
+          valorTotal: valorNovos,
+          formaPagamento: c.pagamentosNovos?.map((x) => x.forma).join(" + "),
           despesaId,
         });
       }
@@ -640,37 +682,45 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
       if (quebrados > 0) {
         let despesaId: string | undefined;
         if (c.valorPerda > 0) {
-          const forma = c.formaPerda === "Dinheiro" ? "Dinheiro do Caixa" : c.formaPerda;
-          const { data: d, error } = await supabase
-            .from("expenses")
-            .insert({
-              user_id: userId,
-              descricao: `Avaria/Perda na carga · ${p.nome} (${quebrados} un.) — ${c.motivoAvaria}`,
-              categoria: "Avarias/Perdas",
-              valor: r2(c.valorPerda),
-              data: c.data,
-              forma,
-              status: "Pago" as const,
-              observacoes: c.motivoAvaria,
-            })
-            .select("id")
-            .single();
-          if (error) throw error;
-          despesaId = d?.id;
+          const partes =
+            c.pagamentosPerda && c.pagamentosPerda.length > 0
+              ? c.pagamentosPerda.filter((x) => x.valor > 0)
+              : [{ forma: c.formaPerda, valor: c.valorPerda }];
+          for (const parte of partes) {
+            const forma = parte.forma === "Dinheiro" ? "Dinheiro do Caixa" : parte.forma;
+            const { data: d, error } = await supabase
+              .from("expenses")
+              .insert({
+                user_id: userId,
+                descricao: `Avaria/Perda${avulsa ? "" : " na carga"} · ${p.nome} (${quebrados} un.) — ${c.motivoAvaria}${partes.length > 1 ? ` (${parte.forma})` : ""}`,
+                categoria: "Avarias/Perdas",
+                valor: r2(parte.valor),
+                data: c.data,
+                forma,
+                status: "Pago" as const,
+                observacoes: c.motivoAvaria,
+              })
+              .select("id")
+              .single();
+            if (error) throw error;
+            despesaId ??= d?.id;
+          }
         }
         await logar({
           produtoId: p.id,
-          tipo: "avaria_cheio",
+          tipo: avulsa && quebraCheio > 0 && quebraVazio === 0 ? "avaria_cheio" : avulsa ? "avaria_vazio" : "avaria_cheio",
           qtd: quebrados,
-          motivo: `${PREFIXO_AVARIA_CARGA} ${c.motivoAvaria}`,
+          motivo: avulsa ? c.motivoAvaria : `${PREFIXO_AVARIA_CARGA} ${c.motivoAvaria}`,
+          deltaCheio: -quebraCheio,
+          deltaVazio: -quebraVazio,
           deltaPatrimonio: -quebrados,
           valorTotal: r2(c.valorPerda),
-          formaPagamento: c.formaPerda,
+          formaPagamento: c.pagamentosPerda?.map((x) => x.forma).join(" + ") || c.formaPerda,
           despesaId,
         });
       }
 
-      if (retornados > 0) {
+      if (retornados > 0 && !avulsa) {
         await logar({
           produtoId: p.id,
           tipo: "retorno_sem_envase",
