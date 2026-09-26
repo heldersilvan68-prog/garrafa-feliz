@@ -1,3 +1,4 @@
+import type React from "react";
 import { createContext, useContext, useMemo, type ReactNode } from "react";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -78,7 +79,7 @@ type Ctx = {
   estornarVenda: (itens: ItemBaixa[], vaziosRecolhidos: number) => Promise<void>;
 };
 
-const EstoqueContext = createContext<Ctx | null>(null);
+const EstoqueContext = (((globalThis as Record<string, unknown>).__ctx_EstoqueContext ??= createContext<Ctx | null>(null)) as React.Context<Ctx | null>);
 
 export function EstoqueProvider({ children }: { children: ReactNode }) {
   const { userId, user } = useAuth();

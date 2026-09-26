@@ -1,3 +1,4 @@
+import type React from "react";
 import { createContext, useCallback, useContext, useMemo, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -102,7 +103,7 @@ type Ctx = {
   semearFormasPadrao: () => Promise<void>;
 };
 
-const ConfiguracoesContext = createContext<Ctx | null>(null);
+const ConfiguracoesContext = (((globalThis as Record<string, unknown>).__ctx_ConfiguracoesContext ??= createContext<Ctx | null>(null)) as React.Context<Ctx | null>);
 
 export function ConfiguracoesProvider({ children }: { children: ReactNode }) {
   const { userId } = useAuth();
