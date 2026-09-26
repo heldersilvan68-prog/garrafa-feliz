@@ -62,6 +62,9 @@ export function EditarPedidoDialog({
   const [vazios, setVazios] = useState(String(pedido.vaziosRecolhidos));
   const [entregador, setEntregador] = useState(pedido.entregador);
   const [lancarCredito, setLancarCredito] = useState(false);
+  // Desconto/crédito aplicado na venda original: preservado para o crédito do
+  // cliente não virar entrada fictícia de caixa ao editar o pedido.
+  const [desconto, setDesconto] = useState(pedido.desconto);
 
   const opcoesEntregador = [...new Set([...opcoes, pedido.entregador].filter(Boolean))];
 
@@ -79,6 +82,7 @@ export function EditarPedidoDialog({
     setLancarCredito(
       parcelasDe(pedido).reduce((s, x) => s + x.valor, 0) - pedido.total > 0.009,
     );
+    setDesconto(pedido.desconto);
   }, [aberto, pedido]);
 
   const itens: ItemPedido[] = produtos
