@@ -74,10 +74,20 @@ export type FormaCompra = (typeof FORMAS_COMPRA)[number];
 export const aPrazo = (forma: string) => forma === "Boleto / A Prazo";
 
 export const MOTIVOS_AVARIA = [
+  "Quebra na Fonte",
   "Quebra no Transporte/Carga",
-  "Defeito/Descarte na Fonte",
   "Quebra Interna no Depósito",
 ] as const;
+
+/** Prefixo das avarias ocorridas na carga (saem do saldo em trânsito na fonte). */
+export const PREFIXO_AVARIA_CARGA = "[Carga]";
+
+/** Filtros do histórico de movimentações. */
+export const FILTROS_HISTORICO: Record<"geral" | "cargas" | "rua", TipoMovVasilhame[] | null> = {
+  geral: null,
+  cargas: ["envasado", "entrada", "retorno_sem_envase", "avaria_cheio", "avaria_vazio"],
+  rua: ["recolhido", "estorno", "devolucao_cliente", "venda_casco", "venda_completa"],
+};
 
 export type MotivoAvaria = (typeof MOTIVOS_AVARIA)[number];
 

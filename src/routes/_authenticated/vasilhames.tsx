@@ -1,6 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { AlertTriangle, ArrowDownLeft, Boxes, ExternalLink, Plus, Recycle, Undo2 } from "lucide-react";
+import { ArrowDownLeft, ExternalLink, Plus, Recycle } from "lucide-react";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
+import { paraMovimentoVasilhame, type VasilhameRow } from "@/lib/mapeadores";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ClienteDetalhes } from "@/components/cliente-detalhes";
@@ -24,11 +29,10 @@ import {
   MoverVaziosDialog,
   RetornoEnvaseDialog,
 } from "@/components/estoque-dialogs";
-import { AvariaDialog, RetornoFonteDialog } from "@/components/estoque/avaria-dialog";
 import { useClientes } from "@/context/clientes";
 import { useEstoque } from "@/context/estoque";
 import { brl } from "@/lib/erp";
-import { LABEL_MOV, resumoVasilhames } from "@/lib/vasilhames";
+import { FILTROS_HISTORICO, LABEL_MOV, resumoVasilhames } from "@/lib/vasilhames";
 import { saldoVasilhamesPedido } from "@/lib/vasilhames";
 import { usePedidos } from "@/context/pedidos";
 
@@ -54,19 +58,34 @@ export const Route = createFileRoute("/_authenticated/vasilhames")({
 });
 
 function Vasilhames() {
-  const {
-    produtos,
-    movimentos,
-    carregarMaisMovimentos,
-    temMaisMovimentos,
-    carregandoMaisMovimentos,
-    emTransitoFonte,
-  } = useEstoque();
+  const { produtos, emTransitoFonte } = useEstoque();
+  const { userId } = useAuth();
+  const [filtro, setFiltro] = useState<keyof typeof FILTROS_HISTORICO>("geral");
+  const historicoQuery = useInfiniteQuery({
+    queryKey: ["movimentos-vasilhames", "historico", filtro, userId],
+    enabled: !!userId,
+    initialPageParam: 0,
+    queryFn: async ({ pageParam }) => {
+      const inicio = pageParam * 50;
+      let q = supabase.from("returnable_movements").select("*");
+      const tipos = FILTROS_HISTORICO[filtro];
+      if (tipos) q = q.in("tipo", tipos);
+      const { data, error } = await q
+        .order("created_at", { ascending: false })
+        .range(inicio, inicio + 49);
+      if (error) throw error;
+      return (data as VasilhameRow[]).map(paraMovimentoVasilhame);
+    },
+    getNextPageParam: (ultima, paginas) => (ultima.length === 50 ? paginas.length : undefined),
+  });
+  const movimentos = useMemo(() => historicoQuery.data?.pages.flat() ?? [], [historicoQuery.data]);
+  const temMaisMovimentos = historicoQuery.hasNextPage;
+  const carregandoMaisMovimentos = historicoQuery.isFetchingNextPage;
+  const carregarMaisMovimentos = () => void historicoQuery.fetchNextPage();
   const { clientes } = useClientes();
   const { pedidos } = usePedidos();
   const [listaRuaAberta, setListaRuaAberta] = useState(false);
   const [clienteDetalheId, setClienteDetalheId] = useState<string | null>(null);
-  const retornaveis = useMemo(() => produtos.filter((p) => p.retornavel), [produtos]);
   const naRua = useMemo(
     () => clientes.reduce((s, c) => s + (c.vasilhamesRua ?? 0), 0),
     [clientes],
@@ -143,17 +162,6 @@ function Vasilhames() {
             </Button>
           </AporteVasilhameDialog>
 
-          <RetornoFonteDialog>
-            <Button variant="outline">
-              <Undo2 className="size-4" /> Retorno 
-            </Button>
-          </RetornoFonteDialog>
-
-          <AvariaDialog>
-            <Button variant="outline" className="text-destructive">
-              <AlertTriangle className="size-4" /> Registrar avaria
-            </Button>
-          </AvariaDialog>
         </div>
       </header>
 
@@ -188,6 +196,70 @@ function Vasilhames() {
         ))}
       </div>
 
+      <Card className="shadow-[var(--shadow-card)]">
+        <CardHeader>
+          <CardTitle className="text-base">Histórico de movimentações de vasilhames</CardTitle>
+          <Tabs value={filtro} onValueChange={(v) => setFiltro(v as keyof typeof FILTROS_HISTORICO)} className="pt-2">
+            <TabsList>
+              <TabsTrigger value="geral">Geral</TabsTrigger>
+              <TabsTrigger value="cargas">Cargas & Fonte</TabsTrigger>
+              <TabsTrigger value="rua">Entregas & Rua</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </CardHeader>
+        <CardContent className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Data/Hora</TableHead>
+                <TableHead>Tipo de movimentação</TableHead>
+                <TableHead>Motivo / detalhe</TableHead>
+                <TableHead className="text-right">Quantidade</TableHead>
+                <TableHead>Usuário</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {movimentos.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-sm text-muted-foreground">
+                    Nenhuma movimentação registrada ainda.
+                  </TableCell>
+                </TableRow>
+              )}
+              {movimentos.map((m) => (
+                <TableRow key={m.id}>
+                  <TableCell className="whitespace-nowrap">
+                    {new Date(m.em).toLocaleString("pt-BR")}
+                  </TableCell>
+                  <TableCell>{LABEL_MOV[m.tipo] ?? m.tipo}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {m.motivo ?? "—"}
+                    <span className="ml-1 text-xs">
+                      ({m.deltaCheio >= 0 ? "+" : ""}
+                      {m.deltaCheio} cheio / {m.deltaVazio >= 0 ? "+" : ""}
+                      {m.deltaVazio} vazio / {m.deltaPatrimonio >= 0 ? "+" : ""}
+                      {m.deltaPatrimonio} patrimônio)
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">{m.qtd}</TableCell>
+                  <TableCell className="text-muted-foreground">{m.usuario ?? "—"}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          {temMaisMovimentos && (
+            <div className="flex justify-center border-t border-border pt-4">
+              <Button
+                variant="outline"
+                onClick={carregarMaisMovimentos}
+                disabled={carregandoMaisMovimentos}
+              >
+                {carregandoMaisMovimentos ? "Carregando..." : "Carregar mais movimentações"}
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
       <Dialog open={listaRuaAberta} onOpenChange={setListaRuaAberta}>
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-3xl">
           <DialogHeader>
@@ -254,121 +326,6 @@ function Vasilhames() {
         }}
       />
 
-      <Card className="shadow-[var(--shadow-card)]">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Boxes className="size-4 text-primary" /> Saldos por produto retornável
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Item</TableHead>
-                <TableHead className="text-right">Cheios</TableHead>
-                <TableHead className="text-right">Vazios</TableHead>
-                <TableHead className="text-right">Custo casco</TableHead>
-                <TableHead className="text-right">Custo envase</TableHead>
-                <TableHead className="text-right">Valor total de venda</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {retornaveis.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-sm text-muted-foreground">
-                    Nenhum produto retornável cadastrado.
-                  </TableCell>
-                </TableRow>
-              )}
-              {retornaveis.map((p) => (
-                <TableRow key={p.id}>
-                  <TableCell className="font-medium">{p.nome}</TableCell>
-                  <TableCell className="text-right tabular-nums">{p.estoqueCheio}</TableCell>
-                  <TableCell className="text-right tabular-nums">{p.estoqueVazio}</TableCell>
-                  <TableCell className="text-right tabular-nums">{brl(p.custoCasco)}</TableCell>
-                  <TableCell className="text-right tabular-nums">{brl(p.custoEnvase)}</TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {brl(p.estoqueCheio * p.precoVenda)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <RetornoEnvaseDialog produtoId={p.id}>
-                        <Button variant="outline" size="sm" className="text-emerald-600 border-emerald-200 hover:bg-emerald-50">
-                          <ArrowDownLeft className="size-3.5 mr-1" /> Receber Carga
-                        </Button>
-                      </RetornoEnvaseDialog>
-                      <MoverVaziosDialog produtoId={p.id}>
-                        <Button variant="outline" size="sm">
-                          <Recycle className="size-3.5 mr-1" /> Enviar Vazios
-                        </Button>
-                      </MoverVaziosDialog>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      <Card className="shadow-[var(--shadow-card)]">
-        <CardHeader>
-          <CardTitle className="text-base">Histórico de movimentações de vasilhames</CardTitle>
-        </CardHeader>
-        <CardContent className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Data/Hora</TableHead>
-                <TableHead>Tipo de movimentação</TableHead>
-                <TableHead>Motivo / detalhe</TableHead>
-                <TableHead className="text-right">Quantidade</TableHead>
-                <TableHead>Usuário</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {movimentos.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-sm text-muted-foreground">
-                    Nenhuma movimentação registrada ainda.
-                  </TableCell>
-                </TableRow>
-              )}
-              {movimentos.map((m) => (
-                <TableRow key={m.id}>
-                  <TableCell className="whitespace-nowrap">
-                    {new Date(m.em).toLocaleString("pt-BR")}
-                  </TableCell>
-                  <TableCell>{LABEL_MOV[m.tipo] ?? m.tipo}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {m.motivo ?? "—"}
-                    <span className="ml-1 text-xs">
-                      ({m.deltaCheio >= 0 ? "+" : ""}
-                      {m.deltaCheio} cheio / {m.deltaVazio >= 0 ? "+" : ""}
-                      {m.deltaVazio} vazio / {m.deltaPatrimonio >= 0 ? "+" : ""}
-                      {m.deltaPatrimonio} patrimônio)
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">{m.qtd}</TableCell>
-                  <TableCell className="text-muted-foreground">{m.usuario ?? "—"}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          {temMaisMovimentos && (
-            <div className="flex justify-center border-t border-border pt-4">
-              <Button
-                variant="outline"
-                onClick={carregarMaisMovimentos}
-                disabled={carregandoMaisMovimentos}
-              >
-                {carregandoMaisMovimentos ? "Carregando..." : "Carregar mais movimentações"}
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
     </div>
   );
 }
