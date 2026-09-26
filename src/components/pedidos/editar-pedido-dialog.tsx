@@ -62,6 +62,9 @@ export function EditarPedidoDialog({
   const [vazios, setVazios] = useState(String(pedido.vaziosRecolhidos));
   const [entregador, setEntregador] = useState(pedido.entregador);
   const [lancarCredito, setLancarCredito] = useState(false);
+  // Desconto/crédito aplicado na venda original: preservado para o crédito do
+  // cliente não virar entrada fictícia de caixa ao editar o pedido.
+  const [desconto, setDesconto] = useState(pedido.desconto);
 
   const opcoesEntregador = [...new Set([...opcoes, pedido.entregador].filter(Boolean))];
 
@@ -79,6 +82,7 @@ export function EditarPedidoDialog({
     setLancarCredito(
       parcelasDe(pedido).reduce((s, x) => s + x.valor, 0) - pedido.total > 0.009,
     );
+    setDesconto(pedido.desconto);
   }, [aberto, pedido]);
 
   const itens: ItemPedido[] = produtos
@@ -108,7 +112,9 @@ export function EditarPedidoDialog({
     });
 
 
-  const total = itens.reduce((s, i) => s + totalItemPedido(i), 0);
+  const bruto = itens.reduce((s, i) => s + totalItemPedido(i), 0);
+  const descontoAplicado = Math.min(Math.max(0, desconto), bruto);
+  const total = Math.round((bruto - descontoAplicado) * 100) / 100;
   const pago = Math.round(parcelas.reduce((s, x) => s + (Number(x.valor) || 0), 0) * 100) / 100;
   const restante = Math.round((total - pago) * 100) / 100;
   const valorFiado =
@@ -164,6 +170,7 @@ export function EditarPedidoDialog({
     atualizar(pedido.id, {
       itens,
       total,
+      desconto: descontoAplicado,
       enderecoEntrega: endereco.trim() || pedido.enderecoEntrega,
       pagamento: formaPrincipal,
       pago: valorFiado <= 0,
@@ -374,6 +381,12 @@ export function EditarPedidoDialog({
                 <span className="text-muted-foreground">
                   Total do pedido: <strong className="tabular-nums text-foreground">{brl(total)}</strong>
                 </span>
+                {descontoAplicado > 0 && (
+                  <span className="text-muted-foreground">
+                    Desconto/crédito:{" "}
+                    <strong className="tabular-nums text-success">− {brl(descontoAplicado)}</strong>
+                  </span>
+                )}
                 <span className="text-muted-foreground">
                   Total pago: <strong className="tabular-nums text-foreground">{brl(pago)}</strong>
                 </span>
