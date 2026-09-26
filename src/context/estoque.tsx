@@ -21,7 +21,7 @@ export type ChegadaCarga = {
   retornados: number;
   data: string;
 };
-import { CATEGORIA_COMPRA_MERCADORIA } from "@/lib/despesas";
+import { CATEGORIA_COMPRA_MERCADORIA, CATEGORIA_ENVASE } from "@/lib/despesas";
 
 export type ItemBaixa = { produtoId: string; qtd: number; modo?: ModoVenda; retornavel?: boolean };
 
