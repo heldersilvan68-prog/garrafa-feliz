@@ -5,7 +5,22 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { paraMovimentoVasilhame, paraProduto, type ProdutoRow, type VasilhameRow } from "@/lib/mapeadores";
 import type { Produto } from "@/lib/erp";
-import { aPrazo, type ModoVenda, type MotivoAvaria, type MovimentoVasilhame, type TipoMovVasilhame } from "@/lib/vasilhames";
+import { aPrazo, PREFIXO_AVARIA_CARGA, type ModoVenda, type MotivoAvaria, type MovimentoVasilhame, type TipoMovVasilhame } from "@/lib/vasilhames";
+
+/** Dados completos da chegada de uma carga da fonte. */
+export type ChegadaCarga = {
+  produtoId: string;
+  enviados: number;
+  custoEnvase: number;
+  forma: string;
+  vencimento?: string;
+  quebrados: number;
+  motivoAvaria: MotivoAvaria;
+  valorPerda: number;
+  formaPerda: string;
+  retornados: number;
+  data: string;
+};
 import { CATEGORIA_COMPRA_MERCADORIA } from "@/lib/despesas";
 
 export type ItemBaixa = { produtoId: string; qtd: number; modo?: ModoVenda; retornavel?: boolean };
@@ -103,11 +118,13 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("returnable_movements")
-        .select("tipo,qtd")
-        .in("tipo", ["envasado", "entrada", "retorno_sem_envase"]);
+        .select("tipo,qtd,motivo")
+        .in("tipo", ["envasado", "entrada", "retorno_sem_envase", "avaria_cheio"]);
       if (error) throw error;
       return (data ?? []).reduce((saldo, movimento) => {
         if (movimento.tipo === "envasado") return saldo + movimento.qtd;
+        if (movimento.tipo === "avaria_cheio")
+          return movimento.motivo?.startsWith(PREFIXO_AVARIA_CARGA) ? saldo - movimento.qtd : saldo;
         return saldo - movimento.qtd;
       }, 0);
     },
