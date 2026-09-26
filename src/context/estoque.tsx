@@ -28,6 +28,8 @@ export type ChegadaCarga = {
   novos?: number;
   valorNovos?: number;
   pagamentosNovos?: { forma: string; valor: number }[];
+  /** Onde os vasilhames novos entram no estoque (padrão: vazio). */
+  novosComo?: "cheio" | "vazio";
 };
 import { CATEGORIA_COMPRA_MERCADORIA, CATEGORIA_ENVASE } from "@/lib/despesas";
 
@@ -619,9 +621,12 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
       const quebraVazio = avulsa ? Math.min(quebrados, p.estoqueVazio) : 0;
       const quebraCheio = avulsa ? Math.min(quebrados - quebraVazio, p.estoqueCheio) : 0;
 
+      const novosCheios = c.novosComo === "cheio" ? novos : 0;
+      const novosVazios = novos - novosCheios;
+
       await patch(p.id, {
-        estoque_cheio: p.estoqueCheio + recebidos - quebraCheio,
-        estoque_vazio: p.estoqueVazio + (avulsa ? 0 : retornados) + novos - quebraVazio,
+        estoque_cheio: p.estoqueCheio + recebidos + novosCheios - quebraCheio,
+        estoque_vazio: p.estoqueVazio + (avulsa ? 0 : retornados) + novosVazios - quebraVazio,
         patrimonio_cascos: Math.max(0, (p.patrimonioCascos || 0) - quebrados + novos),
       });
 
@@ -670,8 +675,9 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
           produtoId: p.id,
           tipo: "compra",
           qtd: novos,
-          motivo: `Compra de vasilhames novos · ${p.nome}`,
-          deltaVazio: novos,
+          motivo: `Compra de vasilhames novos · ${p.nome} (entraram ${c.novosComo === "cheio" ? "cheios" : "vazios"})`,
+          deltaCheio: novosCheios,
+          deltaVazio: novosVazios,
           deltaPatrimonio: novos,
           custoUnitario: r2(valorNovos / novos),
           valorTotal: valorNovos,

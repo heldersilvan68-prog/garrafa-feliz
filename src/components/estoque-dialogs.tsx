@@ -558,6 +558,7 @@ export function RetornoEnvaseDialog({ children, produtoId }: { children: ReactNo
   const [novoUnit, setNovoUnit] = useState(0);
   const [novoTotalManual, setNovoTotalManual] = useState<number | null>(null);
   const [pgNovos, setPgNovos] = useState<Parte[]>([{ forma: "PIX", valor: 0 }]);
+  const [novosComo, setNovosComo] = useState<"cheio" | "vazio">("vazio");
 
   const produto = vasilhames.find((p) => p.id === id);
   const enviados = Math.max(0, Math.floor(Number(qtd) || 0));
@@ -609,6 +610,7 @@ export function RetornoEnvaseDialog({ children, produtoId }: { children: ReactNo
     setPgEnvase([{ forma: "PIX", valor: 0 }]);
     setPgPerda([{ forma: "PIX", valor: 0 }]);
     setPgNovos([{ forma: "PIX", valor: 0 }]);
+    setNovosComo("vazio");
   };
 
   const confirmar = async () => {
@@ -651,6 +653,7 @@ export function RetornoEnvaseDialog({ children, produtoId }: { children: ReactNo
         novos: nNovos,
         valorNovos: totalNovos,
         pagamentosNovos: partesFinais(pgNovos, totalNovos),
+        novosComo,
       });
       toast.success(
         avulsa
@@ -739,7 +742,17 @@ export function RetornoEnvaseDialog({ children, produtoId }: { children: ReactNo
             <Campo label="Valor total (R$)" dica="Calculado automaticamente (editável).">
               <InputMoeda valor={totalNovos} onValor={setNovoTotalManual} />
             </Campo>
-            <div />
+            <Campo label="Entram no estoque como" dica="Cheio: prontos para vender. Vazio: aguardando envase.">
+              <Select value={novosComo} onValueChange={(v) => setNovosComo(v as "cheio" | "vazio")}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="vazio">Vazio (aguardando envase)</SelectItem>
+                  <SelectItem value="cheio">Cheio (pronto para venda)</SelectItem>
+                </SelectContent>
+              </Select>
+            </Campo>
             {nNovos > 0 && (
               <PagamentoMisto label="Pagamento dos vasilhames novos" total={totalNovos} partes={pgNovos} onChange={setPgNovos} semPrazo />
             )}
