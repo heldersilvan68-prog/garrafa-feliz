@@ -112,7 +112,9 @@ export function EditarPedidoDialog({
     });
 
 
-  const total = itens.reduce((s, i) => s + totalItemPedido(i), 0);
+  const bruto = itens.reduce((s, i) => s + totalItemPedido(i), 0);
+  const descontoAplicado = Math.min(Math.max(0, desconto), bruto);
+  const total = Math.round((bruto - descontoAplicado) * 100) / 100;
   const pago = Math.round(parcelas.reduce((s, x) => s + (Number(x.valor) || 0), 0) * 100) / 100;
   const restante = Math.round((total - pago) * 100) / 100;
   const valorFiado =
@@ -168,6 +170,7 @@ export function EditarPedidoDialog({
     atualizar(pedido.id, {
       itens,
       total,
+      desconto: descontoAplicado,
       enderecoEntrega: endereco.trim() || pedido.enderecoEntrega,
       pagamento: formaPrincipal,
       pago: valorFiado <= 0,
