@@ -381,6 +381,12 @@ export function EditarPedidoDialog({
                 <span className="text-muted-foreground">
                   Total do pedido: <strong className="tabular-nums text-foreground">{brl(total)}</strong>
                 </span>
+                {descontoAplicado > 0 && (
+                  <span className="text-muted-foreground">
+                    Desconto/crédito:{" "}
+                    <strong className="tabular-nums text-success">− {brl(descontoAplicado)}</strong>
+                  </span>
+                )}
                 <span className="text-muted-foreground">
                   Total pago: <strong className="tabular-nums text-foreground">{brl(pago)}</strong>
                 </span>
