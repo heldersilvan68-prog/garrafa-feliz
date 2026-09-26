@@ -55,6 +55,7 @@ type Ctx = {
   moverVazios: (id: string, qtd: number) => void;
   comprarVasilhames: (id: string, qtd: number) => Promise<void>;
   retornoSemEnvase: (id: string, qtd: number) => Promise<void>;
+  registrarChegadaCarga: (dados: ChegadaCarga) => Promise<void>;
   registrarAvaria: (dados: {
     produtoId: string;
     estado: "cheio" | "vazio";
@@ -590,6 +591,103 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
     onError: (e: Error) => toast.error(`Não foi possível estornar o estoque: ${e.message}`),
   });
 
+  // Chegada completa da carga: cheios entram, quebras saem do patrimônio,
+  // vazios retornam ao depósito e as despesas são lançadas já com abatimentos.
+  const chegadaMut = useMutation({
+    mutationFn: async (c: ChegadaCarga) => {
+      if (!userId) throw new Error("Sessão expirada");
+      const p = produtos.find((x) => x.id === c.produtoId);
+      if (!p) throw new Error("Produto não encontrado");
+      const quebrados = Math.max(0, Math.floor(c.quebrados));
+      const retornados = Math.max(0, Math.floor(c.retornados));
+      const recebidos = c.enviados - quebrados - retornados;
+      if (recebidos < 0) throw new Error("Avarias + retornos excedem a quantidade da carga");
+      const r2 = (n: number) => Math.round(n * 100) / 100;
+      const valorFinal = r2(Math.max(0, recebidos * c.custoEnvase));
+
+      await patch(p.id, {
+        estoque_cheio: p.estoqueCheio + recebidos,
+        estoque_vazio: p.estoqueVazio + retornados,
+        patrimonio_cascos: Math.max(0, (p.patrimonioCascos || 0) - quebrados),
+      });
+
+      if (recebidos > 0) {
+        const despesaId =
+          valorFinal > 0
+            ? await lancarCompra(p, recebidos, {
+                custoUnitario: c.custoEnvase,
+                valorTotal: valorFinal,
+                data: c.data,
+                forma: c.forma,
+                vencimento: aPrazo(c.forma) ? c.vencimento : undefined,
+                categoria: CATEGORIA_ENVASE,
+                descricao: `Custo de envase · ${recebidos} un. ${p.nome}`,
+              })
+            : undefined;
+        await logar({
+          produtoId: p.id,
+          tipo: "entrada",
+          qtd: recebidos,
+          motivo: `Chegada de carga · ${p.nome} (carga ${c.enviados}${quebrados ? ` · ${quebrados} quebra(s)` : ""}${retornados ? ` · ${retornados} retorno(s)` : ""})`,
+          deltaCheio: recebidos,
+          custoUnitario: c.custoEnvase,
+          valorTotal: valorFinal,
+          formaPagamento: c.forma,
+          despesaId,
+        });
+      }
+
+      if (quebrados > 0) {
+        let despesaId: string | undefined;
+        if (c.valorPerda > 0) {
+          const forma = c.formaPerda === "Dinheiro" ? "Dinheiro do Caixa" : c.formaPerda;
+          const { data: d, error } = await supabase
+            .from("expenses")
+            .insert({
+              user_id: userId,
+              descricao: `Avaria/Perda na carga · ${p.nome} (${quebrados} un.) — ${c.motivoAvaria}`,
+              categoria: "Avarias/Perdas",
+              valor: r2(c.valorPerda),
+              data: c.data,
+              forma,
+              status: "Pago" as const,
+              observacoes: c.motivoAvaria,
+            })
+            .select("id")
+            .single();
+          if (error) throw error;
+          despesaId = d?.id;
+        }
+        await logar({
+          produtoId: p.id,
+          tipo: "avaria_cheio",
+          qtd: quebrados,
+          motivo: `${PREFIXO_AVARIA_CARGA} ${c.motivoAvaria}`,
+          deltaPatrimonio: -quebrados,
+          valorTotal: r2(c.valorPerda),
+          formaPagamento: c.formaPerda,
+          despesaId,
+        });
+      }
+
+      if (retornados > 0) {
+        await logar({
+          produtoId: p.id,
+          tipo: "retorno_sem_envase",
+          qtd: retornados,
+          motivo: `Retorno da fonte sem envasar · ${p.nome}`,
+          deltaVazio: retornados,
+        });
+      }
+    },
+    onSuccess: () => {
+      invalidar();
+      queryClient.invalidateQueries({ queryKey: ["despesas"] });
+      queryClient.invalidateQueries({ queryKey: ["caixa"] });
+    },
+    onError: (e: Error) => toast.error(`Não foi possível registrar a chegada: ${e.message}`),
+  });
+
   const valor = useMemo<Ctx>(
     () => ({
       produtos,
@@ -605,6 +703,7 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
       moverVazios: (id, qtd) => vaziosMut.mutate({ id, qtd }),
       comprarVasilhames: (id, qtd) => comprarMut.mutateAsync({ id, qtd }).then(() => undefined),
       retornoSemEnvase: (id, qtd) => retornoMut.mutateAsync({ id, qtd }).then(() => undefined),
+      registrarChegadaCarga: (dados) => chegadaMut.mutateAsync(dados).then(() => undefined),
       registrarAvaria: (dados) => avariaMut.mutateAsync(dados).then(() => undefined),
       devolucaoCliente: (produtoId, qtd, clienteId) =>
         devolucaoMut.mutateAsync({ produtoId, qtd, clienteId }).then(() => undefined),
@@ -613,7 +712,7 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
        baixaVenda: (itens, vaziosRecolhidos, vinculo) =>
          baixaMut.mutateAsync({ itens, vaziosRecolhidos, vinculo }).then(() => undefined),
     }),
-    [produtos, movimentos, movimentosQuery.fetchNextPage, movimentosQuery.hasNextPage, movimentosQuery.isFetchingNextPage, emTransitoFonte, isLoading, salvarMut.mutate, removerMut.mutate, entradaMut.mutate, vaziosMut.mutate, comprarMut.mutateAsync, retornoMut.mutateAsync, avariaMut.mutateAsync, devolucaoMut.mutateAsync, estornoMut.mutateAsync, baixaMut.mutate],
+    [produtos, movimentos, movimentosQuery.fetchNextPage, movimentosQuery.hasNextPage, movimentosQuery.isFetchingNextPage, emTransitoFonte, isLoading, salvarMut.mutate, removerMut.mutate, entradaMut.mutate, vaziosMut.mutate, comprarMut.mutateAsync, retornoMut.mutateAsync, avariaMut.mutateAsync, devolucaoMut.mutateAsync, estornoMut.mutateAsync, baixaMut.mutate, chegadaMut.mutateAsync],
   );
 
   return (
