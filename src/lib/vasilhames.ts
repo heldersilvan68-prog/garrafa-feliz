@@ -85,7 +85,7 @@ export const PREFIXO_AVARIA_CARGA = "[Carga]";
 /** Filtros do histórico de movimentações. */
 export const FILTROS_HISTORICO: Record<"geral" | "cargas" | "rua", TipoMovVasilhame[] | null> = {
   geral: null,
-  cargas: ["envasado", "entrada", "retorno_sem_envase", "avaria_cheio", "avaria_vazio"],
+  cargas: ["envasado", "entrada", "compra", "retorno_sem_envase", "avaria_cheio", "avaria_vazio"],
   rua: ["recolhido", "estorno", "devolucao_cliente", "venda_casco", "venda_completa"],
 };
 
