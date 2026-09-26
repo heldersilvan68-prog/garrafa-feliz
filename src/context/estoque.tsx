@@ -675,7 +675,7 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
           produtoId: p.id,
           tipo: "compra",
           qtd: novos,
-          motivo: `Compra de vasilhames novos · ${p.nome} (entraram ${novosComo === "cheio" ? "cheios" : "vazios"})`,
+          motivo: `Compra de vasilhames novos · ${p.nome} (entraram ${c.novosComo === "cheio" ? "cheios" : "vazios"})`,
           deltaCheio: novosCheios,
           deltaVazio: novosVazios,
           deltaPatrimonio: novos,
