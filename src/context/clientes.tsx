@@ -1,3 +1,4 @@
+import type React from "react";
 import { createContext, useContext, useMemo, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -39,7 +40,7 @@ export type ClienteImportado = {
   cadastradoEm?: string;
 };
 
-const ClientesContext = createContext<Ctx | null>(null);
+const ClientesContext = (((globalThis as Record<string, unknown>).__ctx_ClientesContext ??= createContext<Ctx | null>(null)) as React.Context<Ctx | null>);
 
 export function ClientesProvider({ children }: { children: ReactNode }) {
   const { userId } = useAuth();

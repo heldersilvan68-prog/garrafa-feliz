@@ -1,3 +1,4 @@
+import type React from "react";
 import { createContext, useContext, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -32,7 +33,7 @@ type Ctx = {
   remover: (t: TipoAuxiliar, id: string) => Promise<void>;
 };
 
-const CatalogoContext = createContext<Ctx | null>(null);
+const CatalogoContext = (((globalThis as Record<string, unknown>).__ctx_CatalogoContext ??= createContext<Ctx | null>(null)) as React.Context<Ctx | null>);
 
 export function CatalogoProvider({ children }: { children: ReactNode }) {
   const { userId } = useAuth();

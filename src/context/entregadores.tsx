@@ -1,3 +1,4 @@
+import type React from "react";
 import { createContext, useContext, useMemo, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -14,7 +15,7 @@ type Ctx = {
   remover: (id: string) => Promise<void>;
 };
 
-const EntregadoresContext = createContext<Ctx | null>(null);
+const EntregadoresContext = (((globalThis as Record<string, unknown>).__ctx_EntregadoresContext ??= createContext<Ctx | null>(null)) as React.Context<Ctx | null>);
 
 export function EntregadoresProvider({ children }: { children: ReactNode }) {
   const { userId } = useAuth();
