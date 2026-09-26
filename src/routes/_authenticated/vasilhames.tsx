@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { ArrowDownLeft, ExternalLink, Plus, Recycle } from "lucide-react";
+import { ArrowDownLeft, ExternalLink, Recycle } from "lucide-react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,8 +24,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { FiltroPeriodo } from "@/components/filtro-periodo";
+import { usePeriodo } from "@/hooks/use-periodo";
+import { FIM_TUDO, INICIO_TUDO } from "@/lib/periodo";
 import {
-  AporteVasilhameDialog,
   MoverVaziosDialog,
   RetornoEnvaseDialog,
 } from "@/components/estoque-dialogs";
@@ -61,8 +63,10 @@ function Vasilhames() {
   const { produtos, emTransitoFonte } = useEstoque();
   const { userId } = useAuth();
   const [filtro, setFiltro] = useState<keyof typeof FILTROS_HISTORICO>("geral");
+  const periodoHist = usePeriodo("mes");
+  const faixaHist = periodoHist.faixa;
   const historicoQuery = useInfiniteQuery({
-    queryKey: ["movimentos-vasilhames", "historico", filtro, userId],
+    queryKey: ["movimentos-vasilhames", "historico", filtro, faixaHist.inicio, faixaHist.fim, userId],
     enabled: !!userId,
     initialPageParam: 0,
     queryFn: async ({ pageParam }) => {
@@ -70,6 +74,10 @@ function Vasilhames() {
       let q = supabase.from("returnable_movements").select("*");
       const tipos = FILTROS_HISTORICO[filtro];
       if (tipos) q = q.in("tipo", tipos);
+      if (faixaHist.inicio && faixaHist.inicio !== INICIO_TUDO)
+        q = q.gte("created_at", `${faixaHist.inicio}T00:00:00-03:00`);
+      if (faixaHist.fim && faixaHist.fim !== FIM_TUDO)
+        q = q.lte("created_at", `${faixaHist.fim}T23:59:59.999-03:00`);
       const { data, error } = await q
         .order("created_at", { ascending: false })
         .range(inicio, inicio + 49);
@@ -155,12 +163,6 @@ function Vasilhames() {
             </Button>
           </MoverVaziosDialog>
 
-          {/* Botão de Comprar / Aportar Vasilhames */}
-          <AporteVasilhameDialog>
-            <Button variant="outline">
-              <Plus className="size-4" /> Comprar Vasilhames
-            </Button>
-          </AporteVasilhameDialog>
 
         </div>
       </header>
@@ -199,13 +201,16 @@ function Vasilhames() {
       <Card className="shadow-[var(--shadow-card)]">
         <CardHeader>
           <CardTitle className="text-base">Histórico de movimentações de vasilhames</CardTitle>
-          <Tabs value={filtro} onValueChange={(v) => setFiltro(v as keyof typeof FILTROS_HISTORICO)} className="pt-2">
-            <TabsList>
-              <TabsTrigger value="geral">Geral</TabsTrigger>
-              <TabsTrigger value="cargas">Cargas & Fonte</TabsTrigger>
-              <TabsTrigger value="rua">Entregas & Rua</TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <div className="flex flex-wrap items-end gap-3 pt-2">
+            <Tabs value={filtro} onValueChange={(v) => setFiltro(v as keyof typeof FILTROS_HISTORICO)}>
+              <TabsList>
+                <TabsTrigger value="geral">Geral</TabsTrigger>
+                <TabsTrigger value="cargas">Cargas & Fonte</TabsTrigger>
+                <TabsTrigger value="rua">Entregas & Rua</TabsTrigger>
+              </TabsList>
+            </Tabs>
+            <FiltroPeriodo estado={periodoHist} />
+          </div>
         </CardHeader>
         <CardContent className="overflow-x-auto">
           <Table>
