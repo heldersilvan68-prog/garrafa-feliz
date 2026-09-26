@@ -24,7 +24,8 @@ import { Campo } from "@/components/ui/campo";
 import { InputMoeda } from "@/components/ui/input-moeda";
 import { brl, getDadosMedidaProduto } from "@/lib/erp";
 import { hojeISO } from "@/lib/caixa";
-import { aPrazo, FORMAS_COMPRA } from "@/lib/vasilhames";
+import { aPrazo, FORMAS_COMPRA, MOTIVOS_AVARIA, type MotivoAvaria } from "@/lib/vasilhames";
+import { supabase } from "@/integrations/supabase/client";
 import { CATEGORIA_COMPRA_MERCADORIA, CATEGORIA_ENVASE } from "@/lib/despesas";
 
 function MovimentoDialog({
@@ -441,81 +442,126 @@ export function AporteVasilhameDialog({ children }: { children: ReactNode }) {
 }
 
 export function RetornoEnvaseDialog({ children, produtoId }: { children: ReactNode; produtoId?: string }) {
-  const { produtos, entradaEstoque } = useEstoque();
+  const { produtos, registrarChegadaCarga } = useEstoque();
   const vasilhames = produtos.filter((p) => p.retornavel);
   const [aberto, setAberto] = useState(false);
+  const [salvando, setSalvando] = useState(false);
   const [id, setId] = useState(produtoId ?? vasilhames[0]?.id ?? "");
-  const [qtd, setQtd] = useState("100");
+  const [qtd, setQtd] = useState("0");
   const [custoEnvase, setCustoEnvase] = useState(0);
-  const [totalManual, setTotalManual] = useState<number | null>(null);
   const [forma, setForma] = useState<string>("PIX");
   const [vencimento, setVencimento] = useState(hojeISO());
+  const [quebrados, setQuebrados] = useState("0");
+  const [motivo, setMotivo] = useState<MotivoAvaria>(MOTIVOS_AVARIA[0]);
+  const [perdaUnit, setPerdaUnit] = useState(0);
+  const [perdaTotalManual, setPerdaTotalManual] = useState<number | null>(null);
+  const [formaPerda, setFormaPerda] = useState<string>("PIX");
+  const [retornados, setRetornados] = useState("0");
 
   const produto = vasilhames.find((p) => p.id === id);
-  const quantidade = Math.max(0, Math.floor(Number(qtd) || 0));
+  const enviados = Math.max(0, Math.floor(Number(qtd) || 0));
+  const nQuebra = Math.max(0, Math.floor(Number(quebrados) || 0));
+  const nRetorno = Math.max(0, Math.floor(Number(retornados) || 0));
+  const recebidos = enviados - nQuebra - nRetorno;
   const prazo = aPrazo(forma);
-  const total =
-    totalManual !== null ? totalManual : Math.round(quantidade * custoEnvase * 100) / 100;
+  const r2 = (n: number) => Math.round(n * 100) / 100;
+  const totalEnvase = r2(enviados * custoEnvase);
+  const abatAvaria = r2(nQuebra * custoEnvase);
+  const abatRetorno = r2(nRetorno * custoEnvase);
+  const valorFinal = r2(Math.max(0, totalEnvase - abatAvaria - abatRetorno));
+  const perdaTotal = perdaTotalManual ?? r2(nQuebra * perdaUnit);
 
-  // Custo de envase padrão vem do cadastro do produto.
+  // Ao abrir/trocar de produto: custo padrão e quantidade da última carga enviada.
   useEffect(() => {
-    if (!produto) return;
+    if (!aberto || !produto) return;
     setCustoEnvase(produto.custoEnvase || 0);
-    setTotalManual(null);
-  }, [produto?.id]);
+    setPerdaUnit(r2((produto.custoCasco || 0) + (produto.custoEnvase || 0)));
+    setPerdaTotalManual(null);
+    let ativo = true;
+    void supabase
+      .from("returnable_movements")
+      .select("qtd")
+      .eq("product_id", produto.id)
+      .eq("tipo", "envasado")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .then(({ data }) => {
+        if (ativo) setQtd(String(data?.[0]?.qtd ?? 0));
+      });
+    return () => {
+      ativo = false;
+    };
+  }, [aberto, produto?.id]);
 
-  const confirmar = () => {
-    if (!id || quantidade <= 0) {
-      toast.error("Informe um produto e uma quantidade válida.");
+  const resetar = () => {
+    setQuebrados("0");
+    setRetornados("0");
+    setPerdaTotalManual(null);
+  };
+
+  const confirmar = async () => {
+    if (!id || enviados <= 0) {
+      toast.error("Informe um produto e a quantidade da carga.");
       return;
     }
-
-    // Registra a entrada dos vasilhames que voltaram recarregados/cheios da fonte
-    entradaEstoque(
-      id,
-      quantidade,
-      total > 0
-        ? {
-            custoUnitario: quantidade > 0 ? Math.round((total / quantidade) * 100) / 100 : 0,
-            valorTotal: total,
-            data: hojeISO(),
-            forma,
-            vencimento: prazo ? vencimento : undefined,
-            categoria: CATEGORIA_ENVASE,
-            descricao: `Custo de envase · ${quantidade} un. ${produto?.nome ?? ""}`.trim(),
-          }
-        : undefined,
-    );
-    toast.success(
-      total > 0
-        ? `Chegada de ${quantidade} un. registrada e ${brl(total)} de envase lançado no financeiro.`
-        : `Chegada de ${quantidade} un. envasadas registrada no estoque cheio.`,
-    );
-    setAberto(false);
-    setTotalManual(null);
+    if (recebidos < 0) {
+      toast.error("Avarias + retornos não podem exceder a quantidade da carga.");
+      return;
+    }
+    setSalvando(true);
+    try {
+      await registrarChegadaCarga({
+        produtoId: id,
+        enviados,
+        custoEnvase,
+        forma,
+        vencimento: prazo ? vencimento : undefined,
+        quebrados: nQuebra,
+        motivoAvaria: motivo,
+        valorPerda: perdaTotal,
+        formaPerda,
+        retornados: nRetorno,
+        data: hojeISO(),
+      });
+      toast.success(
+        `Carga registrada: ${recebidos} cheio(s) no estoque · ${brl(valorFinal)} de envase lançado.`,
+      );
+      resetar();
+      setAberto(false);
+    } finally {
+      setSalvando(false);
+    }
   };
+
+  const SelectForma = ({ valor, onChange, semPrazo }: { valor: string; onChange: (v: string) => void; semPrazo?: boolean }) => (
+    <Select value={valor} onValueChange={onChange}>
+      <SelectTrigger>
+        <SelectValue placeholder="Selecione" />
+      </SelectTrigger>
+      <SelectContent>
+        {FORMAS_COMPRA.filter((f) => !semPrazo || !aPrazo(f)).map((f) => (
+          <SelectItem key={f} value={f}>
+            {f === "Dinheiro" ? "Dinheiro do Caixa (Espécie)" : f}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
 
   return (
     <Dialog open={aberto} onOpenChange={setAberto}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Registrar Chegada da Carga (Retorno de Envase)</DialogTitle>
+          <DialogTitle>Registrar Chegada da Carga</DialogTitle>
           <DialogDescription>
-            Registre a entrada dos vasilhames que retornaram envasados/cheios da envasadora e o
-            pagamento do envase.
+            Entrada dos cheios, avarias, vazios retornados e pagamento do envase em um só lugar.
           </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4 py-2 sm:grid-cols-2">
           <Campo label="Produto" className="sm:col-span-2">
-            <Select
-              value={id}
-              onValueChange={(v) => {
-                setId(v);
-                setTotalManual(null);
-              }}
-            >
+            <Select value={id} onValueChange={setId}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecione o produto" />
               </SelectTrigger>
@@ -529,74 +575,95 @@ export function RetornoEnvaseDialog({ children, produtoId }: { children: ReactNo
             </Select>
           </Campo>
 
-          <Campo label="Quantidade recebida (cheios)" htmlFor="qtdChegada">
-            <Input
-              id="qtdChegada"
-              type="number"
-              min={1}
-              value={qtd}
-              onChange={(e) => {
-                setQtd(e.target.value);
-                setTotalManual(null);
-              }}
-            />
+          <Campo label="Quantidade da carga enviada" htmlFor="qtdChegada" dica="Preenchido com a última carga enviada à fonte.">
+            <Input id="qtdChegada" type="number" min={0} value={qtd} onChange={(e) => setQtd(e.target.value)} />
           </Campo>
-
           <Campo label="Custo de envase por unidade (R$)">
-            <InputMoeda
-              valor={custoEnvase}
-              onValor={(n) => {
-                setCustoEnvase(n);
-                setTotalManual(null);
-              }}
-            />
+            <InputMoeda valor={custoEnvase} onValor={setCustoEnvase} />
           </Campo>
-
-          <Campo label="Valor total do envase (R$)" dica="Calculado automaticamente (editável).">
-            <InputMoeda valor={total} onValor={(n) => setTotalManual(n)} />
+          <Campo label="Forma de pagamento do envase">
+            <SelectForma valor={forma} onChange={setForma} />
           </Campo>
-
-          <Campo label="Forma de pagamento">
-            <Select value={forma} onValueChange={setForma}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione" />
-              </SelectTrigger>
-              <SelectContent>
-                {FORMAS_COMPRA.map((f) => (
-                  <SelectItem key={f} value={f}>
-                    {f}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Campo>
-
-          {prazo && (
+          {prazo ? (
             <Campo label="Vencimento do boleto" htmlFor="vencEnvase">
-              <Input
-                id="vencEnvase"
-                type="date"
-                value={vencimento}
-                onChange={(e) => setVencimento(e.target.value)}
-              />
+              <Input id="vencEnvase" type="date" value={vencimento} onChange={(e) => setVencimento(e.target.value)} />
             </Campo>
+          ) : (
+            <div />
           )}
 
-          <p className="text-xs text-muted-foreground sm:col-span-2">
-            {total > 0
-              ? prazo
-                ? `${brl(total)} entra em Contas a Pagar com vencimento em ${vencimento.split("-").reverse().join("/")}.`
-                : `${brl(total)} sai do saldo em ${forma === "Dinheiro" ? "espécie (gaveta)" : "conta / digital"}.`
-              : "Sem custo informado, apenas o estoque é atualizado."}
-          </p>
-        </div>
+          <div className="grid gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-3 sm:col-span-2 sm:grid-cols-2">
+            <p className="text-sm font-semibold sm:col-span-2">Avaria / Quebra na carga (opcional)</p>
+            <Campo label="Garrafões quebrados" htmlFor="qtdQuebra">
+              <Input
+                id="qtdQuebra"
+                type="number"
+                min={0}
+                value={quebrados}
+                onChange={(e) => {
+                  setQuebrados(e.target.value);
+                  setPerdaTotalManual(null);
+                }}
+              />
+            </Campo>
+            <Campo label="Motivo da avaria">
+              <Select value={motivo} onValueChange={(v) => setMotivo(v as MotivoAvaria)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {MOTIVOS_AVARIA.map((m) => (
+                    <SelectItem key={m} value={m}>
+                      {m}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Campo>
+            <Campo label="Valor da perda por unidade (R$)" dica="Casco + envase (editável).">
+              <InputMoeda
+                valor={perdaUnit}
+                onValor={(n) => {
+                  setPerdaUnit(n);
+                  setPerdaTotalManual(null);
+                }}
+              />
+            </Campo>
+            <Campo label="Valor total da perda (R$)" dica="Calculado automaticamente (editável).">
+              <InputMoeda valor={perdaTotal} onValor={setPerdaTotalManual} />
+            </Campo>
+            <Campo label="Forma de pagamento da perda" className="sm:col-span-2">
+              <SelectForma valor={formaPerda} onChange={setFormaPerda} semPrazo />
+            </Campo>
+          </div>
 
+          <div className="grid gap-3 rounded-lg border border-border bg-muted/40 p-3 sm:col-span-2 sm:grid-cols-2">
+            <p className="text-sm font-semibold sm:col-span-2">Retorno de vazios (voltaram sem envasar)</p>
+            <Campo label="Garrafões vazios retornados" htmlFor="qtdRetorno">
+              <Input id="qtdRetorno" type="number" min={0} value={retornados} onChange={(e) => setRetornados(e.target.value)} />
+            </Campo>
+          </div>
+
+          <div className="grid gap-1 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm sm:col-span-2">
+            <div className="flex justify-between"><span>Valor total do envase ({enviados} un.)</span><span className="tabular-nums">{brl(totalEnvase)}</span></div>
+            <div className="flex justify-between text-destructive"><span>− Abatimento por avaria ({nQuebra} un.)</span><span className="tabular-nums">{brl(abatAvaria)}</span></div>
+            <div className="flex justify-between text-destructive"><span>− Abatimento por retorno ({nRetorno} un.)</span><span className="tabular-nums">{brl(abatRetorno)}</span></div>
+            <div className="mt-1 flex justify-between border-t border-border pt-2 font-semibold"><span>Valor final a pagar à fonte</span><span className="tabular-nums">{brl(valorFinal)}</span></div>
+            <p className="text-xs text-muted-foreground">
+              {recebidos >= 0
+                ? `Entram ${recebidos} cheio(s) no estoque${nRetorno ? `, ${nRetorno} vazio(s) voltam ao depósito` : ""}${nQuebra ? ` e ${nQuebra} casco(s) saem do patrimônio (perda de ${brl(perdaTotal)}, paga)` : ""}.`
+                : "Avarias + retornos excedem a quantidade da carga."}
+            </p>
+          </div>
+        </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => setAberto(false)}>
             Cancelar
           </Button>
-          <Button onClick={confirmar}>Confirmar Chegada</Button>
+          <Button onClick={confirmar} disabled={salvando || recebidos < 0}>
+            {salvando ? "Salvando..." : "Confirmar Chegada"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
