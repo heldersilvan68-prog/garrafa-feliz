@@ -273,31 +273,7 @@ function RelatoriosPage() {
         </TabsList>
 
         <TabsContent value="entregadores" className="mt-4 flex flex-col gap-4">
-          <div className="grid gap-3 sm:grid-cols-3">
-            <Kpi
-              label="Entregas concluídas"
-              valor={String(validos.filter((p) => p.status === "concluido").length)}
-            />
-            <Kpi
-              label="Faturamento em entregas"
-              valor={brl(
-                validos
-                  .filter((p) => p.status === "concluido")
-                  .reduce((s, p) => s + valorFaturado(p), 0),
-              )}
-            />
-            <Kpi
-              label="Entregadores com vendas"
-              valor={String(
-                new Set(
-                  validos
-                    .filter((p) => p.status === "concluido")
-                    .map((p) => p.entregador?.trim() || "Sem entregador"),
-                ).size,
-              )}
-            />
-          </div>
-          <DesempenhoEntregadores pedidos={validos} produtos={produtos} />
+          <DesempenhoEntregadores pedidos={pedidos} produtos={produtos} faixa={faixa} />
         </TabsContent>
 
         <TabsContent value="vendas" className="mt-4 flex flex-col gap-4">
