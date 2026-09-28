@@ -49,6 +49,7 @@ import { lancamentosVale, totaisVale } from "@/lib/vales";
 import { ValesNaRua } from "@/components/relatorios/vales-na-rua";
 
 import { AnaliseProdutos } from "@/components/relatorios/analise-produtos";
+import { DesempenhoEntregadores } from "@/components/relatorios/desempenho-entregadores";
 import { TabelaDespesasCategoria } from "@/components/financeiro/despesas-categoria";
 
 
@@ -267,8 +268,37 @@ function RelatoriosPage() {
           <TabsTrigger value="produtos">Produtos & Reposição</TabsTrigger>
           <TabsTrigger value="clientes">Clientes</TabsTrigger>
           <TabsTrigger value="vales">Vales</TabsTrigger>
+          <TabsTrigger value="entregadores">Entregadores</TabsTrigger>
 
         </TabsList>
+
+        <TabsContent value="entregadores" className="mt-4 flex flex-col gap-4">
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Kpi
+              label="Entregas concluídas"
+              valor={String(validos.filter((p) => p.status === "concluido").length)}
+            />
+            <Kpi
+              label="Faturamento em entregas"
+              valor={brl(
+                validos
+                  .filter((p) => p.status === "concluido")
+                  .reduce((s, p) => s + valorFaturado(p), 0),
+              )}
+            />
+            <Kpi
+              label="Entregadores com vendas"
+              valor={String(
+                new Set(
+                  validos
+                    .filter((p) => p.status === "concluido")
+                    .map((p) => p.entregador?.trim() || "Sem entregador"),
+                ).size,
+              )}
+            />
+          </div>
+          <DesempenhoEntregadores pedidos={validos} produtos={produtos} />
+        </TabsContent>
 
         <TabsContent value="vendas" className="mt-4 flex flex-col gap-4">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
