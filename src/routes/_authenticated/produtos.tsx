@@ -48,6 +48,8 @@ export const Route = createFileRoute("/_authenticated/produtos")({
   component: Produtos,
 });
 
+type Visao = "cards" | "tabela";
+
 function Produtos() {
   const { produtos, remover } = useEstoque();
   const [busca, setBusca] = useState("");
@@ -221,7 +223,18 @@ function Produtos() {
                         <Trash2 />
                       </Button>
                     </ConfirmarExclusao>
-                    <AcoesProduto produtoId={p.id} />
+                    <div className="flex gap-1">
+                      <EntradaEstoqueDialog produtoId={p.id}>
+                        <Button variant="ghost" size="icon" aria-label="Entrada de estoque">
+                          <PackagePlus />
+                        </Button>
+                      </EntradaEstoqueDialog>
+                      <ProdutoDialog produto={p}>
+                        <Button variant="ghost" size="icon" aria-label="Editar produto">
+                          <Pencil />
+                        </Button>
+                      </ProdutoDialog>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
