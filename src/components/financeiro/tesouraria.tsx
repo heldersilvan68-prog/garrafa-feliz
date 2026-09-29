@@ -125,6 +125,7 @@ function AjusteDialog({ conta, tipo }: { conta: Conta; tipo: "entrada" | "saida"
 
 function Conferencia({ conta, saldo }: { conta: Conta; saldo: number }) {
   const [informado, setInformado] = useState(0);
+  const [conferido, setConferido] = useState(false);
   const diferenca = Math.round((informado - saldo) * 100) / 100;
   const digital = conta === "digital";
 
@@ -147,12 +148,19 @@ function Conferencia({ conta, saldo }: { conta: Conta; saldo: number }) {
         label={digital ? "Saldo conferido no banco (R$)" : "Valor contado na gaveta (R$)"}
         htmlFor={`conferencia-${conta}`}
       >
-        <InputMoeda id={`conferencia-${conta}`} valor={informado} onValor={setInformado} />
+        <InputMoeda
+          id={`conferencia-${conta}`}
+          valor={informado}
+          onValor={(valor) => {
+            setInformado(valor);
+            setConferido(true);
+          }}
+        />
       </Campo>
       <div className="flex items-center justify-between gap-3 border-t border-border pt-3 text-sm">
         <span className="text-muted-foreground">Diferença da conferência</span>
-        <span className={`font-semibold tabular-nums ${diferenca < 0 ? "text-destructive" : diferenca > 0 ? "text-success" : ""}`}>
-          {diferenca > 0 ? "+" : ""}{brl(diferenca)}
+        <span className={`font-semibold tabular-nums ${conferido && diferenca < 0 ? "text-destructive" : conferido && diferenca > 0 ? "text-success" : ""}`}>
+          {conferido ? `${diferenca > 0 ? "+" : ""}${brl(diferenca)}` : "Aguardando contagem"}
         </span>
       </div>
     </div>

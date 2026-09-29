@@ -59,7 +59,7 @@ export function SaldosCards() {
       {cards.map((c) => (
         <Card key={c.titulo} className="shadow-[var(--shadow-card)]">
           <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0">
-            <CardTitle className="min-w-0 truncate text-sm font-medium text-muted-foreground">
+            <CardTitle className="min-w-0 text-sm font-medium text-muted-foreground">
               {c.titulo}
             </CardTitle>
             <span className={`grid size-9 shrink-0 place-items-center rounded-xl ${c.tom}`}>
@@ -76,7 +76,7 @@ export function SaldosCards() {
             </p>
             <ul className="mt-2 flex flex-col gap-0.5 text-xs text-muted-foreground">
               {c.linhas.map((l) => (
-                <li key={l} className="truncate">
+                <li key={l} className="leading-relaxed">
                   {l}
                 </li>
               ))}
