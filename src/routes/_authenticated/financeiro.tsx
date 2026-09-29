@@ -15,7 +15,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FiltroPeriodo } from "@/components/filtro-periodo";
 import { DespesasChart } from "@/components/dashboard/charts";
 import { ClientesCobrar, ContasPagar } from "@/components/dashboard/financeiro";
-import { SaldosCards } from "@/components/financeiro/saldos-cards";
+import { Tesouraria } from "@/components/financeiro/tesouraria";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCaixa } from "@/context/caixa";
 import { brl } from "@/lib/erp";
 import { dataCurta, horaCurta, somaMovimentos } from "@/lib/caixa";
@@ -37,6 +38,8 @@ export const Route = createFileRoute("/_authenticated/financeiro")({
         content:
           "Fechamentos de caixa, DRE simplificado, despesas e vendas por forma de pagamento da distribuidora.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Financeiro,
@@ -93,8 +96,13 @@ function Financeiro() {
         </div>
       </header>
 
-      <SaldosCards />
+      <Tabs defaultValue="dre" className="w-full">
+        <TabsList className="grid h-auto w-full grid-cols-2 sm:w-fit">
+          <TabsTrigger value="dre">DRE / Resultado</TabsTrigger>
+          <TabsTrigger value="saldos">Saldos em Caixa</TabsTrigger>
+        </TabsList>
 
+        <TabsContent value="dre" className="mt-6 flex flex-col gap-6">
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {[
           {
@@ -253,6 +261,12 @@ function Financeiro() {
       </div>
 
       <ClientesCobrar />
+        </TabsContent>
+
+        <TabsContent value="saldos" className="mt-6">
+          <Tesouraria />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
