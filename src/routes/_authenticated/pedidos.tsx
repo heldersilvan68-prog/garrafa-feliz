@@ -68,12 +68,13 @@ export const Route = createFileRoute("/_authenticated/pedidos")({
 });
 
 type Filtro = "todos" | StatusPedido | "por-forma";
-type FiltroForma = "especie" | "pix" | "cartao";
+type FiltroForma = "especie" | "pix" | "cartao" | "fiado";
 
 const FORMAS_GRUPO: Record<FiltroForma, string[]> = {
   especie: ["Dinheiro"],
   pix: ["PIX"],
   cartao: ["Débito", "Crédito"],
+  fiado: ["Fiado"],
 };
 
 const STATUS_BADGE: Record<StatusPedido, "default" | "secondary" | "destructive" | "outline"> = {
@@ -284,6 +285,7 @@ function PedidosPage() {
     { valor: "especie", label: "Espécie" },
     { valor: "pix", label: "PIX" },
     { valor: "cartao", label: "Cartão" },
+    { valor: "fiado", label: "Fiado" },
   ];
 
   return (
