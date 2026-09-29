@@ -21,3 +21,8 @@
 - [x] Corrigir saldo líquido e estorno entre PDV, cliente e estoque
 - [x] Adicionar saldo, histórico e devolução manual ao perfil do cliente
 - [x] Adicionar detalhamento clicável de clientes com cascos na rua
+
+# Tesouraria
+- [ ] Separar DRE e Saldos em Caixa no Financeiro
+- [ ] Adicionar conferência, ajustes e extrato por conta
+- [ ] Validar a nova organização em desktop e celular
