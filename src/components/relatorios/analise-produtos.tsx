@@ -82,16 +82,16 @@ export function AnaliseProdutos({ faixa }: { faixa: Faixa }) {
       [
         "Produto",
         "Un/Fardo",
-        "Vendido (un)",
-        "Vendido (fardos+un)",
+        "Vendido (itens)",
+        "Vendido (unidade cadastrada)",
         "Faturamento",
         "Lucro bruto",
         "Margem %",
         "Estoque atual",
         "Estoque mínimo",
-        "Repor mínimo (un)",
+        "Repor mínimo (unidade cadastrada)",
         "Custo reposição mínimo",
-        "Repor giro (un)",
+        "Repor giro (unidade cadastrada)",
         "Custo reposição giro",
       ],
       linhas.map((l) => [
@@ -131,7 +131,7 @@ export function AnaliseProdutos({ faixa }: { faixa: Faixa }) {
         <Card>
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground">Total vendido no período</p>
-            <p className="mt-1 text-xl font-semibold tabular-nums">{totalUnidades} un.</p>
+            <p className="mt-1 text-xl font-semibold tabular-nums">{totalUnidades} itens</p>
           </CardContent>
         </Card>
         <Card>
@@ -143,7 +143,7 @@ export function AnaliseProdutos({ faixa }: { faixa: Faixa }) {
         <Card className="border-warning/40 bg-warning/5">
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground">Reposição por estoque mínimo</p>
-            <p className="mt-1 text-xl font-semibold tabular-nums">{totalRepor} un.</p>
+            <p className="mt-1 text-xl font-semibold tabular-nums">{totalRepor} itens</p>
             <p className="mt-1 text-xs text-muted-foreground">
               Custo estimado: {brl(custoRepor)}
             </p>
@@ -152,7 +152,7 @@ export function AnaliseProdutos({ faixa }: { faixa: Faixa }) {
         <Card className="border-primary/40 bg-primary/5">
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground">Reposição por giro de vendas</p>
-            <p className="mt-1 text-xl font-semibold tabular-nums">{totalReporGiro} un.</p>
+            <p className="mt-1 text-xl font-semibold tabular-nums">{totalReporGiro} itens</p>
             <p className="mt-1 text-xs text-muted-foreground">
               Custo estimado: {brl(custoReporGiro)}
             </p>
@@ -191,7 +191,7 @@ export function AnaliseProdutos({ faixa }: { faixa: Faixa }) {
                       {l.margem.toFixed(1)}%
                     </TableCell>
                     <TableCell className="text-center tabular-nums text-muted-foreground">
-                      {l.estoque} / {l.minimo}
+                       {rotuloEstoque(l.estoque, l.upf, l.unidade)} / {rotuloEstoque(l.minimo, l.upf, l.unidade)}
                     </TableCell>
                     <TableCell
                       className={`text-center tabular-nums ${l.repor > 0 ? "font-semibold text-warning" : ""}`}

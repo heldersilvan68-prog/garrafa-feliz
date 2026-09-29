@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Banknote, Boxes, CreditCard, Landmark, PiggyBank, QrCode, Truck } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { brl } from "@/lib/erp";
+import { brl, rotuloQuantidade } from "@/lib/erp";
 import type { ResumoPeriodo } from "@/lib/dashboard";
 
 const ICONES: Record<string, typeof QrCode> = {
@@ -122,7 +122,7 @@ export function BreakdownSection({ resumo }: { resumo: ResumoPeriodo }) {
         <CardContent>
           <p className="text-3xl font-semibold tracking-tight">
             {resumo.volumeHojeTotal.toLocaleString("pt-BR")}{" "}
-            <span className="text-sm font-normal text-muted-foreground">un</span>
+             <span className="text-sm font-normal text-muted-foreground">itens</span>
           </p>
           {resumo.volumeHoje.length === 0 ? (
             <p className="mt-1 text-xs text-muted-foreground">Nenhuma unidade vendida hoje ainda</p>
@@ -134,7 +134,9 @@ export function BreakdownSection({ resumo }: { resumo: ResumoPeriodo }) {
                   className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 text-xs"
                 >
                   <span className="truncate text-muted-foreground">{v.nome}</span>
-                  <span className="shrink-0 font-medium tabular-nums">{v.qtd} un</span>
+                   <span className="shrink-0 font-medium tabular-nums">
+                     {rotuloQuantidade(v.qtd, v.unidadesPorFardo, v.unidade)}
+                   </span>
                 </li>
               ))}
             </ul>

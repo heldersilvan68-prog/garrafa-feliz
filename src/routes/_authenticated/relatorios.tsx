@@ -29,7 +29,7 @@ import { useCaixa } from "@/context/caixa";
 import { useClientes } from "@/context/clientes";
 import { LABEL_MODO, type ModoVenda } from "@/lib/vasilhames";
 
-import { brl } from "@/lib/erp";
+import { brl, rotuloQuantidadeProduto } from "@/lib/erp";
 import { dataBR } from "@/lib/despesas";
 import {
   STATUS_PEDIDO_LABEL,
@@ -94,6 +94,7 @@ function RelatoriosPage() {
   const { clientes } = useClientes();
   const { metodosAtivos, taxaDe } = useConfiguracoes();
   const formasFiltro = useMemo(() => metodosAtivos as FormaPagamento[], [metodosAtivos]);
+  const produtosPorId = useMemo(() => new Map(produtos.map((p) => [p.id, p])), [produtos]);
 
   const periodoEstado = usePeriodo("hoje");
   const faixa = periodoEstado.faixa;
@@ -434,7 +435,11 @@ function RelatoriosPage() {
                   baixarCSV(
                     "produtos-mais-vendidos",
                     ["Produto", "Quantidade", "Valor"],
-                    ranking.map((r) => [r.nome, r.qtd, r.valor.toFixed(2)]),
+                    ranking.map((r) => [
+                      r.nome,
+                      rotuloQuantidadeProduto(r.qtd, produtosPorId.get(r.produtoId)),
+                      r.valor.toFixed(2),
+                    ]),
                   )
                 }
               >
@@ -459,7 +464,7 @@ function RelatoriosPage() {
                     {ranking.map((r) => (
                       <TableRow key={r.nome}>
                         <TableCell className="font-medium">{r.nome}</TableCell>
-                        <TableCell>{r.qtd}</TableCell>
+                        <TableCell>{rotuloQuantidadeProduto(r.qtd, produtosPorId.get(r.produtoId))}</TableCell>
                         <TableCell className="text-right">{brl(r.valor)}</TableCell>
                       </TableRow>
                     ))}

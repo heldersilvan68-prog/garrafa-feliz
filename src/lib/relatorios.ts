@@ -13,13 +13,14 @@ export {
 
 /** Produtos mais vendidos no conjunto de pedidos. */
 export function maisVendidos(pedidos: Pedido[]) {
-  const mapa = new Map<string, { nome: string; qtd: number; valor: number }>();
+  const mapa = new Map<string, { produtoId: string; nome: string; qtd: number; valor: number }>();
   for (const p of pedidos) {
     for (const i of p.itens) {
-      const atual = mapa.get(i.nome) ?? { nome: i.nome, qtd: 0, valor: 0 };
+      const chave = i.produtoId || i.nome;
+      const atual = mapa.get(chave) ?? { produtoId: i.produtoId, nome: i.nome, qtd: 0, valor: 0 };
       atual.qtd += i.qtd;
       atual.valor += totalItemPedido(i);
-      mapa.set(i.nome, atual);
+      mapa.set(chave, atual);
     }
   }
   return [...mapa.values()].sort((a, b) => b.qtd - a.qtd);

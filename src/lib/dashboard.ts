@@ -40,8 +40,8 @@ export type ResumoPeriodo = {
   compras: number;
   vasilhamesNaRua: number;
   metaVendas: number;
-  /** Unidades vendidas hoje agrupadas por produto. */
-  volumeHoje: { nome: string; qtd: number }[];
+  /** Quantidades vendidas hoje agrupadas por produto, com sua medida cadastrada. */
+  volumeHoje: { id: string; nome: string; qtd: number; unidade?: string; unidadesPorFardo: number }[];
   volumeHojeTotal: number;
   pagamentos: { metodo: string; valor: number }[];
   tendencia: { x: number; v: number }[];
@@ -159,14 +159,20 @@ export function calcularResumo(
   const vasilhamesNaRua = Math.max(0, vendidosRetornaveis - recolhidos);
 
   // Volume vendido hoje: unidades por produto nos pedidos do dia atual.
-  const mapaVolume = new Map<string, number>();
+  const mapaVolume = new Map<string, { id: string; nome: string; qtd: number }>();
   for (const p of ativos.filter((x) => diaDoPedido(x) === hojeIso)) {
     for (const i of p.itens) {
-      mapaVolume.set(i.nome, (mapaVolume.get(i.nome) ?? 0) + i.qtd);
+      const chave = i.produtoId || i.nome;
+      const atual = mapaVolume.get(chave) ?? { id: i.produtoId, nome: i.nome, qtd: 0 };
+      atual.qtd += i.qtd;
+      mapaVolume.set(chave, atual);
     }
   }
-  const volumeHoje = [...mapaVolume.entries()]
-    .map(([nome, qtd]) => ({ nome, qtd }))
+  const volumeHoje = [...mapaVolume.values()]
+    .map((item) => {
+      const produto = produtosPorId.get(item.id);
+      return { ...item, unidade: produto?.unidade, unidadesPorFardo: produto?.unidadesPorFardo ?? 1 };
+    })
     .sort((a, b) => b.qtd - a.qtd);
   const volumeHojeTotal = volumeHoje.reduce((s, v) => s + v.qtd, 0);
 

@@ -162,8 +162,8 @@ export const getDadosMedidaProduto = (
   };
 };
 
-/** Texto amigável do estoque: "10 fardos e 6 un." / "1 cx e 1 un." */
-export const rotuloEstoque = (unidades: number, porFardo: number, unidade?: string) => {
+/** Texto global de quantidade: "10 fardos e 6 un." / "1 cx e 1 un.". */
+export const rotuloQuantidade = (unidades: number, porFardo: number, unidade?: string) => {
   const { fardos, soltas, porFardo: upf } = emFardos(unidades, porFardo);
   if (upf <= 1) return `${Math.max(0, Math.floor(unidades || 0))} un.`;
   const rot = rotuloEmbalagem(unidade);
@@ -172,6 +172,15 @@ export const rotuloEstoque = (unidades: number, porFardo: number, unidade?: stri
   if (soltas > 0 || fardos === 0) partes.push(`${soltas} un.`);
   return partes.join(" e ");
 };
+
+/** Compatibilidade: estoque e vendas seguem exatamente a mesma regra visual. */
+export const rotuloEstoque = rotuloQuantidade;
+
+/** Formata a quantidade usando a unidade e o fator cadastrados no produto. */
+export const rotuloQuantidadeProduto = (
+  unidades: number,
+  produto?: Pick<Produto, "unidadesPorFardo" | "unidade">,
+) => rotuloQuantidade(unidades, produto ? unidPorFardo(produto) : 1, produto?.unidade);
 
 /** Custo unitário avulso, com fallback pelo custo do fardo rateado. */
 export const custoUnitario = (

@@ -45,6 +45,7 @@ import {
   totalComPromocao,
   unidPorFardo,
   rotuloEmbalagem,
+  rotuloQuantidadeProduto,
 } from "@/lib/erp";
 import { BALCAO } from "@/lib/entregadores";
 import {
@@ -609,6 +610,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                 <div className="grid min-w-0 gap-3 sm:grid-cols-2">
                   {produtos.map((p) => {
                     const upf = unidPorFardo(p);
+                    const medida = getDadosMedidaProduto(p);
                     const emFardo = embalagemDe(p.id) === "fardo";
                     const bruto = Math.max(
                       0,
@@ -654,7 +656,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                             onValor={(n) => setPrecos((s) => ({ ...s, [p.id]: String(n) }))}
                           />
                           <span className="shrink-0 text-xs font-normal text-muted-foreground">
-                            {emFardo ? " /fardo" : " /un"}
+                            {emFardo ? ` /${medida.rotulo.singular}` : " /un."}
                           </span>
                         </div>
 
@@ -675,7 +677,9 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="un">Unidade avulsa</SelectItem>
-                              <SelectItem value="fardo">Fardo fechado ({upf} un.)</SelectItem>
+                              <SelectItem value="fardo">
+                                {medida.rotulo.singular} fechada ({upf} un.)
+                              </SelectItem>
                             </SelectContent>
                           </Select>
                         )}
@@ -724,7 +728,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                             }}
                           />
                           <span className="shrink-0 text-[11px] text-muted-foreground">
-                            {emFardo ? "fardos" : "un."}
+                            {emFardo ? medida.rotulo.plural : "un."}
                           </span>
                           <Button
                             type="button"
@@ -740,7 +744,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
 
                         {noPedido > 0 && (
                           <p className="text-[11px] text-muted-foreground">
-                            No pedido: <strong>{noPedido} un.</strong> em{" "}
+                            No pedido: <strong>{rotuloQuantidadeProduto(noPedido, p)}</strong> em{" "}
                             {linhas.filter((l) => l.produtoId === p.id).length} linha(s)
                           </p>
                         )}
@@ -999,13 +1003,9 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                 ) : (
                   <ul className="flex flex-col gap-1.5">
                     {linhas.map((l) => {
-                      const upf = unidPorFardo(
-                        produtos.find((p) => p.id === l.produtoId) ?? ({} as never),
-                      );
-                      const qtdRotulo =
-                        l.embalagem === "fardo"
-                          ? `${Math.round(l.qtd / Math.max(1, upf))} fardo(s) · ${l.qtd} un.`
-                          : `${l.qtd} un.`;
+                      const produto = produtos.find((p) => p.id === l.produtoId);
+                      const medida = produto ? getDadosMedidaProduto(produto) : null;
+                      const qtdRotulo = rotuloQuantidadeProduto(l.qtd, produto);
                       return (
                         <li key={l.key} className="flex items-start gap-2 text-sm">
                           <div className="min-w-0 flex-1">
@@ -1014,7 +1014,9 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                               {qtdRotulo}
                               {l.retornavel ? ` · ${LABEL_MODO[l.modo]}` : ""} ·{" "}
                               {brl(l.preco)}
-                              {l.embalagem === "fardo" ? "/fardo" : "/un"}
+                              {l.embalagem === "fardo"
+                                ? `/${medida?.rotulo.singular ?? "fardo"}`
+                                : "/un."}
                             </p>
                           </div>
                           <span className="shrink-0 tabular-nums">{brl(totalLinha(l))}</span>

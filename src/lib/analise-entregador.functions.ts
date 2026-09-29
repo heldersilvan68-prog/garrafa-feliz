@@ -6,7 +6,9 @@ const Metricas = z.object({
   entregas: z.number(),
   faturamento: z.number(),
   lucro: z.number(),
-  produtos: z.array(z.object({ nome: z.string(), qtd: z.number(), valor: z.number() })),
+  produtos: z.array(
+    z.object({ nome: z.string(), qtd: z.number(), quantidadeFormatada: z.string(), valor: z.number() }),
+  ),
   porDia: z.array(z.object({ dia: z.string(), entregas: z.number(), faturamento: z.number() })),
 });
 
