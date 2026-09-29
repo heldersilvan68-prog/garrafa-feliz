@@ -84,6 +84,15 @@ export const rotuloEmbalagem = (unidade?: string) => {
   return { singular: u, plural: u };
 };
 
+/** Nome por extenso usado em campos de entrada de estoque. */
+export const nomeEmbalagem = (unidade?: string) => {
+  const u = (unidade ?? "").trim().toLowerCase();
+  if (u.startsWith("cx") || u.startsWith("caix")) return { singular: "caixa", plural: "caixas" };
+  if (u.startsWith("fd") || u.startsWith("fard")) return { singular: "fardo", plural: "fardos" };
+  if (u.startsWith("pct") || u.startsWith("pac")) return { singular: "pacote", plural: "pacotes" };
+  return { singular: "unidade", plural: "unidades" };
+};
+
 /* ---------- Regra global de unidade de medida (fonte única) ---------- */
 
 export type MedidaPrincipal = "fardo" | "un";
@@ -167,6 +176,7 @@ export const rotuloQuantidade = (unidades: number, porFardo: number, unidade?: s
   const { fardos, soltas, porFardo: upf } = emFardos(unidades, porFardo);
   if (upf <= 1) return `${Math.max(0, Math.floor(unidades || 0))} un.`;
   const rot = rotuloEmbalagem(unidade);
+  if (fardos === 0 && soltas === 0) return `0 ${rot.plural}`;
   const partes: string[] = [];
   if (fardos > 0) partes.push(`${fardos} ${fardos === 1 ? rot.singular : rot.plural}`);
   if (soltas > 0 || fardos === 0) partes.push(`${soltas} un.`);
@@ -181,6 +191,24 @@ export const rotuloQuantidadeProduto = (
   unidades: number,
   produto?: Pick<Produto, "unidadesPorFardo" | "unidade">,
 ) => rotuloQuantidade(unidades, produto ? unidPorFardo(produto) : 1, produto?.unidade);
+
+/** Converte a quantidade digitada na unidade principal para unidades internas. */
+export const paraUnidadesInternas = (
+  quantidade: number,
+  produto: Pick<Produto, "unidadesPorFardo" | "unidade">,
+) => {
+  const fator = medidaPrincipal(produto.unidade) === "fardo" ? unidPorFardo(produto) : 1;
+  return Math.max(0, Math.floor(quantidade || 0)) * fator;
+};
+
+/** Converte unidades internas para o valor mostrado no campo de estoque. */
+export const daUnidadeInterna = (
+  unidades: number,
+  produto: Pick<Produto, "unidadesPorFardo" | "unidade">,
+) => {
+  const fator = medidaPrincipal(produto.unidade) === "fardo" ? unidPorFardo(produto) : 1;
+  return Math.max(0, Math.floor(unidades || 0)) / fator;
+};
 
 /** Custo unitário avulso, com fallback pelo custo do fardo rateado. */
 export const custoUnitario = (
