@@ -359,7 +359,15 @@ function metricasDe(pedidos: Pedido[], produtos: Produto[], faixa: Faixa, nome: 
     entregas: l?.entregas ?? 0,
     faturamento: r2(l?.faturamento ?? 0),
     lucro: r2(l?.lucro ?? 0),
-    produtos: (l?.produtos ?? []).slice(0, 25).map((p) => ({ ...p, valor: r2(p.valor) })),
+    produtos: (l?.produtos ?? []).slice(0, 25).map((p) => ({
+      nome: p.nome,
+      qtd: p.qtd,
+      quantidadeFormatada: rotuloQuantidadeProduto(
+        p.qtd,
+        produtos.find((produto) => produto.id === p.produtoId),
+      ),
+      valor: r2(p.valor),
+    })),
     porDia: [...dias.values()]
       .sort((a, b) => a.dia.localeCompare(b.dia))
       .slice(-62)
