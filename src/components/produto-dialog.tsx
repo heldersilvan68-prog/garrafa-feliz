@@ -343,7 +343,7 @@ export function ProdutoDialog({
               />
             </Campo>
             <p className="text-xs text-muted-foreground sm:col-span-2">
-              Total no estoque: <strong>{totalAtual} {totalAtual === 1 ? "unidade" : "unidades"}</strong>{" "}
+              Total no estoque: <strong>{totalAtual} {totalAtual === 1 ? "garrafa" : "garrafas"}</strong>{" "}
               ({quantidadeAtual} {quantidadeAtual === 1 ? nomeMedida.singular : nomeMedida.plural}).
             </p>
           </div>
