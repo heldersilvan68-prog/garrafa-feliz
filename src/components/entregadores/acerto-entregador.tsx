@@ -188,7 +188,7 @@ export function AcertoEntregador() {
                       <TableCell className="font-medium">#{p.numero}</TableCell>
                       <TableCell className="max-w-[180px] truncate">{p.clienteNome}</TableCell>
                       <TableCell className="max-w-[220px] truncate text-muted-foreground">
-                        {resumoItens(p.itens)}
+                        {resumoItens(p.itens, produtos)}
                       </TableCell>
                       <TableCell>{p.pagamento}</TableCell>
                       <TableCell className="text-right tabular-nums">{brl(p.total)}</TableCell>

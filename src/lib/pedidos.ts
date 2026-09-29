@@ -1,4 +1,5 @@
 import type { ModoVenda } from "@/lib/vasilhames";
+import { rotuloQuantidadeProduto, type Produto } from "@/lib/erp";
 
 export type StatusPedido = "pendente" | "em-rota" | "concluido" | "cancelado";
 
@@ -59,13 +60,24 @@ export const quantidadeComercialItem = (i: ItemPedido) =>
     ? i.quantidadeEmbalagens ?? 0
     : i.qtd;
 
-export const rotuloItemPedido = (i: ItemPedido) => {
+export const rotuloQuantidadeItem = (
+  i: ItemPedido,
+  produto?: Pick<Produto, "unidadesPorFardo" | "unidade">,
+) => {
+  if (produto) return rotuloQuantidadeProduto(i.qtd, produto);
   if (i.embalagem === "fardo" && (i.quantidadeEmbalagens ?? 0) > 0) {
     const qtd = i.quantidadeEmbalagens ?? 0;
     const embalagem = i.rotuloEmbalagem || "Fardo";
-    return `${qtd}x ${i.nome} (${embalagem})`;
+    return `${qtd} ${embalagem.toLocaleLowerCase("pt-BR")}`;
   }
-  return `${i.qtd}x ${i.nome}`;
+  return `${i.qtd} un.`;
+};
+
+export const rotuloItemPedido = (
+  i: ItemPedido,
+  produto?: Pick<Produto, "unidadesPorFardo" | "unidade">,
+) => {
+  return `${rotuloQuantidadeItem(i, produto)} × ${i.nome}`;
 };
 
 /** Uma parcela do recebimento da venda (pagamento fracionado). */
@@ -158,8 +170,10 @@ export const MOTIVOS_CANCELAMENTO = [
   "Outro",
 ];
 
-export const resumoItens = (itens: ItemPedido[]) =>
-  itens.map(rotuloItemPedido).join(", ");
+export const resumoItens = (itens: ItemPedido[], produtos?: Produto[]) => {
+  const porId = produtos ? new Map(produtos.map((p) => [p.id, p])) : null;
+  return itens.map((i) => rotuloItemPedido(i, porId?.get(i.produtoId))).join(", ");
+};
 
 export const tempoDecorrido = (iso: string) => {
   const min = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));

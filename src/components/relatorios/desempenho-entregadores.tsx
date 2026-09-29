@@ -21,7 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { brl } from "@/lib/erp";
+import { brl, rotuloQuantidadeProduto } from "@/lib/erp";
 import { baixarCSV } from "@/lib/relatorios";
 import { totalItemPedido, valorFaturado, type Pedido } from "@/lib/pedidos";
 import type { Produto } from "@/lib/erp";
@@ -37,7 +37,7 @@ type LinhaEntregador = {
   faturamento: number;
   custo: number;
   lucro: number;
-  produtos: { nome: string; qtd: number; valor: number }[];
+  produtos: { produtoId: string; nome: string; qtd: number; valor: number }[];
 };
 
 /** Custo unitário do item conforme a modalidade de vasilhame (mesma regra do CMV dos relatórios). */
@@ -54,7 +54,7 @@ const nomeEntregador = (p: Pedido) => p.entregador?.trim() || "Sem entregador";
 
 function agrupar(pedidos: Pedido[], produtos: Produto[], faixa: Faixa): LinhaEntregador[] {
   const produtosPorId = new Map(produtos.map((p) => [p.id, p]));
-  const mapa = new Map<string, LinhaEntregador & { _p: Map<string, { nome: string; qtd: number; valor: number }> }>();
+  const mapa = new Map<string, LinhaEntregador & { _p: Map<string, { produtoId: string; nome: string; qtd: number; valor: number }> }>();
   for (const p of pedidos) {
     if (p.status !== "concluido" || !dentroFaixa(p.criadoEm, faixa)) continue;
     const nome = nomeEntregador(p);
@@ -65,10 +65,11 @@ function agrupar(pedidos: Pedido[], produtos: Produto[], faixa: Faixa): LinhaEnt
     l.faturamento += valorFaturado(p);
     for (const i of p.itens) {
       l.custo += i.qtd * custoUnitarioItem(i, produtosPorId.get(i.produtoId));
-      const a = l._p.get(i.nome) ?? { nome: i.nome, qtd: 0, valor: 0 };
+      const chave = i.produtoId || i.nome;
+      const a = l._p.get(chave) ?? { produtoId: i.produtoId, nome: i.nome, qtd: 0, valor: 0 };
       a.qtd += i.qtd;
       a.valor += totalItemPedido(i);
-      l._p.set(i.nome, a);
+      l._p.set(chave, a);
     }
     mapa.set(nome, l);
   }
@@ -141,6 +142,7 @@ export function DesempenhoEntregadores({
   const [aberto, setAberto] = useState<string | null>(null);
   const [selecionados, setSelecionados] = useState<string[]>([]);
   const anterior = useMemo(() => faixaAnterior(faixa), [faixa]);
+  const produtosPorId = useMemo(() => new Map(produtos.map((p) => [p.id, p])), [produtos]);
 
   const linhasTodas = useMemo(() => agrupar(pedidos, produtos, faixa), [pedidos, produtos, faixa]);
   const linhasAntTodas = useMemo(
@@ -310,7 +312,7 @@ export function DesempenhoEntregadores({
                                 {l.produtos.map((pr) => (
                                   <TableRow key={pr.nome}>
                                     <TableCell>{pr.nome}</TableCell>
-                                    <TableCell>{pr.qtd} un</TableCell>
+                                    <TableCell>{rotuloQuantidadeProduto(pr.qtd, produtosPorId.get(pr.produtoId))}</TableCell>
                                     <TableCell className="text-right tabular-nums">
                                       {brl(pr.valor)}
                                     </TableCell>

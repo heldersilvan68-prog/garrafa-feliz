@@ -8,6 +8,7 @@ import { BALCAO } from "@/lib/entregadores";
 import { parcelasDe, rotuloItemPedido, totalItemPedido, type Pedido } from "@/lib/pedidos";
 import { useConfiguracoes, IMPRESSAO_PADRAO } from "@/context/configuracoes";
 import { useClientes } from "@/context/clientes";
+import { useEstoque } from "@/context/estoque";
 import { mascaraTelefone } from "@/lib/clientes";
 
 const EMPRESA_PADRAO = "PK DISTRIBUIDORA";
@@ -42,6 +43,8 @@ const dataHora = (iso: string) =>
 function Cupom({ pedido }: { pedido: Pedido }) {
   const { config } = useConfiguracoes();
   const { clientes } = useClientes();
+  const { produtos } = useEstoque();
+  const produtosPorId = new Map(produtos.map((p) => [p.id, p]));
   const imp = config.impressao ?? IMPRESSAO_PADRAO;
   const parcelas = parcelasDe(pedido);
   const balcao = !pedido.entregador || pedido.entregador === BALCAO;
@@ -115,7 +118,7 @@ function Cupom({ pedido }: { pedido: Pedido }) {
           <div key={`${i.produtoId}-${i.nome}-${i.modo}-${i.embalagem}-${idx}`} className="cupom-item">
             <div className="cupom-linha cupom-negrito">
               <span className="cupom-quebra">
-                 {rotuloItemPedido(i)}
+                 {rotuloItemPedido(i, produtosPorId.get(i.produtoId))}
               </span>
                <span>{brl(totalItemPedido(i))}</span>
             </div>

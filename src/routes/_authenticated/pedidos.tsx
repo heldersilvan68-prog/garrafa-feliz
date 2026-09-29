@@ -26,6 +26,7 @@ import { FiltroPeriodo } from "@/components/filtro-periodo";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePedidos } from "@/context/pedidos";
+import { useEstoque } from "@/context/estoque";
 import { usePeriodo } from "@/hooks/use-periodo";
 import { dentroFaixa } from "@/lib/periodo";
 import { brl } from "@/lib/erp";
@@ -102,7 +103,7 @@ const pedidoCorrespondeBusca = (pedido: Pedido, termo: string) => {
   ].some((valor) => normalizarBusca(valor ?? "").includes(busca));
 };
 
-const PedidoCard = memo(function PedidoCard({ pedido }: { pedido: Pedido }) {
+const PedidoCard = memo(function PedidoCard({ pedido, produtos }: { pedido: Pedido; produtos: ReturnType<typeof useEstoque>["produtos"] }) {
   const { alterarStatus } = usePedidos();
   const avancar = proximoStatus(pedido.status);
 
@@ -136,7 +137,7 @@ const PedidoCard = memo(function PedidoCard({ pedido }: { pedido: Pedido }) {
       <CardContent className="flex flex-col gap-3">
         <DetalhesPedidoDialog pedido={pedido}>
           <p className="cursor-pointer text-sm text-muted-foreground hover:text-foreground">
-            {resumoItens(pedido.itens)}
+             {resumoItens(pedido.itens, produtos)}
           </p>
         </DetalhesPedidoDialog>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
@@ -222,6 +223,7 @@ const PedidoCard = memo(function PedidoCard({ pedido }: { pedido: Pedido }) {
 
 function PedidosPage() {
   const { pedidos } = usePedidos();
+  const { produtos } = useEstoque();
   const [filtro, setFiltro] = useState<Filtro>("todos");
   const [filtroForma, setFiltroForma] = useState<FiltroForma>("especie");
   const [busca, setBusca] = useState("");
@@ -365,7 +367,7 @@ function PedidosPage() {
       ) : (
         <div className="grid gap-4 xl:grid-cols-2">
           {listaVisivel.map((p) => (
-            <PedidoCard key={p.id} pedido={p} />
+            <PedidoCard key={p.id} pedido={p} produtos={produtos} />
           ))}
           {listaVisivel.length < lista.length && (
             <div className="flex justify-center xl:col-span-2">

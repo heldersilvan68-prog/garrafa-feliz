@@ -10,6 +10,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useEstoque } from "@/context/estoque";
 import { ImprimirComprovante } from "@/components/pedidos/comprovante-pedido";
 import { Separator } from "@/components/ui/separator";
 import { brl } from "@/lib/erp";
@@ -42,6 +43,8 @@ export function DetalhesPedidoDialog({
   children: ReactNode;
 }) {
   const [aberto, setAberto] = useState(false);
+  const { produtos } = useEstoque();
+  const produtosPorId = new Map(produtos.map((p) => [p.id, p]));
   const parcelas = parcelasDe(pedido);
   const totalPago = parcelas.reduce((s, x) => s + x.valor, 0);
 
@@ -88,7 +91,7 @@ export function DetalhesPedidoDialog({
                     className="flex items-start justify-between gap-3 text-sm"
                   >
                     <span className="min-w-0">
-                       {rotuloItemPedido(i)}
+                       {rotuloItemPedido(i, produtosPorId.get(i.produtoId))}
                       {i.retornavel && (
                         <span className="ml-1 text-xs text-muted-foreground">
                           ({LABEL_MODO[i.modo]})

@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Format all product quantities through the shared helpers in `src/lib/erp.ts`, because stock uses internal units while the UI must show each product's registered package unit and remainder.
