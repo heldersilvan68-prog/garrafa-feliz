@@ -33,7 +33,7 @@ export const contaDaDespesa = (forma: string): ContaMovimento | null =>
 
 /** Conta em que caiu a baixa de fiado, lida do motivo do lançamento. */
 export const contaDoRecebimento = (m: MovimentoCaixa): ContaMovimento =>
-  /pix/i.test(m.motivo)
+  /digital|pix|banco|transfer/i.test(m.motivo)
     ? "pix"
     : /débito|debito|crédito|credito|cart/i.test(m.motivo)
       ? "cartao"
