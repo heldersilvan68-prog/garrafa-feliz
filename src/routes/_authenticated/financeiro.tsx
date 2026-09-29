@@ -106,30 +106,29 @@ function Financeiro() {
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {[
           {
-            titulo: "Receita bruta",
+            titulo: "Faturamento bruto",
             valor: brl(resumo.vendas),
             icon: Wallet,
             tom: "bg-primary/10 text-primary",
           },
           {
-            titulo: "Despesas pagas",
+            titulo: "CMV",
+            valor: brl(resumo.custoProduto),
+            icon: HandCoins,
+            tom: "bg-warning/20 text-warning-foreground",
+          },
+          {
+            titulo: "Despesas operacionais",
             valor: brl(resumo.despesas),
             icon: Receipt,
             tom: "bg-destructive/10 text-destructive",
             nota: `+ ${brl(resumo.despesasPrevistas)} a vencer no período`,
           },
-
           {
             titulo: "Lucro líquido",
             valor: brl(resumo.lucroLiquido),
             icon: TrendingUp,
             tom: "bg-success/15 text-success",
-          },
-          {
-            titulo: "Margem bruta",
-            valor: `${resumo.margemBruta.toFixed(1)}%`,
-            icon: HandCoins,
-            tom: "bg-warning/20 text-warning-foreground",
           },
         ].map((c) => (
           <Card key={c.titulo} className="shadow-[var(--shadow-card)]">
