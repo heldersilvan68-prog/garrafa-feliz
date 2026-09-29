@@ -23,6 +23,6 @@
 - [x] Adicionar detalhamento clicável de clientes com cascos na rua
 
 # Tesouraria
-- [ ] Separar DRE e Saldos em Caixa no Financeiro
-- [ ] Adicionar conferência, ajustes e extrato por conta
-- [ ] Validar a nova organização em desktop e celular
+- [x] Separar DRE e Saldos em Caixa no Financeiro
+- [x] Adicionar conferência, ajustes e extrato por conta
+- [x] Validar a nova organização em desktop e celular
