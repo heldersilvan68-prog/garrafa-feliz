@@ -29,7 +29,6 @@ import {
   daUnidadeInterna,
   paraUnidadesInternas,
   precoSugerido,
-  rotuloEstoque,
   unidPorFardo,
   type Produto,
 } from "@/lib/erp";
