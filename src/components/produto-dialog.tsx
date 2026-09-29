@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { Upload } from "lucide-react";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -23,11 +24,23 @@ import {
   CATEGORIAS_SUGERIDAS,
   brl,
   margemReal,
+  medidaPrincipal,
+  nomeEmbalagem,
+  daUnidadeInterna,
+  paraUnidadesInternas,
   precoSugerido,
-  rotuloEstoque,
   unidPorFardo,
   type Produto,
 } from "@/lib/erp";
+
+const produtoSchema = z.object({
+  nome: z.string().trim().min(1, "Informe o nome do produto.").max(120, "O nome deve ter até 120 caracteres."),
+  categoria: z.string().trim().min(1, "Selecione ou cadastre uma categoria.").max(80),
+  unidade: z.string().trim().max(30),
+  unidadesPorFardo: z.number().int().min(1).max(100_000),
+  quantidadeAtual: z.number().int().min(0).max(100_000_000),
+  quantidadeMinima: z.number().int().min(0).max(100_000_000),
+});
 
 const vazio: Produto = {
   id: "",
@@ -66,16 +79,27 @@ export function ProdutoDialog({
   const { salvar } = useEstoque();
   const [aberto, setAberto] = useState(false);
   const [form, setForm] = useState<Produto>(produto ?? vazio);
+  const [quantidadeAtual, setQuantidadeAtual] = useState(0);
+  const [quantidadeMinima, setQuantidadeMinima] = useState(0);
   const arquivoRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (aberto) setForm(produto ?? vazio);
+    if (aberto) {
+      const inicial = produto ?? vazio;
+      setForm(inicial);
+      setQuantidadeAtual(daUnidadeInterna(inicial.estoqueCheio, inicial));
+      setQuantidadeMinima(daUnidadeInterna(inicial.estoqueMinimo, inicial));
+    }
   }, [aberto, produto]);
 
   const set = <K extends keyof Produto>(k: K, v: Produto[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
 
   const upf = unidPorFardo(form);
+  const usaEmbalagem = medidaPrincipal(form.unidade) === "fardo";
+  const nomeMedida = usaEmbalagem ? nomeEmbalagem(form.unidade) : { singular: "unidade", plural: "unidades" };
+  const totalAtual = paraUnidadesInternas(quantidadeAtual, form);
+  const totalMinimo = paraUnidadesInternas(quantidadeMinima, form);
   const sugerido = precoSugerido(form.precoCusto, form.margemDesejada);
   const margem = margemReal(form.precoCusto, form.precoVenda);
 
@@ -91,17 +115,27 @@ export function ProdutoDialog({
   };
 
   const submit = () => {
-    if (!form.nome.trim()) {
-      toast.error("Informe o nome do produto.");
+    const validacao = produtoSchema.safeParse({
+      nome: form.nome,
+      categoria: form.categoria,
+      unidade: form.unidade ?? "",
+      unidadesPorFardo: form.unidadesPorFardo,
+      quantidadeAtual,
+      quantidadeMinima,
+    });
+    if (!validacao.success) {
+      toast.error(validacao.error.issues[0]?.message ?? "Revise os dados do produto.");
       return;
     }
-    if (!form.categoria.trim()) {
-      toast.error("Selecione ou cadastre uma categoria.");
+    if (usaEmbalagem && upf <= 1) {
+      toast.error(`Informe quantas unidades vêm em cada ${nomeMedida.singular}.`);
       return;
     }
     salvar({
       ...form,
       id: form.id || `p${Date.now()}`,
+      estoqueCheio: totalAtual,
+      estoqueMinimo: totalMinimo,
       estoqueVazio: form.retornavel ? form.estoqueVazio : 0,
     });
     toast.success(produto ? "Produto atualizado!" : "Produto cadastrado!");
@@ -292,22 +326,25 @@ export function ProdutoDialog({
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <Campo label="Quantidade mínima (unidades)" htmlFor="min">
+            <Campo label={`Quantidade mínima (em ${nomeMedida.plural})`} htmlFor="min">
               <InputNumero
                 id="min"
-                valor={form.estoqueMinimo}
-                onValor={(n) => set("estoqueMinimo", n)}
+                min={0}
+                valor={quantidadeMinima}
+                onValor={(n) => setQuantidadeMinima(Math.max(0, n))}
               />
             </Campo>
-            <Campo label="Quantidade atual (unidades)" htmlFor="cheio">
+            <Campo label={`Quantidade atual (em ${nomeMedida.plural})`} htmlFor="cheio">
               <InputNumero
                 id="cheio"
-                valor={form.estoqueCheio}
-                onValor={(n) => set("estoqueCheio", n)}
+                min={0}
+                valor={quantidadeAtual}
+                onValor={(n) => setQuantidadeAtual(Math.max(0, n))}
               />
             </Campo>
             <p className="text-xs text-muted-foreground sm:col-span-2">
-              Estoque atual equivale a <strong>{rotuloEstoque(form.estoqueCheio, upf, form.unidade)}</strong>.
+              Total no estoque: <strong>{totalAtual} {totalAtual === 1 ? "garrafa" : "garrafas"}</strong>{" "}
+              ({quantidadeAtual} {quantidadeAtual === 1 ? nomeMedida.singular : nomeMedida.plural}).
             </p>
           </div>
 

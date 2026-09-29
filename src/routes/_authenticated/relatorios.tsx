@@ -571,9 +571,9 @@ function RelatoriosPage() {
                     produtos.map((p) => [
                       p.nome,
                       p.categoria,
-                      p.estoqueCheio,
-                      p.estoqueVazio,
-                      p.estoqueMinimo,
+                      rotuloQuantidadeProduto(p.estoqueCheio, p),
+                      p.retornavel ? rotuloQuantidadeProduto(p.estoqueVazio, p) : "—",
+                      rotuloQuantidadeProduto(p.estoqueMinimo, p),
                       p.estoqueCheio <= p.estoqueMinimo ? "Repor" : "OK",
                     ]),
                   )
@@ -604,9 +604,9 @@ function RelatoriosPage() {
                       <TableRow key={p.id}>
                         <TableCell className="font-medium">{p.nome}</TableCell>
                         <TableCell>{p.categoria}</TableCell>
-                        <TableCell>{p.estoqueCheio}</TableCell>
-                        <TableCell>{p.retornavel ? p.estoqueVazio : "—"}</TableCell>
-                        <TableCell>{p.estoqueMinimo}</TableCell>
+                        <TableCell>{rotuloQuantidadeProduto(p.estoqueCheio, p)}</TableCell>
+                        <TableCell>{p.retornavel ? rotuloQuantidadeProduto(p.estoqueVazio, p) : "—"}</TableCell>
+                        <TableCell>{rotuloQuantidadeProduto(p.estoqueMinimo, p)}</TableCell>
                         <TableCell className="text-right">
                           <Badge
                             variant={

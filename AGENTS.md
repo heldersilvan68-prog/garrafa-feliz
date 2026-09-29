@@ -10,3 +10,4 @@
 <!-- LOVABLE:END -->
 
 - Format all product quantities through the shared helpers in `src/lib/erp.ts`, because stock uses internal units while the UI must show each product's registered package unit and remainder.
+- Product stock forms accept the registered principal unit and convert to internal units only on save, preventing package counts from being persisted as loose units.
