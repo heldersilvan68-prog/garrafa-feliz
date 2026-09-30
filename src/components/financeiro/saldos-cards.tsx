@@ -37,9 +37,9 @@ export function SaldosCards() {
       tom: "bg-primary/10 text-primary",
       linhas: [
         `+ ${brl(s.vendasPix)} recebido em PIX`,
-        `+ ${brl(s.vendasCartao)} recebido em cartão`,
-        `− ${brl(s.taxasCartao)} taxas da maquininha`,
+        `+ ${brl(s.cartaoLiquidado)} cartão liquidado (líquido de taxas)`,
         `− ${brl(s.saidasConta)} pagamentos em PIX/transferência/cartão`,
+        `A receber em cartão (D+1 útil): ${brl(s.cartaoAReceber)}`,
       ],
     },
     {

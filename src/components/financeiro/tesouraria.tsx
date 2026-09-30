@@ -1,10 +1,12 @@
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import {
   ArrowDownCircle,
   ArrowUpCircle,
   Banknote,
+  CalendarDays,
+  ChevronDown,
+  ChevronUp,
   Landmark,
-  ListFilter,
   Scale,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -24,19 +26,22 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { InputMoeda } from "@/components/ui/input-moeda";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useCaixa } from "@/context/caixa";
 import { useDespesas } from "@/context/despesas";
 import { usePedidos } from "@/context/pedidos";
-import { dataCurta, horaCurta } from "@/lib/caixa";
+import { horaCurta } from "@/lib/caixa";
 import { CATEGORIA_TAXA_CARTAO } from "@/lib/despesas";
 import { brl } from "@/lib/erp";
-import { contaDaDespesa, contaDaVenda, contaDoRecebimento, sangriaDeDespesa } from "@/lib/financas";
+import { calcularMovimentoDia, contaDaDespesa, contaDaVenda, contaDoRecebimento, sangriaDeDespesa } from "@/lib/financas";
+import { proximoDiaUtil } from "@/lib/liquidacao";
 import { parcelasDe } from "@/lib/pedidos";
+import { PERIODOS, dentroFaixa, faixaPeriodo, isoLocal, type PeriodoId } from "@/lib/periodo";
 import { calcularSaldos } from "@/lib/saldos";
 
 type Conta = "especie" | "digital";
-type FiltroConta = "todos" | Conta;
+const arred = (v: number) => Math.round(v * 100) / 100;
 type ExtratoItem = {
   id: string;
   conta: Conta;
@@ -171,7 +176,6 @@ export function Tesouraria() {
   const { pedidos } = usePedidos();
   const { despesas } = useDespesas();
   const { caixas, caixaAberto } = useCaixa();
-  const [filtro, setFiltro] = useState<FiltroConta>("todos");
   const saldos = useMemo(() => calcularSaldos(pedidos, despesas, caixas), [pedidos, despesas, caixas]);
 
   const extrato = useMemo(() => {
@@ -229,7 +233,34 @@ export function Tesouraria() {
     return itens.sort((a, b) => new Date(b.em).getTime() - new Date(a.em).getTime());
   }, [pedidos, despesas, caixas]);
 
-  const visiveis = filtro === "todos" ? extrato : extrato.filter((item) => item.conta === filtro);
+  const [periodo, setPeriodo] = useState<PeriodoId>("mes");
+  const [aberto, setAberto] = useState<string | null>(null);
+  const faixa = useMemo(() => faixaPeriodo(periodo), [periodo]);
+
+  const resumo = useMemo(() => {
+    const dias = new Set<string>();
+    for (const item of extrato) {
+      const dia = isoLocal(item.em);
+      if (dentroFaixa(dia, faixa)) dias.add(dia);
+    }
+    return [...dias]
+      .sort((a, b) => b.localeCompare(a))
+      .map((dia) => {
+        const m = calcularMovimentoDia(dia, pedidos, despesas, caixas);
+        const pix = arred(m.vendasPix + m.recebimentosPix - m.saidasPix);
+        const especie = arred(m.vendasDinheiro + m.recebimentosDinheiro + m.suprimentos - m.saidasDinheiro - m.sangrias);
+        const cartao = arred(m.vendasCartao + m.recebimentosCartao - m.taxasCartao - m.saidasCartao);
+        return { dia, pix, especie, cartao, total: arred(pix + especie + cartao), liquidaEm: proximoDiaUtil(dia) };
+      });
+  }, [extrato, faixa, pedidos, despesas, caixas]);
+
+  const totais = resumo.reduce(
+    (t, r) => ({ pix: t.pix + r.pix, especie: t.especie + r.especie, cartao: t.cartao + r.cartao, total: t.total + r.total }),
+    { pix: 0, especie: 0, cartao: 0, total: 0 },
+  );
+  const hoje = isoLocal(new Date());
+  const cor = (v: number) => (v < 0 ? "text-destructive" : "");
+  const dataBr = (dia: string) => dia.split("-").reverse().join("/");
 
   return (
     <div className="flex flex-col gap-6">
@@ -259,47 +290,104 @@ export function Tesouraria() {
         <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <CardTitle className="flex items-center gap-2 text-base">
-              <ListFilter className="size-4 text-primary" /> Extrato de movimentações
+              <CalendarDays className="size-4 text-primary" /> Resumo Diário de Fechamentos (Valores Líquidos)
             </CardTitle>
-            <CardDescription>Entradas e saídas que compõem os saldos atuais.</CardDescription>
+            <CardDescription>
+              Líquido por dia e forma. Cartão já descontado das taxas; entra no saldo digital no próximo dia útil.
+            </CardDescription>
           </div>
-          <ToggleGroup
-            type="single"
-            value={filtro}
-            onValueChange={(valor) => valor && setFiltro(valor as FiltroConta)}
-            variant="outline"
-            size="sm"
-            aria-label="Filtrar extrato por conta"
-            className="justify-start"
-          >
-            <ToggleGroupItem value="todos">Todos</ToggleGroupItem>
-            <ToggleGroupItem value="especie">Espécie</ToggleGroupItem>
-            <ToggleGroupItem value="digital">Digital</ToggleGroupItem>
-          </ToggleGroup>
+          <Select value={periodo} onValueChange={(v) => setPeriodo(v as PeriodoId)}>
+            <SelectTrigger className="w-full sm:w-48" aria-label="Período do resumo">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PERIODOS.filter((p) => p.id !== "custom").map((p) => (
+                <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </CardHeader>
         <CardContent>
-          {visiveis.length === 0 ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">Nenhuma movimentação nesta conta.</p>
+          {resumo.length === 0 ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">Nenhuma movimentação no período.</p>
           ) : (
-            <div className="divide-y divide-border">
-              {visiveis.slice(0, 100).map((item) => (
-                <div key={item.id} className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 py-3">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="truncate text-sm font-medium">{item.descricao}</p>
-                      <Badge variant="outline" className="shrink-0">
-                        {item.conta === "especie" ? "Espécie" : "Digital"}
-                      </Badge>
-                    </div>
-                    <p className="truncate text-xs text-muted-foreground">
-                      {dataCurta(item.em)} · {horaCurta(item.em)} · {item.detalhe}
-                    </p>
-                  </div>
-                  <span className={`self-center text-sm font-semibold tabular-nums ${item.valor < 0 ? "text-destructive" : "text-success"}`}>
-                    {item.valor >= 0 ? "+" : "−"} {brl(Math.abs(item.valor))}
-                  </span>
-                </div>
-              ))}
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Data</TableHead>
+                    <TableHead className="text-right">PIX (Líquido)</TableHead>
+                    <TableHead className="text-right">Espécie (Líquido)</TableHead>
+                    <TableHead className="text-right">Cartão (Líquido)</TableHead>
+                    <TableHead className="text-right">Total Líquido do Dia</TableHead>
+                    <TableHead className="text-right">Ações / Detalhes</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {resumo.map((r) => {
+                    const expandido = aberto === r.dia;
+                    const itens = expandido ? extrato.filter((i) => isoLocal(i.em) === r.dia) : [];
+                    return (
+                      <Fragment key={r.dia}>
+                        <TableRow>
+                          <TableCell className="font-medium">{dataBr(r.dia)}</TableCell>
+                          <TableCell className={`text-right tabular-nums ${cor(r.pix)}`}>{brl(r.pix)}</TableCell>
+                          <TableCell className={`text-right tabular-nums ${cor(r.especie)}`}>{brl(r.especie)}</TableCell>
+                          <TableCell className="text-right">
+                            <span className={`tabular-nums ${cor(r.cartao)}`}>{brl(r.cartao)}</span>
+                            {r.cartao !== 0 ? (
+                              <span className="block text-[11px] text-muted-foreground">
+                                {r.liquidaEm <= hoje ? "Liquidado" : "A receber"} em {dataBr(r.liquidaEm)}
+                              </span>
+                            ) : null}
+                          </TableCell>
+                          <TableCell className={`text-right font-semibold tabular-nums ${cor(r.total)}`}>{brl(r.total)}</TableCell>
+                          <TableCell className="text-right">
+                            <Button variant="ghost" size="sm" onClick={() => setAberto(expandido ? null : r.dia)}>
+                              {expandido ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+                              {expandido ? "Ocultar" : "Ver extrato detalhado"}
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                        {expandido ? (
+                          <TableRow className="bg-muted/30 hover:bg-muted/30">
+                            <TableCell colSpan={6}>
+                              <div className="divide-y divide-border">
+                                {itens.map((item) => (
+                                  <div key={item.id} className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 py-2">
+                                    <div className="min-w-0">
+                                      <div className="flex items-center gap-2">
+                                        <p className="truncate text-sm font-medium">{item.descricao}</p>
+                                        <Badge variant="outline" className="shrink-0">
+                                          {item.conta === "especie" ? "Espécie" : "Digital"}
+                                        </Badge>
+                                      </div>
+                                      <p className="truncate text-xs text-muted-foreground">
+                                        {horaCurta(item.em)} · {item.detalhe}
+                                      </p>
+                                    </div>
+                                    <span className={`self-center text-sm font-semibold tabular-nums ${item.valor < 0 ? "text-destructive" : "text-success"}`}>
+                                      {item.valor >= 0 ? "+" : "−"} {brl(Math.abs(item.valor))}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ) : null}
+                      </Fragment>
+                    );
+                  })}
+                  <TableRow className="border-t-2 font-semibold">
+                    <TableCell>Total do período</TableCell>
+                    <TableCell className="text-right tabular-nums">{brl(arred(totais.pix))}</TableCell>
+                    <TableCell className="text-right tabular-nums">{brl(arred(totais.especie))}</TableCell>
+                    <TableCell className="text-right tabular-nums">{brl(arred(totais.cartao))}</TableCell>
+                    <TableCell className="text-right tabular-nums">{brl(arred(totais.total))}</TableCell>
+                    <TableCell />
+                  </TableRow>
+                </TableBody>
+              </Table>
             </div>
           )}
         </CardContent>

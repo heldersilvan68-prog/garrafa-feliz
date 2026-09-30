@@ -2,6 +2,7 @@ import type { Caixa } from "@/lib/caixa";
 import type { Despesa } from "@/lib/despesas";
 import { calcularMovimento } from "@/lib/financas";
 import type { Pedido } from "@/lib/pedidos";
+import { liquidacaoCartao } from "@/lib/liquidacao";
 import { FIM_TUDO, INICIO_TUDO } from "@/lib/periodo";
 
 export type SaldosGerais = {
@@ -20,6 +21,10 @@ export type SaldosGerais = {
   vendasCartao: number;
   taxasCartao: number;
   saidasConta: number;
+  /** Líquido do cartão já liquidado (D+1 útil). */
+  cartaoLiquidado: number;
+  /** Líquido do cartão aguardando liquidação D+1 útil. */
+  cartaoAReceber: number;
 };
 
 const arred = (v: number) => Math.round(v * 100) / 100;
@@ -46,7 +51,8 @@ export function calcularSaldos(
   const saidasConta = m.saidasPix + m.saidasCartao;
 
   const especie = arred(vendasDinheiro + m.suprimentos - m.sangrias - m.saidasDinheiro);
-  const conta = arred(vendasPix + vendasCartao - m.taxasCartao - saidasConta);
+  const cartao = liquidacaoCartao(pedidos, despesas, caixas);
+  const conta = arred(vendasPix + cartao.liquidado - saidasConta);
 
   return {
     especie,
@@ -60,5 +66,7 @@ export function calcularSaldos(
     vendasCartao: arred(vendasCartao),
     taxasCartao: m.taxasCartao,
     saidasConta: arred(saidasConta),
+    cartaoLiquidado: cartao.liquidado,
+    cartaoAReceber: cartao.aReceber,
   };
 }
