@@ -134,9 +134,11 @@ export function calcularResumo(
     .filter(fiadoEmAberto)
     .reduce((s, p) => s + (p.valorFiado > 0 ? p.valorFiado : p.total), 0);
 
+  // Vendas por forma: somente pedidos efetivamente vendidos (sem pendentes).
+  const vendidos = doPeriodo.filter((p) => p.status === "concluido" || p.status === "em-rota");
   const pagamentos = METODOS.map((metodo) => ({
     metodo,
-    valor: doPeriodo.reduce((s, p) => {
+    valor: vendidos.reduce((s, p) => {
       // Fiado quitado entra pela forma efetiva da baixa.
       if (p.pago && p.formaBaixa === metodo) {
         s += valorPorForma(p, "Fiado") || (p.pagamento === "Fiado" ? p.total : 0);

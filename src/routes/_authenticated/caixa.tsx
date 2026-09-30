@@ -420,7 +420,11 @@ function CaixaPage() {
         : pedidosDoDia(pedidos, dia),
     [pedidos, dia, caixaAberto],
   );
-  const totais = useMemo(() => totaisPorPagamento(doDia), [doDia]);
+  // Entradas por forma: apenas pedidos efetivamente vendidos (sem pendentes/cancelados).
+  const totais = useMemo(
+    () => totaisPorPagamento(doDia.filter((p) => p.status === "concluido" || p.status === "em-rota")),
+    [doDia],
+  );
   const fechados = useMemo(() => caixas.filter((c) => c.fechadoEm), [caixas]);
   const cartaoTotal = useMemo(() => totais["Débito"] + totais["Crédito"], [totais]);
 
@@ -447,7 +451,8 @@ function CaixaPage() {
   const totalSaidas = mov.saidasTotal;
 
   const recebimentosPix = mov.recebimentosPix;
-  const vendasPix = mov.vendasPix + recebimentosPix;
+  // "Vendas em PIX" soma APENAS vendas; baixas de fiado aparecem em linha própria.
+  const vendasPix = mov.vendasPix;
   const pixEsperadoConta = mov.entradaPix;
 
   // Sangrias avulsas: as geradas por despesas já aparecem na lista de saídas.
@@ -550,15 +555,10 @@ function CaixaPage() {
           <CardContent className="flex flex-col gap-2">
             <ValorLinha label="Troco inicial" valor={brl(caixaAberto?.trocoInicial ?? 0)} />
             <ValorLinha label="Vendas em dinheiro" valor={brl(caixaAberto ? totais.Dinheiro : 0)} />
-            <ValorLinha
-              label="Vendas em PIX"
-              valor={brl(vendasPix)}
-              hint={
-                recebimentosPix > 0
-                  ? `Inclui ${brl(recebimentosPix)} de baixa de fiado em PIX`
-                  : undefined
-              }
-            />
+            <ValorLinha label="Vendas em PIX" valor={brl(vendasPix)} />
+            {recebimentosPix > 0 && (
+              <ValorLinha label="Baixa de fiado em PIX" valor={brl(recebimentosPix)} />
+            )}
             <ValorLinha
               label="Suprimentos"
               valor={brl(caixaAberto ? suprimentos : 0)}
