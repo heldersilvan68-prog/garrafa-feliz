@@ -106,7 +106,9 @@ function calcularCom(
   despesas: Despesa[],
   caixas: Caixa[],
 ): MovimentoFinanceiro {
-  const validos = pedidos.filter((p) => p.status !== "cancelado");
+  // Só pedidos efetivamente vendidos entram nas somas por forma de pagamento:
+  // pendentes ainda não foram recebidos e cancelados foram estornados.
+  const validos = pedidos.filter((p) => p.status === "concluido" || p.status === "em-rota");
   const doPeriodo = validos.filter((p) => dentro(p.criadoEm));
 
   let vendasDinheiro = 0;
