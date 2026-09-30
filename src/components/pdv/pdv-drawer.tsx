@@ -403,6 +403,27 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
       toast.error(`Falta informar ${brl(restante)} em formas de pagamento.`);
       return;
     }
+    // Pagamento acima do total: o excedente em dinheiro é troco e não entra no caixa.
+    let excedente = Math.round(-restante * 100) / 100;
+    if (excedente > 0.009 && valorDinheiro + 0.009 < excedente) {
+      toast.error(`Pagamentos passam do total em ${brl(excedente)}. Ajuste os valores.`);
+      return;
+    }
+    const pagamentosAjustados = parcelas
+      .map((x) => ({ forma: x.forma, valor: Number(x.valor) || 0 }))
+      .reverse()
+      .map((x) => {
+        if (excedente > 0 && x.forma === "Dinheiro") {
+          const corte = Math.min(excedente, x.valor);
+          excedente = Math.round((excedente - corte) * 100) / 100;
+          return { ...x, valor: Math.round((x.valor - corte) * 100) / 100 };
+        }
+        return x;
+      })
+      .reverse()
+      .filter((x) => x.valor > 0);
+    const trocoInformado =
+      restante < -0.009 ? Math.max(Number(trocoPara) || 0, valorDinheiro) : Number(trocoPara) || 0;
     if (valorFiado > 0 && !cliente) {
       toast.error("Vendas no fiado exigem um cliente cadastrado.");
       return;
@@ -421,15 +442,13 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
       enderecoEntrega: endereco.trim() || cliente?.endereco || "",
       bairro: cliente ? bairroDe(cliente) : "",
       itens,
-      pagamentos: parcelas
-        .filter((x) => (Number(x.valor) || 0) > 0)
-        .map((x) => ({ forma: x.forma, valor: Number(x.valor) })),
+      pagamentos: pagamentosAjustados,
       total,
       desconto: Math.round((descontoAplicado + creditoAplicado) * 100) / 100,
       pagamento,
       pago: valorFiado === 0,
       valorFiado,
-      trocoPara: valorDinheiro > 0 ? Number(trocoPara) || undefined : undefined,
+      trocoPara: valorDinheiro > 0 ? trocoInformado || undefined : undefined,
       vaziosRecolhidos: nVazios,
       entregador: entregador || BALCAO,
       valesCredito: valesVendidos,
