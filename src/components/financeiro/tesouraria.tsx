@@ -314,16 +314,6 @@ export function Tesouraria() {
               Líquido por dia e forma. Cartão já descontado das taxas; entra no saldo digital no próximo dia útil.
             </CardDescription>
           </div>
-          <Select value={periodo} onValueChange={(v) => setPeriodo(v as PeriodoId)}>
-            <SelectTrigger className="w-full sm:w-48" aria-label="Período do resumo">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {PERIODOS.filter((p) => p.id !== "custom").map((p) => (
-                <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
         </CardHeader>
         <CardContent>
           {resumo.length === 0 ? (
