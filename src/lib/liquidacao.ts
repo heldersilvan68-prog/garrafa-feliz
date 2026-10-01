@@ -8,7 +8,7 @@ import type { Despesa } from "@/lib/despesas";
 import { CATEGORIA_TAXA_CARTAO } from "@/lib/despesas";
 import { contaDaVenda, contaDoRecebimento } from "@/lib/financas";
 import { parcelasDe, type Pedido } from "@/lib/pedidos";
-import { isoLocal, isoParaDataLocal, somarDiasIso } from "@/lib/periodo";
+import { dentroFaixa, isoLocal, isoParaDataLocal, somarDiasIso, type Faixa } from "@/lib/periodo";
 
 const arred = (v: number) => Math.round(v * 100) / 100;
 
@@ -70,16 +70,21 @@ export function cartaoLiquidoPorDia(pedidos: Pedido[], despesas: Despesa[], caix
   return mapa;
 }
 
-/** Separa o líquido do cartão já liquidado do que ainda está a receber. */
+/**
+ * Separa o líquido do cartão já liquidado do que ainda está a receber.
+ * Com uma faixa informada, só os dias dentro dela entram na soma.
+ */
 export function liquidacaoCartao(
   pedidos: Pedido[],
   despesas: Despesa[],
   caixas: Caixa[],
   hoje = isoLocal(new Date()),
+  faixa?: Faixa,
 ) {
   let liquidado = 0;
   let aReceber = 0;
   for (const [dia, valor] of cartaoLiquidoPorDia(pedidos, despesas, caixas)) {
+    if (faixa && !dentroFaixa(dia, faixa)) continue;
     if (proximoDiaUtil(dia) <= hoje) liquidado += valor;
     else aReceber += valor;
   }
