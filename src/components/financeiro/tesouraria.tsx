@@ -176,7 +176,13 @@ export function Tesouraria() {
   const { pedidos } = usePedidos();
   const { despesas } = useDespesas();
   const { caixas, caixaAberto } = useCaixa();
-  const saldos = useMemo(() => calcularSaldos(pedidos, despesas, caixas), [pedidos, despesas, caixas]);
+  const [periodo, setPeriodo] = useState<PeriodoId>("mes");
+  const [aberto, setAberto] = useState<string | null>(null);
+  const faixa = useMemo(() => faixaPeriodo(periodo), [periodo]);
+  const saldos = useMemo(
+    () => calcularSaldos(pedidos, despesas, caixas, faixa),
+    [pedidos, despesas, caixas, faixa],
+  );
 
   const extrato = useMemo(() => {
     const itens: ExtratoItem[] = [];
