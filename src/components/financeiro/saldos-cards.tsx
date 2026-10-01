@@ -5,17 +5,22 @@ import { useCaixa } from "@/context/caixa";
 import { useDespesas } from "@/context/despesas";
 import { usePedidos } from "@/context/pedidos";
 import { brl } from "@/lib/erp";
+import type { Faixa } from "@/lib/periodo";
 import { calcularSaldos } from "@/lib/saldos";
 
 /**
- * Saldos acumulados em tempo real: caixa físico (gaveta) x conta digital
- * (PIX/cartões), com o total disponível na distribuidora.
+ * Saldos por conta: caixa físico (gaveta) x conta digital (PIX/cartões),
+ * com o total disponível. Quando uma faixa é informada, os cards refletem
+ * apenas as movimentações daquele período.
  */
-export function SaldosCards() {
+export function SaldosCards({ faixa }: { faixa?: Faixa }) {
   const { pedidos } = usePedidos();
   const { despesas } = useDespesas();
   const { caixas } = useCaixa();
-  const s = useMemo(() => calcularSaldos(pedidos, despesas, caixas), [pedidos, despesas, caixas]);
+  const s = useMemo(
+    () => calcularSaldos(pedidos, despesas, caixas, faixa),
+    [pedidos, despesas, caixas, faixa],
+  );
 
   const cards = [
     {

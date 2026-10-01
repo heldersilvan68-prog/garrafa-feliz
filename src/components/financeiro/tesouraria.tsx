@@ -176,7 +176,13 @@ export function Tesouraria() {
   const { pedidos } = usePedidos();
   const { despesas } = useDespesas();
   const { caixas, caixaAberto } = useCaixa();
-  const saldos = useMemo(() => calcularSaldos(pedidos, despesas, caixas), [pedidos, despesas, caixas]);
+  const [periodo, setPeriodo] = useState<PeriodoId>("mes");
+  const [aberto, setAberto] = useState<string | null>(null);
+  const faixa = useMemo(() => faixaPeriodo(periodo), [periodo]);
+  const saldos = useMemo(
+    () => calcularSaldos(pedidos, despesas, caixas, faixa),
+    [pedidos, despesas, caixas, faixa],
+  );
 
   const extrato = useMemo(() => {
     const itens: ExtratoItem[] = [];
@@ -233,10 +239,6 @@ export function Tesouraria() {
     return itens.sort((a, b) => new Date(b.em).getTime() - new Date(a.em).getTime());
   }, [pedidos, despesas, caixas]);
 
-  const [periodo, setPeriodo] = useState<PeriodoId>("mes");
-  const [aberto, setAberto] = useState<string | null>(null);
-  const faixa = useMemo(() => faixaPeriodo(periodo), [periodo]);
-
   const resumo = useMemo(() => {
     const dias = new Set<string>();
     for (const item of extrato) {
@@ -264,7 +266,23 @@ export function Tesouraria() {
 
   return (
     <div className="flex flex-col gap-6">
-      <SaldosCards />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-muted-foreground">
+          Saldos e resumo calculados apenas com as movimentações do período selecionado.
+        </p>
+        <Select value={periodo} onValueChange={(v) => setPeriodo(v as PeriodoId)}>
+          <SelectTrigger className="w-full sm:w-48" aria-label="Período dos saldos">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {PERIODOS.filter((p) => p.id !== "custom").map((p) => (
+              <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <SaldosCards faixa={faixa} />
 
       <Card className="shadow-[var(--shadow-card)]">
         <CardHeader>
@@ -296,16 +314,6 @@ export function Tesouraria() {
               Líquido por dia e forma. Cartão já descontado das taxas; entra no saldo digital no próximo dia útil.
             </CardDescription>
           </div>
-          <Select value={periodo} onValueChange={(v) => setPeriodo(v as PeriodoId)}>
-            <SelectTrigger className="w-full sm:w-48" aria-label="Período do resumo">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {PERIODOS.filter((p) => p.id !== "custom").map((p) => (
-                <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
         </CardHeader>
         <CardContent>
           {resumo.length === 0 ? (

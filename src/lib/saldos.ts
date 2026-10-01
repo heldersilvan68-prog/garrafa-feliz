@@ -3,7 +3,7 @@ import type { Despesa } from "@/lib/despesas";
 import { calcularMovimento } from "@/lib/financas";
 import type { Pedido } from "@/lib/pedidos";
 import { liquidacaoCartao } from "@/lib/liquidacao";
-import { FIM_TUDO, INICIO_TUDO } from "@/lib/periodo";
+import { FIM_TUDO, INICIO_TUDO, type Faixa } from "@/lib/periodo";
 
 export type SaldosGerais = {
   /** Dinheiro físico disponível na gaveta. */
@@ -29,21 +29,21 @@ export type SaldosGerais = {
 
 const arred = (v: number) => Math.round(v * 100) / 100;
 
+/** Faixa que abrange todo o histórico (comportamento padrão). */
+export const FAIXA_TUDO: Faixa = { inicio: INICIO_TUDO, fim: FIM_TUDO };
+
 /**
- * Saldo acumulado em tempo real por conta (caixa físico x conta digital),
- * calculado pela mesma função financeira usada no Dashboard e no Caixa.
+ * Saldo por conta (caixa físico x conta digital), calculado pela mesma
+ * função financeira usada no Dashboard e no Caixa. Quando uma faixa é
+ * informada, somente as movimentações dentro dela entram no cálculo.
  */
 export function calcularSaldos(
   pedidos: Pedido[],
   despesas: Despesa[],
   caixas: Caixa[],
+  faixa: Faixa = FAIXA_TUDO,
 ): SaldosGerais {
-  const m = calcularMovimento(
-    { inicio: INICIO_TUDO, fim: FIM_TUDO },
-    pedidos,
-    despesas,
-    caixas,
-  );
+  const m = calcularMovimento(faixa, pedidos, despesas, caixas);
 
   const vendasDinheiro = m.vendasDinheiro + m.recebimentosDinheiro;
   const vendasPix = m.vendasPix + m.recebimentosPix;
@@ -51,7 +51,7 @@ export function calcularSaldos(
   const saidasConta = m.saidasPix + m.saidasCartao;
 
   const especie = arred(vendasDinheiro + m.suprimentos - m.sangrias - m.saidasDinheiro);
-  const cartao = liquidacaoCartao(pedidos, despesas, caixas);
+  const cartao = liquidacaoCartao(pedidos, despesas, caixas, undefined, faixa);
   const conta = arred(vendasPix + cartao.liquidado - saidasConta);
 
   return {
