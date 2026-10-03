@@ -41,6 +41,31 @@ type Lancamento = {
   motivo_estorno: string | null;
 };
 
+export type Debito = {
+  id: string;
+  valor: number;
+  descricao: string;
+  vencimento: string | null;
+  created_at: string;
+};
+
+export function useDebitosCliente(clienteId: string | undefined) {
+  const { userId } = useAuth();
+  return useQuery({
+    queryKey: ["debitos-cliente", clienteId],
+    enabled: !!userId && !!clienteId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("client_debit_entries")
+        .select("*")
+        .eq("client_id", clienteId!)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as Debito[];
+    },
+  });
+}
+
 export function CreditoCliente({ cliente }: { cliente: Cliente }) {
   const { userId } = useAuth();
   const queryClient = useQueryClient();
@@ -55,6 +80,39 @@ export function CreditoCliente({ cliente }: { cliente: Cliente }) {
   const [motivoEstorno, setMotivoEstorno] = useState("");
 
   const chave = ["creditos-cliente", cliente.id];
+  const { data: debitos = [] } = useDebitosCliente(cliente.id);
+  const [debAberto, setDebAberto] = useState(false);
+  const [debValor, setDebValor] = useState("");
+  const [debDesc, setDebDesc] = useState("");
+  const [debVenc, setDebVenc] = useState("");
+
+  const confirmarDebito = async () => {
+    const v = Math.round((Number(debValor.replace(",", ".")) || 0) * 100) / 100;
+    if (v <= 0) return toast.error("Informe um valor maior que zero.");
+    if (!debDesc.trim()) return toast.error("Informe o motivo / descrição.");
+    if (!userId) return toast.error("Sessão expirada");
+    setSalvando(true);
+    try {
+      const { error } = await supabase.from("client_debit_entries").insert({
+        user_id: userId,
+        client_id: cliente.id,
+        valor: v,
+        descricao: debDesc.trim(),
+        vencimento: debVenc || null,
+      });
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ["debitos-cliente", cliente.id] });
+      toast.success(`Débito de ${brl(v)} lançado para ${cliente.nome}.`);
+      setDebAberto(false);
+      setDebValor("");
+      setDebDesc("");
+      setDebVenc("");
+    } catch (e) {
+      toast.error(`Não foi possível lançar o débito: ${(e as Error).message}`);
+    } finally {
+      setSalvando(false);
+    }
+  };
   const { data: extrato = [] } = useQuery({
     queryKey: chave,
     enabled: !!userId,
@@ -142,11 +200,38 @@ export function CreditoCliente({ cliente }: { cliente: Cliente }) {
         <CardTitle className="text-base">
           Crédito / Saldo: {brl(cliente.saldoCredito ?? 0)}
         </CardTitle>
-        <Button size="sm" onClick={() => setAberto(true)}>
-          <Plus className="size-4" /> Adicionar Crédito / Saldo
-        </Button>
+        <div className="flex flex-wrap justify-end gap-2">
+          <Button size="sm" onClick={() => setAberto(true)}>
+            <Plus className="size-4" /> Adicionar Crédito / Saldo
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => setDebAberto(true)}>
+            <Plus className="size-4" /> Adicionar Débito Manual
+          </Button>
+        </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
+        {debitos.length > 0 && (
+          <div>
+            <p className="mb-1 text-xs font-medium uppercase text-muted-foreground">Débitos manuais</p>
+            <ul className="divide-y text-sm">
+              {debitos.map((d) => (
+                <li key={d.id} className="flex items-start justify-between gap-3 py-2">
+                  <div className="min-w-0">
+                    <p className="font-medium">
+                      {new Date(d.created_at).toLocaleDateString("pt-BR", { timeZone: "America/Bahia" })}
+                      {d.vencimento &&
+                        ` · vence ${d.vencimento.split("-").reverse().join("/")}`}
+                    </p>
+                    <p className="break-words text-xs text-muted-foreground">{d.descricao}</p>
+                  </div>
+                  <span className="shrink-0 font-semibold tabular-nums text-destructive">
+                    − {brl(Number(d.valor))}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         {extrato.length === 0 ? (
           <p className="text-sm text-muted-foreground">Nenhum lançamento de crédito manual.</p>
         ) : (
@@ -254,6 +339,37 @@ export function CreditoCliente({ cliente }: { cliente: Cliente }) {
               Cancelar
             </Button>
             <Button onClick={confirmar} disabled={salvando}>
+              {salvando ? "Salvando..." : "Confirmar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={debAberto} onOpenChange={setDebAberto}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Adicionar débito manual</DialogTitle>
+            <DialogDescription>
+              O valor soma no saldo em aberto / fiado de {cliente.nome}. Não mexe no caixa.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-3">
+            <div className="grid gap-1.5">
+              <Label>Valor (R$)</Label>
+              <Input inputMode="decimal" placeholder="0,00" value={debValor} onChange={(e) => setDebValor(e.target.value)} />
+            </div>
+            <div className="grid gap-1.5">
+              <Label>Motivo / Descrição</Label>
+              <Textarea placeholder="Ex.: Saldo anterior da caderneta" value={debDesc} onChange={(e) => setDebDesc(e.target.value)} />
+            </div>
+            <div className="grid gap-1.5">
+              <Label>Data de vencimento</Label>
+              <Input type="date" value={debVenc} onChange={(e) => setDebVenc(e.target.value)} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDebAberto(false)}>Cancelar</Button>
+            <Button onClick={confirmarDebito} disabled={salvando}>
               {salvando ? "Salvando..." : "Confirmar"}
             </Button>
           </DialogFooter>
