@@ -25,6 +25,7 @@ type Ctx = {
   abrirCaixa: (trocoInicial: number) => void;
   fecharCaixa: (dados: FechamentoCaixa) => void;
   registrarMovimento: (tipo: TipoMovimento, valor: number, motivo: string) => void;
+  excluirMovimento: (id: string) => Promise<void>;
   salvarRegra: (regra: RegraComissao) => void;
   registrarVale: (entregador: string, valor: number, motivo: string) => void;
   pagarComissao: (entregador: string, valor: number) => void;
@@ -143,6 +144,11 @@ export function CaixaProvider({ children }: { children: ReactNode }) {
     "Não foi possível registrar o movimento",
   );
 
+  const excluirMovMut = useMutacao<string>(async (id) => {
+    const { error } = await supabase.from("cash_movements").delete().eq("id", id);
+    if (error) throw error;
+  }, "Não foi possível excluir o movimento");
+
   const regraMut = useMutacao<RegraComissao>(async (regra) => {
     if (!userId) throw new Error("Sessão expirada");
     const { error } = await supabase.from("commission_rules").upsert(
@@ -189,13 +195,16 @@ export function CaixaProvider({ children }: { children: ReactNode }) {
       fecharCaixa: (dados) => fecharMut.mutate(dados),
       registrarMovimento: (tipo, valorMovimento, motivo) =>
         movimentoMut.mutate({ tipo, valor: valorMovimento, motivo }),
+      excluirMovimento: async (id) => {
+        await excluirMovMut.mutateAsync(id);
+      },
       salvarRegra: (regra) => regraMut.mutate(regra),
       registrarVale: (entregador, valorVale, motivo) =>
         valeMut.mutate({ entregador, valor: valorVale, motivo }),
       pagarComissao: (entregador, valorPagamento) =>
         pagamentoMut.mutate({ entregador, valor: valorPagamento }),
     }),
-    [caixas, data?.regras, data?.vales, data?.pagamentos, isLoading, caixaAberto, abrirMut.mutate, fecharMut.mutate, movimentoMut.mutate, regraMut.mutate, valeMut.mutate, pagamentoMut.mutate],
+    [caixas, data?.regras, data?.vales, data?.pagamentos, isLoading, caixaAberto, abrirMut.mutate, fecharMut.mutate, movimentoMut.mutate, excluirMovMut.mutateAsync, regraMut.mutate, valeMut.mutate, pagamentoMut.mutate],
   );
 
   return (
