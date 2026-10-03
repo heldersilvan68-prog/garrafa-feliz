@@ -44,7 +44,8 @@ type Props = {
 
 export function BaixaFiadoDialog({ children, pedido, cliente, saldo, onConcluido }: Props) {
   const { darBaixa, pedidos } = usePedidos();
-  const { registrarMovimento, caixaAberto } = useCaixa();
+  const { registrarMovimento, caixaAberto, caixas } = useCaixa();
+  const [enviando, setEnviando] = useState(false);
   const { ajustarDivida, definirDivida } = useClientes();
 
   const totalPedido = pedido ? (pedido.valorFiado > 0 ? pedido.valorFiado : pedido.total) : 0;
@@ -56,7 +57,28 @@ export function BaixaFiadoDialog({ children, pedido, cliente, saldo, onConcluido
   const nome = pedido?.clienteNome ?? cliente?.nome ?? "cliente";
   const valorNum = Number(valor.replace(",", ".")) || 0;
 
+  // Estado atual do pedido (evita usar uma cópia desatualizada).
+  const pedidoAtual = pedido ? (pedidos.find((p) => p.id === pedido.id) ?? pedido) : undefined;
+  // Baixas parciais já lançadas no caixa para este pedido.
+  const jaRecebido = pedido
+    ? caixas
+        .flatMap((c) => c.movimentos)
+        .filter((m) => m.motivo.startsWith(`Baixa fiado pedido #${pedido.numero} `))
+        .reduce((s, m) => s + m.valor, 0)
+    : 0;
+  const quitado = !!pedidoAtual && (!fiadoEmAberto(pedidoAtual) || jaRecebido >= totalPedido - 0.009);
+  const restantePedido = Math.max(0, Math.round((totalPedido - jaRecebido) * 100) / 100);
+
   const confirmar = () => {
+    if (enviando) return;
+    if (quitado) {
+      toast.error("Este pedido já foi totalmente quitado. Não é possível lançar nova baixa.");
+      return;
+    }
+    if (pedido && valorNum > restantePedido + 0.009) {
+      toast.error(`Valor maior que o saldo em aberto do pedido (${brl(restantePedido)}).`);
+      return;
+    }
     if (valorNum <= 0) {
       toast.error("Informe um valor maior que zero.");
       return;
@@ -72,7 +94,7 @@ export function BaixaFiadoDialog({ children, pedido, cliente, saldo, onConcluido
 
     if (pedido) {
       // Só encerra o pedido quando o valor recebido cobre o fiado em aberto.
-      const quitou = valorNum >= totalPedido - 0.009;
+      const quitou = valorNum + jaRecebido >= totalPedido - 0.009;
       const hoje = ehDeHoje(pedido);
       if (quitou) {
         darBaixa(pedido.id, forma, hoje);
@@ -121,6 +143,8 @@ export function BaixaFiadoDialog({ children, pedido, cliente, saldo, onConcluido
       );
     }
 
+    setEnviando(true);
+    setTimeout(() => setEnviando(false), 1500);
     toast.success(`${brl(valorNum)} recebido em ${forma} e lançado no caixa.`);
     setAberto(false);
     onConcluido?.();
@@ -132,7 +156,7 @@ export function BaixaFiadoDialog({ children, pedido, cliente, saldo, onConcluido
       open={aberto}
       onOpenChange={(o) => {
         setAberto(o);
-        if (o) setValor(String(valorPadrao.toFixed(2)));
+        if (o) setValor(String((pedido ? restantePedido : valorPadrao).toFixed(2)));
       }}
     >
       <DialogTrigger asChild>{children}</DialogTrigger>
@@ -157,7 +181,7 @@ export function BaixaFiadoDialog({ children, pedido, cliente, saldo, onConcluido
               placeholder="0,00"
             />
             <p className="text-xs text-muted-foreground">
-              Saldo em aberto: {brl(pedido ? totalPedido : (saldo ?? 0))} — pagamentos parciais
+              Saldo em aberto: {brl(pedido ? restantePedido : (saldo ?? 0))} — pagamentos parciais
               são permitidos.
             </p>
           </div>
@@ -182,6 +206,11 @@ export function BaixaFiadoDialog({ children, pedido, cliente, saldo, onConcluido
             </RadioGroup>
           </div>
 
+          {quitado && (
+            <p className="text-xs font-medium text-destructive">
+              Este pedido já foi totalmente quitado — nova baixa bloqueada.
+            </p>
+          )}
           {!caixaAberto && (
             <p className="text-xs font-medium text-destructive">
               Abra o caixa para registrar recebimentos.
@@ -193,7 +222,7 @@ export function BaixaFiadoDialog({ children, pedido, cliente, saldo, onConcluido
           <Button variant="ghost" onClick={() => setAberto(false)}>
             Voltar
           </Button>
-          <Button onClick={confirmar} disabled={!caixaAberto}>
+          <Button onClick={confirmar} disabled={!caixaAberto || quitado || enviando}>
             Confirmar pagamento
           </Button>
 
