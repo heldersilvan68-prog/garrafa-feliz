@@ -216,6 +216,44 @@ export type Database = {
           },
         ]
       }
+      client_debit_entries: {
+        Row: {
+          client_id: string
+          created_at: string
+          descricao: string
+          id: string
+          user_id: string
+          valor: number
+          vencimento: string | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          descricao: string
+          id?: string
+          user_id: string
+          valor: number
+          vencimento?: string | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          descricao?: string
+          id?: string
+          user_id?: string
+          valor?: number
+          vencimento?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_debit_entries_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_purchases: {
         Row: {
           client_id: string
