@@ -31,7 +31,7 @@ import { Switch } from "@/components/ui/switch";
 import { usePedidos } from "@/context/pedidos";
 import { DemonstrativoDialog } from "@/components/clientes/demonstrativo-dialog";
 import { HistoricoVales } from "@/components/clientes/historico-vales";
-import { CreditoCliente } from "@/components/clientes/credito-cliente";
+import { CreditoCliente, useDebitosCliente } from "@/components/clientes/credito-cliente";
 import { ControleVasilhamesCliente } from "@/components/clientes/controle-vasilhames";
 
 import { BaixaFiadoDialog } from "@/components/pedidos/baixa-fiado-dialog";
@@ -115,6 +115,8 @@ export function ClienteDetalhes({
   onOpenChange: (o: boolean) => void;
 }) {
   const { pedidos } = usePedidos();
+  const { data: debitos = [] } = useDebitosCliente(cliente?.id);
+  const totalDebitos = debitos.reduce((s, d) => s + Number(d.valor), 0);
   const [periodo, setPeriodo] = useState(periodoPadrao);
   const [mostrarInsights, setMostrarInsights] = useState(true);
 
@@ -128,7 +130,7 @@ export function ClienteDetalhes({
     );
     const fiados = meus.filter(fiadoEmAberto);
     const fiado = fiados.reduce((s, p) => s + p.total, 0);
-    const saldo = (cliente.divida ?? 0) + fiado;
+    const saldo = (cliente.divida ?? 0) + fiado + totalDebitos;
     const produtos = produtosFrequentes(compras.length ? compras : cliente.historico);
     return {
       compras,
@@ -142,7 +144,7 @@ export function ClienteDetalhes({
       churn: sinaisChurn(cliente),
       confianca: confiancaPrevisao(cliente),
     };
-  }, [cliente, periodo, pedidos]);
+  }, [cliente, periodo, pedidos, totalDebitos]);
 
   if (!cliente || !dados) return null;
 

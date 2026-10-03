@@ -167,6 +167,7 @@ function MovimentoDialog({ tipo }: { tipo: TipoMovimento }) {
   const [open, setOpen] = useState(false);
   const [valor, setValor] = useState("");
   const [motivo, setMotivo] = useState("");
+  const [destino, setDestino] = useState<"dinheiro" | "pix">("dinheiro");
   const sangria = tipo === "sangria";
 
   return (
@@ -183,7 +184,7 @@ function MovimentoDialog({ tipo }: { tipo: TipoMovimento }) {
           <DialogDescription>
             {sangria
               ? "Retirada de dinheiro da gaveta (depósito, pagamento, cofre)."
-              : "Entrada de dinheiro na gaveta (reforço de troco)."}
+              : "Entrada de dinheiro na gaveta ou na conta digital."}
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-3">
@@ -197,6 +198,19 @@ function MovimentoDialog({ tipo }: { tipo: TipoMovimento }) {
               onChange={(e) => setValor(e.target.value)}
             />
           </Campo>
+          {!sangria && (
+            <Campo label="Forma de Entrada / Conta Destino" htmlFor="mov-destino">
+              <select
+                id="mov-destino"
+                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                value={destino}
+                onChange={(e) => setDestino(e.target.value as "dinheiro" | "pix")}
+              >
+                <option value="dinheiro">Dinheiro / Gaveta em Espécie</option>
+                <option value="pix">PIX / Conta Digital</option>
+              </select>
+            </Campo>
+          )}
           <Campo label="Motivo" htmlFor="mov-motivo">
             <Input
               id="mov-motivo"
@@ -210,8 +224,13 @@ function MovimentoDialog({ tipo }: { tipo: TipoMovimento }) {
           <Button
             disabled={!Number(valor)}
             onClick={() => {
-              registrarMovimento(tipo, Number(valor), motivo.trim() || "—");
+              if (!sangria && destino === "pix") {
+                registrarMovimento("recebimento", Number(valor), `Suprimento (PIX) · ${motivo.trim() || "—"}`);
+              } else {
+                registrarMovimento(tipo, Number(valor), motivo.trim() || "—");
+              }
               setValor("");
+              setDestino("dinheiro");
               setMotivo("");
               setOpen(false);
               toast.success(sangria ? "Sangria registrada." : "Suprimento registrado.");
