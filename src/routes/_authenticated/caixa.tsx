@@ -409,7 +409,7 @@ function FecharCaixaDialog({
 }
 
 function CaixaPage() {
-  const { caixaAberto, caixas } = useCaixa();
+  const { caixaAberto, caixas, excluirMovimento } = useCaixa();
   const { pedidos } = usePedidos();
   const { despesas } = useDespesas();
   const dia = hojeISO();
