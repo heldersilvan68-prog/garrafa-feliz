@@ -8,6 +8,7 @@ import {
   CreditCard,
   Lock,
   LockOpen,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Campo } from "@/components/ui/campo";
+import { ConfirmarExclusao } from "@/components/confirmar-exclusao";
 
 import {
   Select,
@@ -614,6 +616,21 @@ function CaixaPage() {
                     >
                       {m.tipo === "sangria" ? "-" : "+"} {brl(m.valor)}
                     </span>
+                    <ConfirmarExclusao
+                      titulo="Cancelar esta movimentação?"
+                      descricao={`${m.motivo} — ${brl(m.valor)}. O valor sai dos totais do caixa imediatamente.`}
+                      sucesso="Movimentação cancelada."
+                      onConfirmar={() => excluirMovimento(m.id)}
+                    >
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                        aria-label="Cancelar movimentação"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </ConfirmarExclusao>
                   </li>
                 ))}
                 {gruposSaidas.map((g) => (
