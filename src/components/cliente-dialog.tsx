@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { useClientes } from "@/context/clientes";
 import {
   hojeISO,
@@ -166,6 +167,15 @@ export function ClienteDialog({
             />
           </div>
 
+          <label className="flex items-center justify-between gap-3 rounded-lg border border-border p-3">
+            <span>
+              <span className="block text-sm font-medium">É Empresa Parceira</span>
+              <span className="block text-xs text-muted-foreground">
+                Habilita a tabela de comissões por unidade na ficha do cliente.
+              </span>
+            </span>
+            <Switch checked={!!form.parceiro} onCheckedChange={(v) => set("parceiro", v)} />
+          </label>
         </div>
 
 

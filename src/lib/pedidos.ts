@@ -119,6 +119,10 @@ export type Pedido = {
   formaBaixa?: FormaPagamento;
   pagoEm?: string;
   obsCancelamento?: string;
+  /** Acerto de parceria que quitou este pedido. */
+  acertoParceriaId?: string;
+  /** Comissão de parceria registrada no acerto. */
+  comissaoParceria?: number;
 };
 
 /** Pedido em fiado ainda não quitado. */

@@ -20,6 +20,9 @@ import { usePedidos } from "@/context/pedidos";
 import { brl } from "@/lib/erp";
 import { MOTIVOS_CANCELAMENTO, saldoFiadoCliente, type Pedido } from "@/lib/pedidos";
 import { saldoVasilhamesPedido } from "@/lib/vasilhames";
+import { useCaixa } from "@/context/caixa";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function CancelarPedidoDialog({
   pedido,
@@ -32,6 +35,8 @@ export function CancelarPedidoDialog({
   const { estornarVenda } = useEstoque();
   const { definirDivida, ajustarVasilhames, ajustarVales, removerCompraPorPedido } = useClientes();
   const { despesas, removerDespesa } = useDespesas();
+  const { caixaAberto, registrarMovimento } = useCaixa();
+  const qc = useQueryClient();
   const [aberto, setAberto] = useState(false);
   const [motivo, setMotivo] = useState(MOTIVOS_CANCELAMENTO[0]!);
   const [obs, setObs] = useState("");
@@ -53,8 +58,49 @@ export function CancelarPedidoDialog({
       toast.error("Descreva o motivo do cancelamento.");
       return;
     }
+    if (pedido.acertoParceriaId && !caixaAberto) {
+      toast.error("Este pedido já foi acertado com a parceira. Abra o caixa para estornar.");
+      return;
+    }
     setProcessando(true);
     try {
+      // 0) Pedido já acertado com empresa parceira: estorna comissão e fiado recebido.
+      if (pedido.acertoParceriaId) {
+        const { data: acerto } = await supabase
+          .from("partner_settlements")
+          .select("*")
+          .eq("id", pedido.acertoParceriaId)
+          .maybeSingle();
+        if (acerto && !acerto.estornado_em) {
+          const comissao = Number(pedido.comissaoParceria ?? 0);
+          const fiado =
+            pedido.valorFiado > 0 ? pedido.valorFiado : pedido.pagamento === "Fiado" ? pedido.total : 0;
+          const novaComissao = Math.max(0, Math.round((Number(acerto.comissao_total) - comissao) * 100) / 100);
+          await supabase
+            .from("partner_settlements")
+            .update({
+              comissao_total: novaComissao,
+              fiado_total: Math.max(0, Math.round((Number(acerto.fiado_total) - fiado) * 100) / 100),
+              liquido: Math.round((Number(acerto.liquido) - fiado + comissao) * 100) / 100,
+            })
+            .eq("id", acerto.id);
+          if (acerto.expense_id && comissao > 0) {
+            if (novaComissao <= 0.009) await supabase.from("expenses").delete().eq("id", acerto.expense_id);
+            else await supabase.from("expenses").update({ valor: novaComissao }).eq("id", acerto.expense_id);
+          }
+          // Devolve ao caixa o líquido recebido por este pedido (fiado − comissão).
+          const devolver = Math.round((fiado - comissao) * 100) / 100;
+          const motivoMov = `Estorno parceria pedido #${pedido.numero}`;
+          if (Math.abs(devolver) > 0.009) {
+            if (acerto.forma === "Dinheiro")
+              registrarMovimento(devolver > 0 ? "sangria" : "suprimento", Math.abs(devolver), `${motivoMov} (Dinheiro)`);
+            else registrarMovimento("recebimento", -devolver, `${motivoMov} (PIX)`);
+          }
+          qc.invalidateQueries({ queryKey: ["acertos-parceria"] });
+          qc.invalidateQueries({ queryKey: ["despesas"] });
+        }
+      }
+
       // 1) Marca como cancelado — todos os cálculos (Painel, Caixa, Relatórios)
       // já ignoram pedidos cancelados, então faturamento e formas de pagamento
       // deixam de contar este valor imediatamente.

@@ -316,6 +316,7 @@ export type Database = {
           legacy_id: string | null
           limite_fiado: number
           nome: string
+          parceiro: boolean
           saldo_credito: number
           telefone: string
           ultima_compra: string | null
@@ -337,6 +338,7 @@ export type Database = {
           legacy_id?: string | null
           limite_fiado?: number
           nome: string
+          parceiro?: boolean
           saldo_credito?: number
           telefone?: string
           ultima_compra?: string | null
@@ -358,6 +360,7 @@ export type Database = {
           legacy_id?: string | null
           limite_fiado?: number
           nome?: string
+          parceiro?: boolean
           saldo_credito?: number
           telefone?: string
           ultima_compra?: string | null
@@ -685,6 +688,7 @@ export type Database = {
           cash_register_id: string | null
           client_id: string | null
           cliente_nome: string
+          comissao_parceria: number
           created_at: string
           desconto: number
           endereco: string
@@ -701,6 +705,7 @@ export type Database = {
           pagamento: Database["public"]["Enums"]["payment_method"]
           pago: boolean
           pago_em: string | null
+          partner_settlement_id: string | null
           status: Database["public"]["Enums"]["order_status"]
           telefone: string
           total: number
@@ -717,6 +722,7 @@ export type Database = {
           cash_register_id?: string | null
           client_id?: string | null
           cliente_nome?: string
+          comissao_parceria?: number
           created_at?: string
           desconto?: number
           endereco?: string
@@ -733,6 +739,7 @@ export type Database = {
           pagamento?: Database["public"]["Enums"]["payment_method"]
           pago?: boolean
           pago_em?: string | null
+          partner_settlement_id?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           telefone?: string
           total?: number
@@ -749,6 +756,7 @@ export type Database = {
           cash_register_id?: string | null
           client_id?: string | null
           cliente_nome?: string
+          comissao_parceria?: number
           created_at?: string
           desconto?: number
           endereco?: string
@@ -765,6 +773,7 @@ export type Database = {
           pagamento?: Database["public"]["Enums"]["payment_method"]
           pago?: boolean
           pago_em?: string | null
+          partner_settlement_id?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           telefone?: string
           total?: number
@@ -789,6 +798,111 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_partner_settlement_id_fkey"
+            columns: ["partner_settlement_id"]
+            isOneToOne: false
+            referencedRelation: "partner_settlements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_commission_rules: {
+        Row: {
+          client_id: string
+          comissao_unit: number
+          created_at: string
+          id: string
+          preco_venda: number
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          comissao_unit?: number
+          created_at?: string
+          id?: string
+          preco_venda?: number
+          user_id?: string
+        }
+        Update: {
+          client_id?: string
+          comissao_unit?: number
+          created_at?: string
+          id?: string
+          preco_venda?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_commission_rules_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_settlements: {
+        Row: {
+          client_id: string
+          comissao_total: number
+          created_at: string
+          estornado_em: string | null
+          expense_id: string | null
+          fiado_total: number
+          fim: string
+          forma: string
+          id: string
+          inicio: string
+          liquido: number
+          qtd: number
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          comissao_total?: number
+          created_at?: string
+          estornado_em?: string | null
+          expense_id?: string | null
+          fiado_total?: number
+          fim: string
+          forma?: string
+          id?: string
+          inicio: string
+          liquido?: number
+          qtd?: number
+          user_id?: string
+        }
+        Update: {
+          client_id?: string
+          comissao_total?: number
+          created_at?: string
+          estornado_em?: string | null
+          expense_id?: string | null
+          fiado_total?: number
+          fim?: string
+          forma?: string
+          id?: string
+          inicio?: string
+          liquido?: number
+          qtd?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_settlements_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_settlements_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
             referencedColumns: ["id"]
           },
         ]
@@ -1143,6 +1257,7 @@ export type Database = {
           cash_register_id: string | null
           client_id: string | null
           cliente_nome: string
+          comissao_parceria: number
           created_at: string
           desconto: number
           endereco: string
@@ -1159,6 +1274,7 @@ export type Database = {
           pagamento: Database["public"]["Enums"]["payment_method"]
           pago: boolean
           pago_em: string | null
+          partner_settlement_id: string | null
           status: Database["public"]["Enums"]["order_status"]
           telefone: string
           total: number

@@ -10,6 +10,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AcertoParcerias } from "@/components/comissoes/acerto-parcerias";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
@@ -241,6 +243,15 @@ function ComissoesPage() {
   const saldo = comissaoHoje - totalVales - totalPago;
 
   return (
+    <Tabs defaultValue="entregadores" className="flex flex-col gap-4">
+      <TabsList className="self-start">
+        <TabsTrigger value="entregadores">Entregadores</TabsTrigger>
+        <TabsTrigger value="parcerias">Acerto de Parcerias</TabsTrigger>
+      </TabsList>
+      <TabsContent value="parcerias">
+        <AcertoParcerias />
+      </TabsContent>
+      <TabsContent value="entregadores">
     <div className="flex flex-col gap-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
@@ -428,5 +439,7 @@ function ComissoesPage() {
         </Card>
       </div>
     </div>
+      </TabsContent>
+    </Tabs>
   );
 }
