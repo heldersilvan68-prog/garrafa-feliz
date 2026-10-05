@@ -1,7 +1,7 @@
 import type { Produto } from "@/lib/erp";
 import type { Cliente } from "@/lib/clientes";
 import type { Despesa } from "@/lib/despesas";
-import { CATEGORIA_TAXA_CARTAO, CORES_CATEGORIA } from "@/lib/despesas";
+import { CATEGORIA_COMPRA_MERCADORIA, CATEGORIA_TAXA_CARTAO, CORES_CATEGORIA } from "@/lib/despesas";
 import { fiadoEmAberto, valorEmAberto, valorFaturado, valorPorForma, type Pedido } from "@/lib/pedidos";
 import { lucroLiquido as calcLucroLiquido } from "@/lib/financas";
 import {
@@ -103,11 +103,15 @@ export function calcularResumo(
   const custoProduto = doPeriodo.reduce((s, p) => s + custo(p, produtosPorId), 0);
 
   const pagas = despesas.filter((d) => d.status === "Pago");
+  // Despesas operacionais = só gestão (combustível, aluguel, salários...).
+  // "Compra de Mercadoria / Fornecedores" NÃO entra: já é apurada no CMV,
+  // senão o custo da mercadoria seria descontado duas vezes do lucro.
+  const ehOperacional = (d: Despesa) => d.categoria !== CATEGORIA_COMPRA_MERCADORIA;
   const despesasPeriodo = pagas
-    .filter((d) => naFaixa(d.data, faixa))
+    .filter((d) => naFaixa(d.data, faixa) && ehOperacional(d))
     .reduce((s, d) => s + d.valor, 0);
   const despesasAnt = pagas
-    .filter((d) => naFaixa(d.data, anterior))
+    .filter((d) => naFaixa(d.data, anterior) && ehOperacional(d))
     .reduce((s, d) => s + d.valor, 0);
   // Provisões: despesas pendentes ("a vencer") lançadas no período.
   const despesasPrevistas = despesas

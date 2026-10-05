@@ -67,7 +67,7 @@ function Financeiro() {
     { rotulo: "(-) Custo do produto vendido", valor: -resumo.custoProduto, tom: "" },
     { rotulo: "(=) Lucro bruto", valor: resumo.lucroBruto, tom: "font-semibold" },
     {
-      rotulo: "(-) Despesas operacionais (inclui taxas)",
+      rotulo: "(-) Despesas operacionais",
       valor: -resumo.despesas,
       tom: "",
     },
