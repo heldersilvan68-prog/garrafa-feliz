@@ -101,6 +101,7 @@ export const paraCliente = (r: ClienteRow, compras: CompraRow[]): Cliente => {
       r.cadastrado_em ??
       isoLocal(new Date()),
     historico,
+    parceiro: !!(r as { parceiro?: boolean }).parceiro,
   };
 };
 
@@ -152,6 +153,8 @@ export const paraPedido = (
   formaBaixa: (r.forma_baixa as FormaPagamento | null) ?? undefined,
   pagoEm: r.pago_em ?? undefined,
   obsCancelamento: r.obs_cancelamento ?? undefined,
+  acertoParceriaId: r.partner_settlement_id ?? undefined,
+  comissaoParceria: num(r.comissao_parceria),
 });
 
 /** Monta listas sem repetir filtros completos para cada registro pai. */

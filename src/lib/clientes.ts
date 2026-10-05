@@ -25,6 +25,8 @@ export type Cliente = {
   consumoMedioDias: number; // dias por galão/fardo
   ultimaCompra: string; // ISO yyyy-mm-dd
   historico: Compra[];
+  /** Empresa parceira com tabela própria de comissão por unidade. */
+  parceiro?: boolean;
 };
 
 /** Rótulo com código + nome, ex.: "02 - Maria Aparecida". */

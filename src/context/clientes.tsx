@@ -91,6 +91,7 @@ export function ClientesProvider({ children }: { children: ReactNode }) {
       vales_saldo: Math.max(0, Math.round(c.valesSaldo ?? 0)),
       consumo_medio_dias: c.consumoMedioDias,
       ultima_compra: c.ultimaCompra,
+      parceiro: !!c.parceiro,
     };
     const existe = clientes.some((x) => x.id === c.id);
     const { error } = existe

@@ -31,6 +31,7 @@ import { Switch } from "@/components/ui/switch";
 import { usePedidos } from "@/context/pedidos";
 import { DemonstrativoDialog } from "@/components/clientes/demonstrativo-dialog";
 import { HistoricoVales } from "@/components/clientes/historico-vales";
+import { RegrasParceria } from "@/components/clientes/regras-parceria";
 import { CreditoCliente, useDebitosCliente } from "@/components/clientes/credito-cliente";
 import { ControleVasilhamesCliente } from "@/components/clientes/controle-vasilhames";
 
@@ -308,6 +309,8 @@ export function ClienteDetalhes({
           </div>
 
           <CreditoCliente cliente={cliente} />
+
+          {cliente.parceiro && <RegrasParceria cliente={cliente} />}
 
           <HistoricoVales cliente={cliente} />
 
