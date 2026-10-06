@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useCaixa } from "@/context/caixa";
 import { useDespesas } from "@/context/despesas";
 import {
@@ -50,6 +51,10 @@ export function DespesaDialog({ open, onOpenChange, despesa }: Props) {
   const [forma, setForma] = useState<FormaDespesa>("PIX");
   const [status, setStatus] = useState<StatusDespesa>("Pago");
   const [observacoes, setObservacoes] = useState("");
+  const [recorrente, setRecorrente] = useState(false);
+  const [diaVenc, setDiaVenc] = useState("10");
+  const [meses, setMeses] = useState("12");
+  const [indefinido, setIndefinido] = useState(false);
   const [criandoCategoria, setCriandoCategoria] = useState(false);
   const [novaCategoria, setNovaCategoria] = useState("");
   const [salvandoCategoria, setSalvandoCategoria] = useState(false);
@@ -87,6 +92,10 @@ export function DespesaDialog({ open, onOpenChange, despesa }: Props) {
     setObservacoes(despesa?.observacoes ?? "");
     setCriandoCategoria(false);
     setNovaCategoria("");
+    setRecorrente(false);
+    setDiaVenc(String(Number((despesa?.data ?? hoje()).slice(8, 10))));
+    setMeses("12");
+    setIndefinido(false);
   }, [open, despesa]);
 
 
@@ -110,7 +119,21 @@ export function DespesaDialog({ open, onOpenChange, despesa }: Props) {
       atualizarDespesa(despesa.id, payload);
       toast.success("Despesa atualizada.");
     } else {
-      adicionarDespesa(payload);
+      let rec: { dia: number; meses?: number } | undefined;
+      if (recorrente) {
+        const dia = Number(diaVenc);
+        const qtd = Number(meses);
+        if (!Number.isInteger(dia) || dia < 1 || dia > 31) {
+          toast.error("Informe um dia de vencimento entre 1 e 31.");
+          return;
+        }
+        if (!indefinido && (!Number.isInteger(qtd) || qtd < 1 || qtd > 120)) {
+          toast.error("Informe a quantidade de meses (1 a 120) ou marque Indefinido.");
+          return;
+        }
+        rec = { dia, meses: indefinido ? undefined : qtd };
+      }
+      adicionarDespesa(payload, rec);
       if (forma === "Dinheiro do Caixa" && status === "Pago") {
         if (caixaAberto) {
           registrarMovimento("sangria", v, `Despesa: ${payload.descricao}`);
@@ -267,6 +290,48 @@ export function DespesaDialog({ open, onOpenChange, despesa }: Props) {
               </SelectContent>
             </Select>
           </div>
+
+          {!despesa && (
+            <div className="grid gap-3 rounded-lg border border-border p-3">
+              <label className="flex items-center gap-2 text-sm font-medium">
+                <Checkbox checked={recorrente} onCheckedChange={(v) => setRecorrente(v === true)} />
+                Despesa Recorrente Mensal
+              </label>
+              {recorrente && (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="grid gap-2">
+                    <Label htmlFor="dia-venc">Dia do vencimento mensal</Label>
+                    <Input
+                      id="dia-venc"
+                      inputMode="numeric"
+                      value={diaVenc}
+                      onChange={(e) => setDiaVenc(e.target.value.replace(/\D/g, "").slice(0, 2))}
+                      placeholder="10"
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="meses">Quantidade de meses</Label>
+                    <Input
+                      id="meses"
+                      inputMode="numeric"
+                      disabled={indefinido}
+                      value={indefinido ? "" : meses}
+                      onChange={(e) => setMeses(e.target.value.replace(/\D/g, "").slice(0, 3))}
+                      placeholder={indefinido ? "Indefinido" : "12"}
+                    />
+                    <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Checkbox checked={indefinido} onCheckedChange={(v) => setIndefinido(v === true)} />
+                      Indefinido (sem data de término)
+                    </label>
+                  </div>
+                  <p className="text-xs text-muted-foreground sm:col-span-2">
+                    A primeira despesa usa a data e o status acima; os meses seguintes são gerados
+                    automaticamente como “Pendente” todo dia {diaVenc || "—"}.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="grid gap-2">
             <Label htmlFor="obs">Observações</Label>
