@@ -15,6 +15,13 @@
       "when": 1791158699319,
       "tag": "0001_partner_settlements",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791249358261,
+      "tag": "0002_despesas_recorrentes",
+      "breakpoints": true
     }
   ]
 }

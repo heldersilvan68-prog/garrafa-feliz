@@ -250,4 +250,8 @@ export const paraDespesa = (r: DespesaRow): Despesa => ({
   status: r.status as StatusDespesa,
   observacoes: r.observacoes ?? undefined,
   criadoEm: r.created_at,
+  recorrenciaId: r.recorrencia_id ?? undefined,
+  recorrenciaDia: r.recorrencia_dia ?? undefined,
+  recorrenciaMeses: r.recorrencia_meses ?? undefined,
+  recorrenciaParcela: r.recorrencia_parcela ?? undefined,
 });

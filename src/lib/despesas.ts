@@ -43,7 +43,27 @@ export type Despesa = {
   status: StatusDespesa;
   observacoes?: string;
   criadoEm: string;
+  /** Série de despesa recorrente mensal (mesmo ID em todas as parcelas). */
+  recorrenciaId?: string;
+  recorrenciaDia?: number;
+  /** Quantidade total de meses; vazio = indefinido. */
+  recorrenciaMeses?: number;
+  recorrenciaParcela?: number;
 };
+
+/** Data da k-ésima ocorrência mensal (k=0 é o mês inicial), ajustando o dia ao fim do mês. */
+export const dataRecorrente = (inicioIso: string, k: number, dia: number) => {
+  const [a, m] = inicioIso.split("-").map(Number);
+  const total = a * 12 + (m - 1) + k;
+  const ano = Math.floor(total / 12);
+  const mes = (total % 12) + 1;
+  const ultimo = new Date(ano, mes, 0).getDate();
+  const d = Math.min(Math.max(1, dia), ultimo);
+  return `${ano}-${String(mes).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+};
+
+/** Meses gerados antecipadamente para recorrências indefinidas. */
+export const HORIZONTE_RECORRENCIA = 12;
 
 export const CORES_CATEGORIA: Record<string, string> = {
   Combustível: "var(--color-primary)",

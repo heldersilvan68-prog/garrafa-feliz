@@ -1,20 +1,26 @@
 import type React from "react";
-import { createContext, useContext, useMemo, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { paraDespesa, type DespesaRow } from "@/lib/mapeadores";
 import { buscarTodos } from "@/lib/supabase-paginado";
-import type { Despesa } from "@/lib/despesas";
+import { dataRecorrente, HORIZONTE_RECORRENCIA, type Despesa } from "@/lib/despesas";
+import { isoLocal } from "@/lib/periodo";
 
-type NovaDespesa = Omit<Despesa, "id" | "criadoEm">;
+type NovaDespesa = Omit<
+  Despesa,
+  "id" | "criadoEm" | "recorrenciaId" | "recorrenciaDia" | "recorrenciaMeses" | "recorrenciaParcela"
+>;
+
+export type Recorrencia = { dia: number; meses?: number };
 
 type Ctx = {
   despesas: Despesa[];
   categorias: { id: string; nome: string; cor: string }[];
   carregando: boolean;
-  adicionarDespesa: (d: NovaDespesa) => void;
+  adicionarDespesa: (d: NovaDespesa, recorrencia?: Recorrencia) => void;
   atualizarDespesa: (id: string, d: NovaDespesa) => void;
   removerDespesa: (id: string) => void;
   criarCategoria: (nome: string) => Promise<string>;
@@ -78,11 +84,75 @@ export function DespesasProvider({ children }: { children: ReactNode }) {
     observacoes: d.observacoes ?? null,
   });
 
-  const adicionarMut = useMutacao<NovaDespesa>(async (d) => {
+  const adicionarMut = useMutacao<{ d: NovaDespesa; rec?: Recorrencia }>(async ({ d, rec }) => {
     if (!userId) throw new Error("Sessão expirada");
-    const { error } = await supabase.from("expenses").insert({ user_id: userId, ...linhaDe(d) });
+    if (!rec) {
+      const { error } = await supabase.from("expenses").insert({ user_id: userId, ...linhaDe(d) });
+      if (error) throw error;
+      return;
+    }
+    const serie = crypto.randomUUID();
+    const qtd = rec.meses ?? HORIZONTE_RECORRENCIA;
+    const linhas = Array.from({ length: qtd }, (_, k) => ({
+      user_id: userId,
+      ...linhaDe(d),
+      data: k === 0 ? d.data : dataRecorrente(d.data, k, rec.dia),
+      status: k === 0 ? d.status : ("Pendente" as const),
+      recorrencia_id: serie,
+      recorrencia_dia: rec.dia,
+      recorrencia_meses: rec.meses ?? null,
+      recorrencia_parcela: k + 1,
+    }));
+    const { error } = await supabase.from("expenses").insert(linhas);
     if (error) throw error;
   }, "Não foi possível salvar a despesa");
+
+  // Recorrências indefinidas: mantém sempre ~12 meses gerados à frente.
+  const completando = useRef(false);
+  useEffect(() => {
+    if (!userId || !data || completando.current) return;
+    const series = new Map<string, Despesa>();
+    for (const x of data.despesas) {
+      if (!x.recorrenciaId || x.recorrenciaMeses) continue;
+      const atual = series.get(x.recorrenciaId);
+      if (!atual || (x.recorrenciaParcela ?? 0) > (atual.recorrenciaParcela ?? 0)) series.set(x.recorrenciaId, x);
+    }
+    const limite = dataRecorrente(isoLocal(new Date()), HORIZONTE_RECORRENCIA - 1, 31);
+    const novas: Record<string, unknown>[] = [];
+    for (const ult of series.values()) {
+      const dia = ult.recorrenciaDia ?? Number(ult.data.slice(8, 10));
+      let k = 1;
+      let prox = dataRecorrente(ult.data, k, dia);
+      while (prox <= limite && k <= 24) {
+        novas.push({
+          user_id: userId,
+          descricao: ult.descricao,
+          categoria: ult.categoria,
+          category_id: data.categorias.find((c) => c.nome === ult.categoria)?.id ?? null,
+          valor: ult.valor,
+          data: prox,
+          forma: ult.forma,
+          status: "Pendente",
+          observacoes: ult.observacoes ?? null,
+          recorrencia_id: ult.recorrenciaId,
+          recorrencia_dia: dia,
+          recorrencia_meses: null,
+          recorrencia_parcela: (ult.recorrenciaParcela ?? 1) + k,
+        });
+        k++;
+        prox = dataRecorrente(ult.data, k, dia);
+      }
+    }
+    if (novas.length === 0) return;
+    completando.current = true;
+    void supabase
+      .from("expenses")
+      .insert(novas as never)
+      .then(({ error }) => {
+        completando.current = false;
+        if (!error) invalidar();
+      });
+  }, [userId, data]);
 
   const atualizarMut = useMutacao<{ id: string; d: NovaDespesa }>(async ({ id, d }) => {
     const { error } = await supabase.from("expenses").update(linhaDe(d)).eq("id", id);
@@ -153,7 +223,7 @@ export function DespesasProvider({ children }: { children: ReactNode }) {
       despesas: data?.despesas ?? [],
       categorias: data?.categorias ?? [],
       carregando: isLoading,
-      adicionarDespesa: (d) => adicionarMut.mutate(d),
+      adicionarDespesa: (d, rec) => adicionarMut.mutate({ d, rec }),
       atualizarDespesa: (id, d) => atualizarMut.mutate({ id, d }),
       removerDespesa: (id) => removerMut.mutate(id),
       criarCategoria: (nome) => categoriaMut.mutateAsync(nome),

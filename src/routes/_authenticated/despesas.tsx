@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { ConfirmarExclusao } from "@/components/confirmar-exclusao";
-import { CircleAlert, CircleCheck, Layers, Pencil, Plus, Receipt, Trash2 } from "lucide-react";
+import { CircleAlert, CircleCheck, Layers, Pencil, Plus, Receipt, Repeat, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,10 +47,13 @@ function DespesasPage() {
   const { despesas, removerDespesa } = useDespesas();
   const [open, setOpen] = useState(false);
   const [porCategoria, setPorCategoria] = useState(false);
+  const [soRecorrentes, setSoRecorrentes] = useState(false);
   const [editando, setEditando] = useState<Despesa | undefined>();
   const periodo = usePeriodo("mes");
 
-  const doPeriodo = despesas.filter((d) => dentroFaixa(d.data, periodo.faixa));
+  const doPeriodo = despesas.filter(
+    (d) => dentroFaixa(d.data, periodo.faixa) && (!soRecorrentes || d.recorrenciaId),
+  );
   const pagas = doPeriodo.filter((d) => d.status === "Pago");
   const pendentes = doPeriodo.filter((d) => d.status === "Pendente");
 
@@ -90,6 +93,12 @@ function DespesasPage() {
         </div>
         <div className="flex flex-wrap items-end gap-2">
           <FiltroPeriodo estado={periodo} />
+          <Button
+            variant={soRecorrentes ? "default" : "outline"}
+            onClick={() => setSoRecorrentes((v) => !v)}
+          >
+            <Repeat className="size-4" /> Despesas Recorrentes
+          </Button>
           <Button variant="outline" onClick={() => setPorCategoria(true)}>
             <Layers className="size-4" /> Visualizar Despesas por Categoria
           </Button>
@@ -153,7 +162,17 @@ function DespesasPage() {
                         {dataBR(d.data)}
                       </TableCell>
                       <TableCell className="max-w-[220px]">
-                        <p className="truncate font-medium">{d.descricao}</p>
+                        <p className="flex items-center gap-1.5 truncate font-medium">
+                          {d.recorrenciaId ? (
+                            <Badge variant="outline" className="shrink-0 gap-1 px-1.5 text-[10px]">
+                              <Repeat className="size-3" />
+                              {d.recorrenciaMeses
+                                ? `${d.recorrenciaParcela ?? 1}/${d.recorrenciaMeses}`
+                                : "Mensal"}
+                            </Badge>
+                          ) : null}
+                          <span className="truncate">{d.descricao}</span>
+                        </p>
                         {d.observacoes ? (
                           <p className="truncate text-xs text-muted-foreground">{d.observacoes}</p>
                         ) : null}

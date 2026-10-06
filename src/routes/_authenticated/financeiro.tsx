@@ -16,6 +16,7 @@ import { FiltroPeriodo } from "@/components/filtro-periodo";
 import { DespesasChart } from "@/components/dashboard/charts";
 import { ClientesCobrar, ContasPagar } from "@/components/dashboard/financeiro";
 import { Tesouraria } from "@/components/financeiro/tesouraria";
+import { HistoricoFechamentos } from "@/components/financeiro/historico-fechamentos";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCaixa } from "@/context/caixa";
 import { brl } from "@/lib/erp";
@@ -209,50 +210,7 @@ function Financeiro() {
         </Card>
       </div>
 
-      <Card className="shadow-[var(--shadow-card)]">
-        <CardHeader>
-          <CardTitle className="text-base">Histórico de fechamento de caixa</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {fechados.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Nenhum caixa fechado ainda. Os fechamentos feitos em “Caixa &amp; Acerto” aparecem
-              aqui.
-            </p>
-          ) : (
-            <div className="flex flex-col gap-3">
-              {fechados.map((c) => (
-                <div
-                  key={c.id}
-                  className="grid gap-2 rounded-lg border border-border p-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
-                >
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">
-                      {dataCurta(c.abertoEm)} · {horaCurta(c.abertoEm)} às{" "}
-                      {c.fechadoEm ? horaCurta(c.fechadoEm) : "—"}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Troco inicial {brl(c.trocoInicial)} · Sangrias{" "}
-                      {brl(somaMovimentos(c.movimentos, "sangria"))} · Suprimentos{" "}
-                      {brl(somaMovimentos(c.movimentos, "suprimento"))} · Recebimentos{" "}
-                      {brl(somaMovimentos(c.movimentos, "recebimento"))}
-                    </p>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-2">
-                    <span className="text-sm tabular-nums">Contado {brl(c.contado ?? 0)}</span>
-                    <Badge
-                      variant={Math.abs(c.diferenca ?? 0) < 0.01 ? "secondary" : "destructive"}
-                    >
-                      {(c.diferenca ?? 0) >= 0 ? "+" : "-"}
-                      {brl(Math.abs(c.diferenca ?? 0))}
-                    </Badge>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <HistoricoFechamentos fechados={fechados} />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <DespesasChart faixa={periodo.faixa} />

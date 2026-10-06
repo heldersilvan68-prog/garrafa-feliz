@@ -527,6 +527,10 @@ export type Database = {
           id: string
           legacy_id: string | null
           observacoes: string | null
+          recorrencia_dia: number | null
+          recorrencia_id: string | null
+          recorrencia_meses: number | null
+          recorrencia_parcela: number | null
           status: Database["public"]["Enums"]["expense_status"]
           updated_at: string
           user_id: string
@@ -543,6 +547,10 @@ export type Database = {
           id?: string
           legacy_id?: string | null
           observacoes?: string | null
+          recorrencia_dia?: number | null
+          recorrencia_id?: string | null
+          recorrencia_meses?: number | null
+          recorrencia_parcela?: number | null
           status?: Database["public"]["Enums"]["expense_status"]
           updated_at?: string
           user_id: string
@@ -559,6 +567,10 @@ export type Database = {
           id?: string
           legacy_id?: string | null
           observacoes?: string | null
+          recorrencia_dia?: number | null
+          recorrencia_id?: string | null
+          recorrencia_meses?: number | null
+          recorrencia_parcela?: number | null
           status?: Database["public"]["Enums"]["expense_status"]
           updated_at?: string
           user_id?: string
