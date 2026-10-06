@@ -28,6 +28,6 @@
 - [x] Validar a nova organização em desktop e celular
 
 # Contas a pagar e categorias
-- [ ] Filtrar lista e total por vencimento no período, incluindo todo o mês ativo
-- [ ] Diferenciar cores e sincronizar destaque entre gráfico e legenda
-- [ ] Verificar cálculos e interação no aplicativo
+- [x] Filtrar lista e total por vencimento no período, incluindo todo o mês ativo
+- [x] Diferenciar cores e sincronizar destaque entre gráfico e legenda
+- [x] Verificar cálculos e interação no aplicativo
