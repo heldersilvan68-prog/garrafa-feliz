@@ -8,6 +8,7 @@ import { clientesParaCobrar, contasAPagar } from "@/lib/dashboard";
 import { useClientes } from "@/context/clientes";
 import { useDespesas } from "@/context/despesas";
 import { usePedidos } from "@/context/pedidos";
+import type { Faixa } from "@/lib/periodo";
 
 export function ClientesCobrar() {
   const { pedidos } = usePedidos();
@@ -75,9 +76,9 @@ export function ClientesCobrar() {
 }
 
 
-export function ContasPagar() {
+export function ContasPagar({ faixa }: { faixa: Faixa }) {
   const { despesas } = useDespesas();
-  const lista = contasAPagar(despesas);
+  const lista = contasAPagar(despesas, faixa);
   const total = lista.reduce((s, c) => s + c.valor, 0);
 
   return (
@@ -90,7 +91,7 @@ export function ContasPagar() {
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         {lista.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nenhuma despesa pendente.</p>
+          <p className="text-sm text-muted-foreground">Nenhuma despesa pendente no período.</p>
         ) : (
           lista.map((c) => (
             <div

@@ -26,3 +26,8 @@
 - [x] Separar DRE e Saldos em Caixa no Financeiro
 - [x] Adicionar conferência, ajustes e extrato por conta
 - [x] Validar a nova organização em desktop e celular
+
+# Contas a pagar e categorias
+- [x] Filtrar lista e total por vencimento no período, incluindo todo o mês ativo
+- [x] Diferenciar cores e sincronizar destaque entre gráfico e legenda
+- [x] Verificar cálculos e interação no aplicativo

@@ -1,7 +1,7 @@
 import type { Produto } from "@/lib/erp";
 import type { Cliente } from "@/lib/clientes";
 import type { Despesa } from "@/lib/despesas";
-import { CATEGORIA_COMPRA_MERCADORIA, CATEGORIA_TAXA_CARTAO, CORES_CATEGORIA } from "@/lib/despesas";
+import { CATEGORIA_COMPRA_MERCADORIA, CATEGORIA_TAXA_CARTAO, corCategoriaDespesa } from "@/lib/despesas";
 import { fiadoEmAberto, valorEmAberto, valorFaturado, valorPorForma, type Pedido } from "@/lib/pedidos";
 import { lucroLiquido as calcLucroLiquido } from "@/lib/financas";
 import {
@@ -264,7 +264,7 @@ export function despesasPorCategoria(despesas: Despesa[], faixa: Faixa) {
     .map(([categoria, valor]) => ({
       categoria,
       valor,
-      cor: CORES_CATEGORIA[categoria as keyof typeof CORES_CATEGORIA] ?? "var(--color-primary)",
+      cor: corCategoriaDespesa(categoria, despesas.map((d) => d.categoria)),
     }))
     .sort((a, b) => b.valor - a.valor);
 }
@@ -315,9 +315,9 @@ export function clientesParaCobrar(pedidos: Pedido[], clientes: Cliente[]) {
   return [...mapa.values()].sort((a, b) => b.valor - a.valor);
 }
 
-export function contasAPagar(despesas: Despesa[]) {
+export function contasAPagar(despesas: Despesa[], faixa: Faixa) {
   return despesas
-    .filter((d) => d.status === "Pendente")
+    .filter((d) => d.status === "Pendente" && dentroFaixa(d.data, faixa))
     .sort((a, b) => a.data.localeCompare(b.data))
     .map((d) => ({
       id: d.id,

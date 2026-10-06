@@ -23,6 +23,7 @@ import { brl } from "@/lib/erp";
 import { dataCurta, horaCurta, somaMovimentos } from "@/lib/caixa";
 import { usePeriodo } from "@/hooks/use-periodo";
 import { useResumo } from "@/hooks/use-resumo";
+import { dataRecorrente } from "@/lib/despesas";
 
 export const Route = createFileRoute("/_authenticated/financeiro")({
   head: () => ({
@@ -56,8 +57,11 @@ const ICONES_PAGAMENTO: Record<string, typeof QrCode> = {
 
 function Financeiro() {
   const { caixas } = useCaixa();
-  const periodo = usePeriodo("hoje");
+  const periodo = usePeriodo("mes");
   const { resumo } = useResumo(periodo.faixa);
+  const faixaContas = periodo.periodo === "mes"
+    ? { ...periodo.faixa, fim: dataRecorrente(periodo.faixa.inicio, 0, 31) }
+    : periodo.faixa;
 
   const fechados = caixas.filter((c) => c.fechadoEm);
 
@@ -214,7 +218,7 @@ function Financeiro() {
 
       <div className="grid gap-4 lg:grid-cols-2">
         <DespesasChart faixa={periodo.faixa} />
-        <ContasPagar />
+        <ContasPagar faixa={faixaContas} />
       </div>
 
       <ClientesCobrar />
