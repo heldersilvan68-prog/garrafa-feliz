@@ -66,17 +66,30 @@ export const dataRecorrente = (inicioIso: string, k: number, dia: number) => {
 export const HORIZONTE_RECORRENCIA = 12;
 
 export const CORES_CATEGORIA: Record<string, string> = {
-  Combustível: "var(--color-primary)",
-  "Manutenção/Frota": "var(--color-warning)",
-  "Contas Fixas": "var(--color-destructive)",
-  Aluguel: "var(--color-success)",
-  "Salários/Comissões": "var(--color-accent)",
-  "Compra de Vasilhames": "var(--color-muted-foreground)",
-  Outros: "var(--color-secondary-foreground)",
-  [CATEGORIA_TAXA_CARTAO]: "var(--color-accent)",
-  [CATEGORIA_COMPRA_MERCADORIA]: "var(--color-primary)",
-  [CATEGORIA_ENVASE]: "var(--color-primary)",
+  Combustível: "var(--color-expense-orange)",
+  "Manutenção/Frota": "var(--color-expense-red)",
+  "Contas Fixas": "var(--color-expense-blue)",
+  Aluguel: "var(--color-expense-green)",
+  "Salários/Comissões": "var(--color-expense-purple)",
+  "Compra de Vasilhames": "var(--color-expense-yellow)",
+  Outros: "var(--color-expense-slate)",
+  [CATEGORIA_TAXA_CARTAO]: "var(--color-expense-pink)",
+  [CATEGORIA_COMPRA_MERCADORIA]: "var(--color-expense-turquoise)",
+  [CATEGORIA_ENVASE]: "var(--color-expense-lime)",
 };
+
+const PALETA_DESPESAS = Object.values(CORES_CATEGORIA);
+
+/** Mantém cores estáveis para categorias manuais ao trocar o período. */
+export function corCategoriaDespesa(categoria: string, categorias: string[]) {
+  const registrada = Object.hasOwn(CORES_CATEGORIA, categoria) ? CORES_CATEGORIA[categoria] : undefined;
+  if (registrada) return registrada;
+  const manuais = [...new Set(categorias)].filter((c) => !Object.hasOwn(CORES_CATEGORIA, c)).sort();
+  const usadas = new Set(categorias.map((c) => CORES_CATEGORIA[c]).filter(Boolean));
+  const livres = PALETA_DESPESAS.filter((cor) => !usadas.has(cor));
+  const paleta = livres.length ? livres : PALETA_DESPESAS;
+  return paleta[Math.max(0, manuais.indexOf(categoria)) % paleta.length];
+}
 
 export const dataBR = (iso: string) => {
   const [a, m, d] = iso.split("-");

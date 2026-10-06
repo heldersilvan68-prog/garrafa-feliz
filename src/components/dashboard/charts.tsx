@@ -22,6 +22,7 @@ import { brl } from "@/lib/erp";
 import { despesasPorCategoria, type ResumoPeriodo } from "@/lib/dashboard";
 import { faixaPeriodo, type Faixa } from "@/lib/periodo";
 import { useDespesas } from "@/context/despesas";
+import { Button } from "@/components/ui/button";
 
 export function VendasChart({ resumo }: { resumo: ResumoPeriodo }) {
   const [visao, setVisao] = useState<"dia" | "mes">("dia");
@@ -79,12 +80,14 @@ export function VendasChart({ resumo }: { resumo: ResumoPeriodo }) {
 
 export function DespesasChart({ faixa }: { faixa?: Faixa }) {
   const { despesas } = useDespesas();
+  const [categoriaAtiva, setCategoriaAtiva] = useState<string | null>(null);
   const faixaEfetiva = faixa ?? faixaPeriodo("mes");
   const dados = useMemo(
     () => despesasPorCategoria(despesas, faixaEfetiva),
     [despesas, faixaEfetiva.inicio, faixaEfetiva.fim],
   );
   const total = useMemo(() => dados.reduce((s, d) => s + d.valor, 0), [dados]);
+  const ativa = dados.some((d) => d.categoria === categoriaAtiva) ? categoriaAtiva : null;
 
   return (
     <Card className="shadow-[var(--shadow-card)]">
@@ -109,9 +112,17 @@ export function DespesasChart({ faixa }: { faixa?: Faixa }) {
                     outerRadius={82}
                     paddingAngle={2}
                     stroke="none"
+                     onMouseEnter={(_, index) => setCategoriaAtiva(dados[index]?.categoria ?? null)}
+                     onMouseLeave={() => setCategoriaAtiva(null)}
                   >
                     {dados.map((d) => (
-                      <Cell key={d.categoria} fill={d.cor} />
+                      <Cell
+                        key={d.categoria}
+                        fill={d.cor}
+                        fillOpacity={ativa && ativa !== d.categoria ? 0.3 : 1}
+                        stroke={ativa === d.categoria ? "var(--color-foreground)" : "var(--color-card)"}
+                        strokeWidth={ativa === d.categoria ? 3 : 1}
+                      />
                     ))}
                   </Pie>
                   <Tooltip
@@ -130,15 +141,26 @@ export function DespesasChart({ faixa }: { faixa?: Faixa }) {
               {dados.map((d) => (
                 <li
                   key={d.categoria}
-                  className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2"
                 >
+                  <Button
+                    variant="ghost"
+                    className={`grid h-auto w-full grid-cols-[minmax(0,1fr)_auto] gap-2 whitespace-normal px-2 py-1.5 text-left ${ativa === d.categoria ? "bg-accent text-accent-foreground ring-1 ring-ring" : ""}`}
+                    aria-label={`${d.categoria}: ${brl(d.valor)}, ${((d.valor / total) * 100).toFixed(0)}%`}
+                    aria-pressed={ativa === d.categoria}
+                    onMouseEnter={() => setCategoriaAtiva(d.categoria)}
+                    onMouseLeave={() => setCategoriaAtiva(null)}
+                    onFocus={() => setCategoriaAtiva(d.categoria)}
+                    onBlur={() => setCategoriaAtiva(null)}
+                    onClick={() => setCategoriaAtiva(ativa === d.categoria ? null : d.categoria)}
+                  >
                   <span className="flex min-w-0 items-center gap-2 text-sm">
                     <span
                       className="size-2.5 shrink-0 rounded-full"
                       style={{ background: d.cor }}
                     />
-                    <span className="truncate">{d.categoria}</span>
+                    <span className="break-words">{d.categoria}</span>
                   </span>
+                  </Button>
                   <span className="shrink-0 text-sm tabular-nums text-muted-foreground">
                     {brl(d.valor)} · {((d.valor / total) * 100).toFixed(0)}%
                   </span>
