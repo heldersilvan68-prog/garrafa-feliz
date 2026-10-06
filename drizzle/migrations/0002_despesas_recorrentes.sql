@@ -1,0 +1,2 @@
+ALTER TABLE public.expenses ADD COLUMN IF NOT EXISTS recorrencia_id uuid, ADD COLUMN IF NOT EXISTS recorrencia_dia integer, ADD COLUMN IF NOT EXISTS recorrencia_meses integer, ADD COLUMN IF NOT EXISTS recorrencia_parcela integer;
+CREATE INDEX IF NOT EXISTS idx_expenses_recorrencia ON public.expenses(recorrencia_id);
