@@ -484,7 +484,10 @@ export function EditarPedidoDialog({
                   type="number"
                   min={0}
                   value={vazios}
-                  onChange={(e) => setVazios(e.target.value)}
+                  onChange={(e) => {
+                    vaziosManual.current = true;
+                    setVazios(e.target.value);
+                  }}
                 />
               </div>
               <div className="flex flex-col gap-2">
