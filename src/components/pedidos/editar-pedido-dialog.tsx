@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ProdutoFoto } from "@/components/produto-foto";
 import { Minus, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -65,6 +65,10 @@ export function EditarPedidoDialog({
   // Desconto/crédito aplicado na venda original: preservado para o crédito do
   // cliente não virar entrada fictícia de caixa ao editar o pedido.
   const [desconto, setDesconto] = useState(pedido.desconto);
+  // Recálculo dinâmico: total anterior para aplicar a diferença na 1ª forma,
+  // e flag de ajuste manual dos vazios (para não sobrescrever o usuário).
+  const ultimoTotal = useRef<number | null>(null);
+  const vaziosManual = useRef(false);
 
   const opcoesEntregador = [...new Set([...opcoes, pedido.entregador].filter(Boolean))];
 
@@ -83,6 +87,8 @@ export function EditarPedidoDialog({
       parcelasDe(pedido).reduce((s, x) => s + x.valor, 0) - pedido.total > 0.009,
     );
     setDesconto(pedido.desconto);
+    ultimoTotal.current = null;
+    vaziosManual.current = false;
   }, [aberto, pedido]);
 
   const itens: ItemPedido[] = produtos
@@ -129,6 +135,36 @@ export function EditarPedidoDialog({
     0,
     Math.round((parcelasDe(pedido).reduce((s, x) => s + x.valor, 0) - pedido.total) * 100) / 100,
   );
+  // Galões retornáveis (modo refil) no pedido — base para os vazios recolhidos.
+  const retornaveisQtd = itens
+    .filter((i) => i.retornavel && i.modo === "refil")
+    .reduce((s, i) => s + i.qtd, 0);
+
+  // Recálculo automático: ao mudar o total (botões +/- ou preço), a diferença
+  // é aplicada na 1ª forma de pagamento; com uma única forma, ela iguala o total.
+  useEffect(() => {
+    if (!aberto) return;
+    if (ultimoTotal.current === null) {
+      ultimoTotal.current = total;
+      return;
+    }
+    const diff = Math.round((total - ultimoTotal.current) * 100) / 100;
+    ultimoTotal.current = total;
+    if (Math.abs(diff) < 0.009) return;
+    setParcelas((ps) => {
+      if (ps.length === 0) return ps;
+      if (ps.length === 1) return [{ ...ps[0], valor: total.toFixed(2) }];
+      const primeiro = Math.round(((Number(ps[0].valor) || 0) + diff) * 100) / 100;
+      return ps.map((y, i) => (i === 0 ? { ...y, valor: Math.max(0, primeiro).toFixed(2) } : y));
+    });
+  }, [aberto, total]);
+
+  // Vazios recolhidos acompanham a soma de retornáveis, salvo ajuste manual.
+  useEffect(() => {
+    if (!aberto || vaziosManual.current) return;
+    setVazios(String(retornaveisQtd));
+  }, [aberto, retornaveisQtd]);
+
   const dinheiroInformado = parcelas.some((x) => x.forma === "Dinheiro");
   const formaPrincipal =
     [...parcelas]
@@ -448,7 +484,10 @@ export function EditarPedidoDialog({
                   type="number"
                   min={0}
                   value={vazios}
-                  onChange={(e) => setVazios(e.target.value)}
+                  onChange={(e) => {
+                    vaziosManual.current = true;
+                    setVazios(e.target.value);
+                  }}
                 />
               </div>
               <div className="flex flex-col gap-2">
