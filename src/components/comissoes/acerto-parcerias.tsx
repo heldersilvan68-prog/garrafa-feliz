@@ -92,18 +92,26 @@ export function AcertoParcerias() {
   const { data: acertos = [] } = useAcertosParceria();
   const periodo = usePeriodo("mes");
   const parceiros = useMemo(() => clientes.filter((c) => c.parceiro), [clientes]);
-  const [parceiroId, setParceiroId] = useState("");
+  const [parceiroId, setParceiroId] = useState("__todas__");
   const [forma, setForma] = useState<(typeof FORMAS)[number]>("PIX");
-  const idSel = parceiroId || parceiros[0]?.id || "";
+  const ehTodas = parceiroId === "__todas__";
+  const idSel = ehTodas ? "" : parceiroId || parceiros[0]?.id || "";
   const parceiro = parceiros.find((c) => c.id === idSel);
   const idsParceiros = useMemo(() => new Set(parceiros.map((c) => c.id)), [parceiros]);
   const porProduto = useMemo(() => new Map(produtos.map((p) => [p.id, p])), [produtos]);
 
   const regrasDe = (clienteId: string) => regras.filter((r) => r.clienteId === clienteId);
 
-  // ---- Cards gerais (histórico) ----
+  const { inicio, fim } = periodo.faixa;
+
+  // ---- Cards gerais (filtrados pelo período e pela parceira selecionada) ----
   const geral = useMemo(() => {
-    const validos = pedidos.filter((p) => idsParceiros.has(p.clienteId) && pedidoParceriaValido(p));
+    const validos = pedidos.filter((p) => {
+      if (!(ehTodas ? idsParceiros.has(p.clienteId) : p.clienteId === idSel)) return false;
+      if (!pedidoParceriaValido(p)) return false;
+      const d = isoLocal(p.criadoEm);
+      return (!inicio || d >= inicio) && (!fim || d <= fim);
+    });
     const qtd = validos.reduce((s, p) => s + unidadesPedido(p), 0);
     const faturamento = validos.reduce((s, p) => s + valorFaturado(p), 0);
     const custo = validos.reduce(
@@ -116,26 +124,30 @@ export function AcertoParcerias() {
       0,
     );
     const comissoes = acertos
-      .filter((a) => !a.estornadoEm)
+      .filter((a) => {
+        if (a.estornadoEm) return false;
+        if (!ehTodas && a.clienteId !== idSel) return false;
+        return (!inicio || a.fim >= inicio) && (!fim || a.inicio <= fim);
+      })
       .reduce((s, a) => s + a.comissaoTotal, 0);
     return { qtd, comissoes, lucro: arred(faturamento - custo - comissoes) };
-  }, [pedidos, idsParceiros, porProduto, acertos]);
+  }, [pedidos, idsParceiros, porProduto, acertos, idSel, ehTodas, inicio, fim]);
 
   // ---- Painel do período ----
-  const { inicio, fim } = periodo.faixa;
   const doPeriodo = useMemo(
     () =>
       pedidos.filter((p) => {
-        if (p.clienteId !== idSel || !pedidoParceriaValido(p) || p.acertoParceriaId) return false;
+        if (!(idSel ? p.clienteId === idSel : idsParceiros.has(p.clienteId))) return false;
+        if (!pedidoParceriaValido(p) || p.acertoParceriaId) return false;
         const d = isoLocal(p.criadoEm);
         return (!inicio || d >= inicio) && (!fim || d <= fim);
       }),
-    [pedidos, idSel, inicio, fim],
+    [pedidos, idSel, idsParceiros, inicio, fim],
   );
   const regrasSel = regrasDe(idSel);
   const qtd = doPeriodo.reduce((s, p) => s + unidadesPedido(p), 0);
   const fiado = arred(doPeriodo.reduce((s, p) => s + valorEmAberto(p), 0));
-  const comissao = arred(doPeriodo.reduce((s, p) => s + comissaoPedido(p, regrasSel), 0));
+  const comissao = arred(doPeriodo.reduce((s, p) => s + comissaoPedido(p, regrasDe(p.clienteId)), 0));
   const liquido = arred(fiado - comissao);
 
   const invalidar = () => {
@@ -272,7 +284,7 @@ export function AcertoParcerias() {
     );
   }
 
-  const acertosSel = acertos.filter((a) => a.clienteId === idSel);
+  const acertosSel = acertos.filter((a) => ehTodas || a.clienteId === idSel);
 
   return (
     <div className="flex flex-col gap-4">
@@ -310,6 +322,7 @@ export function AcertoParcerias() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="__todas__">Todas as parceiras</SelectItem>
                   {parceiros.map((c) => (
                     <SelectItem key={c.id} value={c.id}>
                       {rotuloCliente(c)}
@@ -321,7 +334,7 @@ export function AcertoParcerias() {
             <FiltroPeriodo estado={periodo} comRotulos />
           </div>
 
-          {regrasSel.length === 0 && (
+          {idSel && regrasSel.length === 0 && (
             <p className="rounded-lg border border-warning/40 bg-warning/10 p-3 text-xs">
               Esta parceira não tem regras de comissão — as comissões ficarão zeradas.
             </p>
@@ -371,7 +384,7 @@ export function AcertoParcerias() {
               </Select>
             </div>
             <Button
-              disabled={acertar.isPending || doPeriodo.length === 0}
+              disabled={acertar.isPending || doPeriodo.length === 0 || !idSel}
               onClick={() => {
                 if (confirm(`Confirmar acerto de ${brl(liquido)} em ${forma}?`)) acertar.mutate();
               }}
