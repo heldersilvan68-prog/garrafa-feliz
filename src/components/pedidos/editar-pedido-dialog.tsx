@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ProdutoFoto } from "@/components/produto-foto";
 import { Minus, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -65,6 +65,10 @@ export function EditarPedidoDialog({
   // Desconto/crédito aplicado na venda original: preservado para o crédito do
   // cliente não virar entrada fictícia de caixa ao editar o pedido.
   const [desconto, setDesconto] = useState(pedido.desconto);
+  // Recálculo dinâmico: total anterior para aplicar a diferença na 1ª forma,
+  // e flag de ajuste manual dos vazios (para não sobrescrever o usuário).
+  const ultimoTotal = useRef<number | null>(null);
+  const vaziosManual = useRef(false);
 
   const opcoesEntregador = [...new Set([...opcoes, pedido.entregador].filter(Boolean))];
 
