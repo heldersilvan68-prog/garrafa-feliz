@@ -87,6 +87,8 @@ export function EditarPedidoDialog({
       parcelasDe(pedido).reduce((s, x) => s + x.valor, 0) - pedido.total > 0.009,
     );
     setDesconto(pedido.desconto);
+    ultimoTotal.current = null;
+    vaziosManual.current = false;
   }, [aberto, pedido]);
 
   const itens: ItemPedido[] = produtos
