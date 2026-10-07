@@ -135,6 +135,36 @@ export function EditarPedidoDialog({
     0,
     Math.round((parcelasDe(pedido).reduce((s, x) => s + x.valor, 0) - pedido.total) * 100) / 100,
   );
+  // Galões retornáveis (modo refil) no pedido — base para os vazios recolhidos.
+  const retornaveisQtd = itens
+    .filter((i) => i.retornavel && i.modo === "refil")
+    .reduce((s, i) => s + i.qtd, 0);
+
+  // Recálculo automático: ao mudar o total (botões +/- ou preço), a diferença
+  // é aplicada na 1ª forma de pagamento; com uma única forma, ela iguala o total.
+  useEffect(() => {
+    if (!aberto) return;
+    if (ultimoTotal.current === null) {
+      ultimoTotal.current = total;
+      return;
+    }
+    const diff = Math.round((total - ultimoTotal.current) * 100) / 100;
+    ultimoTotal.current = total;
+    if (Math.abs(diff) < 0.009) return;
+    setParcelas((ps) => {
+      if (ps.length === 0) return ps;
+      if (ps.length === 1) return [{ ...ps[0], valor: total.toFixed(2) }];
+      const primeiro = Math.round(((Number(ps[0].valor) || 0) + diff) * 100) / 100;
+      return ps.map((y, i) => (i === 0 ? { ...y, valor: Math.max(0, primeiro).toFixed(2) } : y));
+    });
+  }, [aberto, total]);
+
+  // Vazios recolhidos acompanham a soma de retornáveis, salvo ajuste manual.
+  useEffect(() => {
+    if (!aberto || vaziosManual.current) return;
+    setVazios(String(retornaveisQtd));
+  }, [aberto, retornaveisQtd]);
+
   const dinheiroInformado = parcelas.some((x) => x.forma === "Dinheiro");
   const formaPrincipal =
     [...parcelas]
