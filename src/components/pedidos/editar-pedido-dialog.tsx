@@ -50,7 +50,7 @@ export function EditarPedidoDialog({
 }) {
   const { produtos } = useEstoque();
   const { atualizar, pedidos } = usePedidos();
-  const { definirDivida, ajustarCredito } = useClientes();
+  const { definirDivida, ajustarCredito, ajustarVasilhames } = useClientes();
   const { opcoes } = useEntregadores();
 
   const [aberto, setAberto] = useState(false);
@@ -221,6 +221,11 @@ export function EditarPedidoDialog({
 
     // Sincroniza o "Devido total" do cliente com os fiados que continuam em aberto.
     if (pedido.clienteId) {
+      // Recalcula os cascos na rua: estorna o saldo antigo do pedido e aplica o novo.
+      const saldoAntigo = saldoVasilhamesPedido(pedido.itens, pedido.vaziosRecolhidos);
+      const saldoNovo = saldoVasilhamesPedido(itens, Math.max(0, Number(vazios) || 0));
+      const deltaCascos = saldoNovo - saldoAntigo;
+      if (deltaCascos !== 0) void ajustarVasilhames(pedido.clienteId, deltaCascos);
       const outros = pedidos
         .filter((p) => p.clienteId === pedido.clienteId && p.id !== pedido.id)
         .reduce((s, p) => s + valorEmAberto(p), 0);
