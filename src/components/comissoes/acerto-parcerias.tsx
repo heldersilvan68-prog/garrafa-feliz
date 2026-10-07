@@ -317,7 +317,7 @@ export function AcertoParcerias() {
           <div className="flex flex-wrap items-end gap-3">
             <div className="grid gap-1">
               <Label className="text-xs">Empresa parceira</Label>
-              <Select value={idSel} onValueChange={setParceiroId}>
+              <Select value={parceiroId} onValueChange={setParceiroId}>
                 <SelectTrigger className="w-[240px]">
                   <SelectValue />
                 </SelectTrigger>
