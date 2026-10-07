@@ -38,6 +38,7 @@ import {
   totalItemPedido,
 } from "@/lib/pedidos";
 import { useClientes } from "@/context/clientes";
+import { saldoVasilhamesPedido } from "@/lib/vasilhames";
 
 type Parcela = { forma: FormaPagamento; valor: string };
 
