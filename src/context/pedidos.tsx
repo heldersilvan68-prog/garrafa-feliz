@@ -124,6 +124,7 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
             rotulo_embalagem: i.rotuloEmbalagem ?? null,
             retornavel: i.retornavel,
             modo: i.modo,
+            composicao: i.composicao ?? null,
           })),
         );
         if (erroItens) throw erroItens;
@@ -218,6 +219,7 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
               rotulo_embalagem: i.rotuloEmbalagem ?? null,
               retornavel: i.retornavel,
               modo: i.modo,
+              composicao: i.composicao ?? null,
             })),
           );
           if (erroInsert) throw erroInsert;
