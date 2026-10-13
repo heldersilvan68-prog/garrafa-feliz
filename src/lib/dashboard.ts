@@ -62,6 +62,16 @@ const validos = (pedidos: Pedido[]) => pedidos.filter((p) => p.status !== "cance
 
 const custo = (p: Pedido, produtosPorId: Map<string, Produto>) =>
   p.itens.reduce((s, i) => {
+    // Modalidade: o CMV é a soma do custo de cada produto da composição.
+    if (i.composicao && i.composicao.length > 0) {
+      return (
+        s +
+        i.composicao.reduce((a, sub) => {
+          const sp = produtosPorId.get(sub.produtoId);
+          return a + (sp?.precoCusto ?? 0) * sub.qtd * i.qtd;
+        }, 0)
+      );
+    }
     const prod = produtosPorId.get(i.produtoId);
     return s + (prod?.precoCusto ?? 0) * i.qtd;
   }, 0);
