@@ -185,9 +185,14 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
    * fardo fechado = nº de fardos × preço do fardo (sem dividir por unidade);
    * avulso = promoção progressiva (combos fechados) + unidades restantes.
    */
-  const totalLinha = (l: Pick<Linha, "produtoId" | "qtd" | "embalagem" | "preco">) => {
+  const totalLinha = (
+    l: Pick<Linha, "produtoId" | "qtd" | "embalagem" | "preco" | "composicao">,
+  ) => {
     const p = produtos.find((x) => x.id === l.produtoId);
     if (!p || l.qtd <= 0) return 0;
+    // Modalidade: preço fechado por unidade vendida, sem promoção/embalagem.
+    if (l.composicao && l.composicao.length > 0)
+      return Math.round(l.qtd * l.preco * 100) / 100;
     if (l.embalagem === "fardo") {
       const fardos = Math.max(1, Math.round(l.qtd / unidPorFardo(p)));
       return Math.round(fardos * l.preco * 100) / 100;
@@ -218,10 +223,12 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
       toast.error("Informe a quantidade antes de adicionar.");
       return;
     }
-    const embalagem = embalagemDe(id);
-    const modo: ModoVenda = p.retornavel ? (modos[id] ?? "refil") : "refil";
+    const modalidade = modalidadeDe(id);
+    const embalagem = modalidade ? "un" : embalagemDe(id);
+    const modo: ModoVenda = !modalidade && p.retornavel ? (modos[id] ?? "refil") : "refil";
     const preco = precoVenda(id);
     const qtd = bruto * passo;
+    const nomeLinha = modalidade ? `${p.nome} (${modalidade.nome})` : p.nome;
     setLinhas((ls) => {
       // Mesma variação e mesmo preço somam na linha existente; o resto vira linha nova.
       const i = ls.findIndex(
@@ -229,6 +236,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
           l.produtoId === id &&
           l.modo === modo &&
           l.embalagem === embalagem &&
+          l.modalidadeId === modalidade?.id &&
           Math.abs(l.preco - preco) < 0.005,
       );
       if (i >= 0)
@@ -236,20 +244,22 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
       return [
         ...ls,
         {
-          key: `${id}-${modo}-${embalagem}-${Date.now()}-${ls.length}`,
+          key: `${id}-${modo}-${embalagem}-${modalidade?.id ?? "padrao"}-${Date.now()}-${ls.length}`,
           produtoId: id,
-          nome: p.nome,
+          nome: nomeLinha,
           modo,
           embalagem,
           qtd,
           preco,
-          retornavel: p.retornavel,
+          retornavel: modalidade ? false : p.retornavel,
+          modalidadeId: modalidade?.id,
+          composicao: modalidade?.composicao,
         },
       ];
     });
     setQtds((s) => ({ ...s, [id]: "" }));
     toast.success(
-      `${p.nome} adicionado${p.retornavel ? ` · ${LABEL_MODO[modo]}` : ""}`,
+      `${nomeLinha} adicionado${!modalidade && p.retornavel ? ` · ${LABEL_MODO[modo]}` : ""}`,
     );
   };
 
