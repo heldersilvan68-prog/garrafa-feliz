@@ -14,8 +14,10 @@ import {
 import { DevolucaoCascoDialog } from "@/components/clientes/devolucao-casco-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { usePedidos } from "@/context/pedidos";
+import { useEstoque } from "@/context/estoque";
 import type { Cliente } from "@/lib/clientes";
 import { saldoVasilhamesPedido } from "@/lib/vasilhames";
+import { expandirComposicao } from "@/lib/erp";
 
 type DevolucaoManual = {
   id: string;
@@ -25,6 +27,7 @@ type DevolucaoManual = {
 
 export function ControleVasilhamesCliente({ cliente }: { cliente: Cliente }) {
   const { pedidos } = usePedidos();
+  const { produtos } = useEstoque();
   const { data: devolucoes = [] } = useQuery({
     queryKey: ["movimentos-vasilhames", "cliente", cliente.id],
     queryFn: async () => {
@@ -43,7 +46,10 @@ export function ControleVasilhamesCliente({ cliente }: { cliente: Cliente }) {
     const vendas = pedidos
       .filter((pedido) => pedido.clienteId === cliente.id && pedido.status !== "cancelado")
       .map((pedido) => {
-        const saldo = saldoVasilhamesPedido(pedido.itens, pedido.vaziosRecolhidos);
+        const saldo = saldoVasilhamesPedido(
+          expandirComposicao(pedido.itens, produtos),
+          pedido.vaziosRecolhidos,
+        );
         if (saldo === 0) return null;
         return {
           id: `pedido-${pedido.id}`,
