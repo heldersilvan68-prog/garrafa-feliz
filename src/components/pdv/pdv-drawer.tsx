@@ -770,7 +770,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                           </Select>
                         )}
 
-                        {!modalidadeAtiva && p.retornavel && (
+                        {!modalidadeAtiva && !temModalidades && p.retornavel && (
                           <Select
                             value={modos[p.id] ?? "refil"}
                             onValueChange={(v) => {
