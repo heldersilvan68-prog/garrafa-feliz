@@ -20,6 +20,7 @@ import { usePedidos } from "@/context/pedidos";
 import { brl } from "@/lib/erp";
 import { MOTIVOS_CANCELAMENTO, saldoFiadoCliente, type Pedido } from "@/lib/pedidos";
 import { saldoVasilhamesPedido } from "@/lib/vasilhames";
+import { expandirComposicao } from "@/lib/erp";
 import { useCaixa } from "@/context/caixa";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -32,7 +33,7 @@ export function CancelarPedidoDialog({
   children: ReactNode;
 }) {
   const { cancelar, pedidos } = usePedidos();
-  const { estornarVenda } = useEstoque();
+  const { estornarVenda, produtos } = useEstoque();
   const { definirDivida, ajustarVasilhames, ajustarVales, removerCompraPorPedido } = useClientes();
   const { despesas, removerDespesa } = useDespesas();
   const { caixaAberto, registrarMovimento } = useCaixa();
@@ -124,7 +125,7 @@ export function CancelarPedidoDialog({
 
         // 5) Cascos que ficaram na rua nesta venda voltam a não pertencer ao cliente.
         const deltaVasilhames = saldoVasilhamesPedido(
-          pedido.itens,
+          expandirComposicao(pedido.itens, produtos),
           pedido.vaziosRecolhidos,
         );
         if (deltaVasilhames !== 0) {
