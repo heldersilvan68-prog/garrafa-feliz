@@ -40,12 +40,14 @@ import { CATEGORIA_TAXA_CARTAO } from "@/lib/despesas";
 import { bairroDe, filtrarClientes, hojeISO, ordenarPorCodigo, rotuloCliente } from "@/lib/clientes";
 import {
   brl,
+  expandirComposicao,
   getDadosMedidaProduto,
   precoPorModo,
   totalComPromocao,
   unidPorFardo,
   rotuloEmbalagem,
   rotuloQuantidadeProduto,
+  type ItemComposicao,
 } from "@/lib/erp";
 import { BALCAO } from "@/lib/entregadores";
 import {
@@ -297,6 +299,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
         : undefined,
     retornavel: l.retornavel,
     modo: l.modo,
+    composicao: l.composicao,
   }));
 
 
@@ -485,7 +488,12 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
 
       // Pacote de vales não baixa estoque físico — só os itens de produto.
       await baixaVenda(
-        itensFisicos.map((i) => ({ produtoId: i.produtoId, qtd: i.qtd, modo: i.modo })),
+        itensFisicos.map((i) => ({
+          produtoId: i.produtoId,
+          qtd: i.qtd,
+          modo: i.modo,
+          composicao: i.composicao,
+        })),
         nVazios,
         { clienteId: cliente?.id, pedidoId: pedido.id, numeroPedido: pedido.numero },
       );
@@ -497,7 +505,10 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
         // Débito lançado exatamente igual ao valor informado como fiado.
         if (valorFiado > 0) ajustarDivida(cliente.id, valorFiado);
         // Saldo líquido: uma devolução excedente também baixa empréstimos antigos.
-        const deltaVasilhames = saldoVasilhamesPedido(itensFisicos, nVazios);
+        const deltaVasilhames = saldoVasilhamesPedido(
+          expandirComposicao(itensFisicos, produtos),
+          nVazios,
+        );
         if (deltaVasilhames !== 0) await ajustarVasilhames(cliente.id, deltaVasilhames);
       }
 
