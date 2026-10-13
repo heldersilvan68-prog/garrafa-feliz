@@ -103,19 +103,22 @@ export function EditarPedidoDialog({
         original?.embalagem === "fardo" &&
         original.qtd === qtd &&
         Math.abs(original.precoUnit - precoUnit) < 0.000001;
+      // Linhas de modalidade mantêm nome, preço e composição originais.
+      const deModalidade = (original?.composicao?.length ?? 0) > 0;
       return {
         produtoId: p.id,
-        nome: p.nome,
+        nome: deModalidade ? original!.nome : p.nome,
         qtd,
-        precoUnit,
+        precoUnit: deModalidade ? original!.precoUnit : precoUnit,
         embalagem: embalagemInalterada ? original.embalagem : "un",
         quantidadeEmbalagens: embalagemInalterada
           ? original.quantidadeEmbalagens
           : undefined,
         precoEmbalagem: embalagemInalterada ? original.precoEmbalagem : undefined,
         rotuloEmbalagem: embalagemInalterada ? original.rotuloEmbalagem : undefined,
-        retornavel: p.retornavel,
+        retornavel: deModalidade ? original!.retornavel : p.retornavel,
         modo: original?.modo ?? "refil",
+        composicao: original?.composicao,
       } satisfies ItemPedido;
     });
 
