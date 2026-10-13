@@ -22,7 +22,7 @@ import { useClientes } from "@/context/clientes";
 import { usePedidos } from "@/context/pedidos";
 import { useEstoque } from "@/context/estoque";
 import { useCaixa } from "@/context/caixa";
-import { brl, custoUnidades } from "@/lib/erp";
+import { brl, custoUnidades, expandirComposicao } from "@/lib/erp";
 import { isoLocal } from "@/lib/periodo";
 import { rotuloCliente } from "@/lib/clientes";
 import { saldoFiadoCliente, valorEmAberto, valorFaturado, type Pedido } from "@/lib/pedidos";
@@ -118,13 +118,15 @@ export function AcertoParcerias() {
       (s, p) =>
         s +
         p.itens.reduce((a, i) => {
-          // Modalidade: custo = soma dos produtos da composição.
+          // Modalidade: custo = soma dos produtos consumidos, incluindo
+          // implicitamente 1 unidade do produto principal quando a composição
+          // não o lista (mesma regra da baixa de estoque).
           if (i.composicao && i.composicao.length > 0) {
             return (
               a +
-              i.composicao.reduce((x, sub) => {
+              expandirComposicao([i], [...porProduto.values()]).reduce((x, sub) => {
                 const sp = porProduto.get(sub.produtoId);
-                return x + (sp ? custoUnidades(sp, sub.qtd * i.qtd) : 0);
+                return x + (sp ? custoUnidades(sp, sub.qtd) : 0);
               }, 0)
             );
           }
