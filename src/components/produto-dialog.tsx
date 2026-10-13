@@ -46,8 +46,9 @@ const produtoSchema = z.object({
   categoria: z.string().trim().min(1, "Selecione ou cadastre uma categoria.").max(80),
   unidade: z.string().trim().max(30),
   unidadesPorFardo: z.number().int().min(1).max(100_000),
-  quantidadeAtual: z.number().int().min(0).max(100_000_000),
-  quantidadeMinima: z.number().int().min(0).max(100_000_000),
+  // Caixas/fardos podem ser fracionados (sobras avulsas); arredonda ao salvar.
+  quantidadeAtual: z.number().min(0).max(100_000_000),
+  quantidadeMinima: z.number().min(0).max(100_000_000),
 });
 
 const vazio: Produto = {
@@ -159,8 +160,8 @@ export function ProdutoDialog({
     salvar({
       ...form,
       id: form.id || `p${Date.now()}`,
-      estoqueCheio: totalAtual,
-      estoqueMinimo: totalMinimo,
+      estoqueCheio: Math.round(totalAtual),
+      estoqueMinimo: Math.round(totalMinimo),
       estoqueVazio: form.retornavel ? form.estoqueVazio : 0,
     });
     toast.success(produto ? "Produto atualizado!" : "Produto cadastrado!");
