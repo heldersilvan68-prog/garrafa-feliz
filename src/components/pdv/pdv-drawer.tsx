@@ -73,6 +73,10 @@ type Linha = {
   qtd: number;
   preco: number;
   retornavel: boolean;
+  /** Modalidade escolhida no card (quando o produto tem modalidades). */
+  modalidadeId?: string;
+  /** Baixa composta: produtos e quantidades por unidade vendida. */
+  composicao?: ItemComposicao[];
 };
 
 
@@ -108,6 +112,8 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
   const [modos, setModos] = useState<Record<string, ModoVenda>>({});
   // Embalagem escolhida por produto: unidade avulsa ou fardo fechado.
   const [embalagens, setEmbalagens] = useState<Record<string, "un" | "fardo">>({});
+  // Modalidade escolhida por produto ("" = formato padrão do cadastro).
+  const [modalidadeSel, setModalidadeSel] = useState<Record<string, string>>({});
   const [parcelas, setParcelas] = useState<Parcela[]>([{ forma: "PIX", valor: "" }]);
   const [trocoPara, setTrocoPara] = useState("");
   // Desconto manual aplicado sobre o total da venda.
@@ -134,6 +140,13 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
     if (escolha) return escolha;
     const p = produtos.find((x) => x.id === id);
     return p ? getDadosMedidaProduto(p).principal : "un";
+  };
+
+  /** Modalidade ativa no card do produto (undefined = formato padrão). */
+  const modalidadeDe = (id: string) => {
+    const p = produtos.find((x) => x.id === id);
+    const sel = modalidadeSel[id];
+    return p?.modalidades?.find((m) => m.id === sel);
   };
 
   /** Passo de incremento no carrinho: 1 unidade ou o fardo inteiro. */
