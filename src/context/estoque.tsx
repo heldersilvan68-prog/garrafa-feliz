@@ -487,11 +487,13 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
 
   // Vendas (Se for água completa ou casco vendido, REDUZ o patrimônio)
   const aplicarVenda = async (
-    itens: ItemBaixa[],
+    itensOriginais: ItemBaixa[],
     vaziosRecolhidos: number,
     sinal: 1 | -1,
     vinculo?: { clienteId?: string; pedidoId?: string; numeroPedido?: number },
   ) => {
+    // Modalidades com composição viram baixas individuais por produto.
+    const itens: ItemBaixa[] = expandirComposicao(itensOriginais, produtos);
     const modoDe = (i: ItemBaixa): ModoVenda => {
       const p = produtos.find((x) => x.id === i.produtoId);
       return p?.retornavel ? (i.modo ?? "refil") : "refil";
