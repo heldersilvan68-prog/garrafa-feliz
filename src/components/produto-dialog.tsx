@@ -109,7 +109,7 @@ export function ProdutoDialog({
   const setModalidade = (id: string, dados: Partial<ModalidadeProduto>) =>
     setModalidades(modalidades.map((m) => (m.id === id ? { ...m, ...dados } : m)));
   // Produtos elegíveis para compor uma modalidade (nunca o próprio produto).
-  const produtosComposicao = produtos.filter((p) => p.id !== form.id);
+  const produtosComposicao = produtos;
 
   const upf = unidPorFardo(form);
   const usaEmbalagem = medidaPrincipal(form.unidade) === "fardo";
@@ -147,13 +147,14 @@ export function ProdutoDialog({
       toast.error(`Informe quantas unidades vêm em cada ${nomeMedida.singular}.`);
       return;
     }
-    for (const m of modalidades) {
+    const modalidadesLimpa = modalidades.map((m) => ({
+      ...m,
+      // Linhas incompletas (produto não escolhido ou qtd inválida) são descartadas.
+      composicao: m.composicao.filter((c) => c.produtoId && c.qtd > 0),
+    }));
+    for (const m of modalidadesLimpa) {
       if (!m.nome.trim()) {
         toast.error("Toda modalidade precisa de um nome.");
-        return;
-      }
-      if (m.composicao.length === 0 || m.composicao.some((c) => !c.produtoId || c.qtd <= 0)) {
-        toast.error(`A modalidade "${m.nome}" precisa de pelo menos 1 produto na composição.`);
         return;
       }
     }
@@ -163,6 +164,7 @@ export function ProdutoDialog({
       estoqueCheio: Math.round(totalAtual),
       estoqueMinimo: Math.round(totalMinimo),
       estoqueVazio: form.retornavel ? form.estoqueVazio : 0,
+      modalidades: modalidadesLimpa,
     });
     toast.success(produto ? "Produto atualizado!" : "Produto cadastrado!");
     setAberto(false);
@@ -483,7 +485,8 @@ export function ProdutoDialog({
                     </Button>
                   </div>
                   <p className="mb-2 mt-3 text-xs font-medium text-muted-foreground">
-                    Composição de estoque (baixa por unidade vendida)
+                    Composição de estoque (baixa por unidade vendida) — pode incluir o próprio
+                    produto. Se ficar vazia, a modalidade consome 1 unidade dele por venda.
                   </p>
                   <div className="flex flex-col gap-2">
                     {m.composicao.map((c, idx) => (

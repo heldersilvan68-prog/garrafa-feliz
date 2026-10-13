@@ -667,6 +667,9 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                   {produtos.filter((p) => !p.ocultarPdv).map((p) => {
                     const upf = unidPorFardo(p);
                     const modalidadeAtiva = modalidadeDe(p.id);
+                    // Produto com modalidades cadastradas: os modos antigos de
+                    // vasilhame saem do card (as modalidades cobrem esses casos).
+                    const temModalidades = (p.modalidades?.length ?? 0) > 0;
                     const medida = getDadosMedidaProduto(p);
                     const emFardo = embalagemDe(p.id) === "fardo";
                     const bruto = Math.max(
@@ -767,7 +770,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                           </Select>
                         )}
 
-                        {!modalidadeAtiva && p.retornavel && (
+                        {!modalidadeAtiva && !temModalidades && p.retornavel && (
                           <Select
                             value={modos[p.id] ?? "refil"}
                             onValueChange={(v) => {

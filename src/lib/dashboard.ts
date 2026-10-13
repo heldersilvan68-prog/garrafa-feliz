@@ -1,4 +1,4 @@
-import type { Produto } from "@/lib/erp";
+import { expandirComposicao, type Produto } from "@/lib/erp";
 import type { Cliente } from "@/lib/clientes";
 import type { Despesa } from "@/lib/despesas";
 import { CATEGORIA_COMPRA_MERCADORIA, CATEGORIA_TAXA_CARTAO, corCategoriaDespesa } from "@/lib/despesas";
@@ -62,13 +62,15 @@ const validos = (pedidos: Pedido[]) => pedidos.filter((p) => p.status !== "cance
 
 const custo = (p: Pedido, produtosPorId: Map<string, Produto>) =>
   p.itens.reduce((s, i) => {
-    // Modalidade: o CMV é a soma do custo de cada produto da composição.
+    // Modalidade: o CMV é a soma do custo de cada produto consumido,
+    // incluindo implicitamente 1 unidade do produto principal quando a
+    // composição não o lista (mesma regra da baixa de estoque).
     if (i.composicao && i.composicao.length > 0) {
       return (
         s +
-        i.composicao.reduce((a, sub) => {
-          const sp = produtosPorId.get(sub.produtoId);
-          return a + (sp?.precoCusto ?? 0) * sub.qtd * i.qtd;
+        expandirComposicao([i], [...produtosPorId.values()]).reduce((a, x) => {
+          const sp = produtosPorId.get(x.produtoId);
+          return a + (sp?.precoCusto ?? 0) * x.qtd;
         }, 0)
       );
     }

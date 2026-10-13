@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/table";
 import { useEstoque } from "@/context/estoque";
 import { usePedidos } from "@/context/pedidos";
-import { brl, custoUnidades, rotuloEstoque, unidPorFardo } from "@/lib/erp";
+import { brl, custoUnidades, expandirComposicao, rotuloEstoque, unidPorFardo } from "@/lib/erp";
 import { totalItemPedido } from "@/lib/pedidos";
 import { dentroFaixa, rotuloFaixa, type Faixa } from "@/lib/periodo";
 import { baixarCSV } from "@/lib/relatorios";
@@ -25,18 +25,31 @@ export function AnaliseProdutos({ faixa }: { faixa: Faixa }) {
   const linhas = useMemo(() => {
     const validos = pedidos.filter((p) => p.status !== "cancelado" && dentroFaixa(p.criadoEm, faixa));
     const porId = new Map(produtos.map((p) => [p.id, p]));
-    // Giro e CMV das modalidades são atribuídos a cada produto da composição.
-    const giroComposicao = new Map<string, { qtd: number; custo: number }>();
+    // Modalidades: giro, CMV e faturamento rateados por produto consumido
+    // (a composição inclui implicitamente 1 unidade do produto principal,
+    // quando ela não lista o próprio produto).
+    const porComposicao = new Map<string, { qtd: number; custo: number; fat: number }>();
     for (const ped of validos) {
       for (const i of ped.itens) {
-        if (!i.composicao || i.composicao.length === 0) continue;
-        for (const sub of i.composicao) {
-          const sp = porId.get(sub.produtoId);
-          if (!sp) continue;
-          const acc = giroComposicao.get(sub.produtoId) ?? { qtd: 0, custo: 0 };
-          acc.qtd += sub.qtd * i.qtd;
-          acc.custo += custoUnidades(sp, sub.qtd * i.qtd);
-          giroComposicao.set(sub.produtoId, acc);
+        if (!(i.composicao && i.composicao.length > 0)) continue;
+        const fat = totalItemPedido(i);
+        const subs = expandirComposicao([i], produtos);
+        const pesoTotal = subs.reduce(
+          (s, x) => s + x.qtd * (porId.get(x.produtoId)?.precoVenda || 0),
+          0,
+        );
+        for (const x of subs) {
+          const sp = porId.get(x.produtoId);
+          const acc = porComposicao.get(x.produtoId) ?? { qtd: 0, custo: 0, fat: 0 };
+          acc.qtd += x.qtd;
+          if (sp) acc.custo += custoUnidades(sp, x.qtd);
+          // Rateio do faturamento proporcional ao preço de venda de cada item
+          // da composição; sem preços, divide igualmente.
+          acc.fat +=
+            pesoTotal > 0
+              ? (fat * x.qtd * (sp?.precoVenda || 0)) / pesoTotal
+              : fat / subs.length;
+          porComposicao.set(x.produtoId, acc);
         }
       }
     }
@@ -49,11 +62,7 @@ export function AnaliseProdutos({ faixa }: { faixa: Faixa }) {
         for (const ped of validos) {
           for (const i of ped.itens) {
             if (i.produtoId !== p.id) continue;
-            if (i.composicao && i.composicao.length > 0) {
-              // Modalidade: faturamento fica no kit; giro/CMV vão para a composição.
-              faturamento += totalItemPedido(i);
-              continue;
-            }
+            if (i.composicao && i.composicao.length > 0) continue; // rateado acima
             qtd += i.qtd;
             faturamento += totalItemPedido(i);
             custoVendido +=
@@ -65,9 +74,10 @@ export function AnaliseProdutos({ faixa }: { faixa: Faixa }) {
                 : custoUnidades(p, i.qtd);
           }
         }
-        const giro = giroComposicao.get(p.id);
+        const giro = porComposicao.get(p.id);
         if (giro) {
           qtd += giro.qtd;
+          faturamento += giro.fat;
           custoVendido += giro.custo;
         }
         faturamento = Math.round(faturamento * 100) / 100;

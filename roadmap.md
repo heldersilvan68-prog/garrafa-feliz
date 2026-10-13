@@ -31,3 +31,6 @@
 - [x] Filtrar lista e total por vencimento no período, incluindo todo o mês ativo
 - [x] Diferenciar cores e sincronizar destaque entre gráfico e legenda
 - [x] Verificar cálculos e interação no aplicativo
+- [x] Modalidades: liberar o próprio produto no seletor de composição + fallback 1 un. do produto quando composição vazia
+- [x] Modalidades: relatório Produtos & Reposição — Vendido soma unidades consumidas por produto; rateio de faturamento/custo na composição
+- [x] PDV: ocultar o seletor antigo de modo de vasilhames quando o produto tiver modalidades ativas (manter só "Formato padrão" + modalidades)

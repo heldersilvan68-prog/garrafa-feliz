@@ -75,6 +75,9 @@ export type ModalidadeProduto = {
  * Achata itens com composição de modalidade em baixas individuais por produto.
  * Itens sem composição passam intactos; o `modo`/`retornavel` dos sub-itens
  * vem do cadastro de cada produto da composição.
+ *
+ * Regra de segurança: se a composição explícita NÃO incluir o produto
+ * principal (item.produtoId), a modalidade consome 1 unidade dele por venda.
  */
 export function expandirComposicao<T extends { produtoId: string; qtd: number }>(
   itens: T[],
@@ -85,12 +88,21 @@ export function expandirComposicao<T extends { produtoId: string; qtd: number }>
   for (const item of itens) {
     const composicao = (item as { composicao?: ItemComposicao[] }).composicao;
     if (composicao && composicao.length > 0) {
+      let paiIncluido = false;
       for (const sub of composicao) {
         if (!sub.produtoId || sub.qtd <= 0) continue;
+        if (sub.produtoId === item.produtoId) paiIncluido = true;
         saida.push({
           produtoId: sub.produtoId,
           qtd: sub.qtd * item.qtd,
           retornavel: porId.get(sub.produtoId)?.retornavel ?? false,
+        });
+      }
+      if (!paiIncluido) {
+        saida.push({
+          produtoId: item.produtoId,
+          qtd: item.qtd,
+          retornavel: porId.get(item.produtoId)?.retornavel ?? false,
         });
       }
     } else {
