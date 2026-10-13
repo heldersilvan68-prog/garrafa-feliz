@@ -153,6 +153,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
   const passoDe = (id: string) => {
     const p = produtos.find((x) => x.id === id);
     if (!p) return 1;
+    if (modalidadeDe(id)) return 1;
     return embalagemDe(id) === "fardo" ? unidPorFardo(p) : 1;
   };
 
@@ -164,6 +165,8 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
   const precoPadrao = (id: string) => {
     const p = produtos.find((x) => x.id === id);
     if (!p) return 0;
+    const modalidade = modalidadeDe(id);
+    if (modalidade) return modalidade.preco;
     if (embalagemDe(id) === "fardo") {
       return p.precoFardo > 0
         ? p.precoFardo
