@@ -51,7 +51,58 @@ export type Produto = {
    * vasilhames, avarias/perdas e venda definitiva de casco.
    */
   patrimonioCascos: number;
+  /** Quando true, o produto não aparece como card na tela de vendas (PDV). */
+  ocultarPdv?: boolean;
+  /** Modalidades de venda com baixa composta no estoque. */
+  modalidades?: ModalidadeProduto[];
 };
+
+/** Item da composição de estoque de uma modalidade (baixa individual). */
+export type ItemComposicao = { produtoId: string; qtd: number };
+
+/** Modalidade/variação de venda de um produto (ex.: Troca de Refil, Venda Completa). */
+export type ModalidadeProduto = {
+  id: string;
+  /** Rótulo exibido no seletor do PDV. */
+  nome: string;
+  /** Preço final cobrado do cliente nesta modalidade. */
+  preco: number;
+  /** Produtos baixados do estoque por unidade vendida nesta modalidade. */
+  composicao: ItemComposicao[];
+};
+
+/**
+ * Achata itens com composição de modalidade em baixas individuais por produto.
+ * Itens sem composição passam intactos; o `modo`/`retornavel` dos sub-itens
+ * vem do cadastro de cada produto da composição.
+ */
+export function expandirComposicao<T extends { produtoId: string; qtd: number }>(
+  itens: T[],
+  produtos: Pick<Produto, "id" | "retornavel">[],
+): Array<{ produtoId: string; qtd: number; retornavel: boolean }> {
+  const porId = new Map(produtos.map((p) => [p.id, p]));
+  const saida: Array<{ produtoId: string; qtd: number; retornavel: boolean }> = [];
+  for (const item of itens) {
+    const composicao = (item as { composicao?: ItemComposicao[] }).composicao;
+    if (composicao && composicao.length > 0) {
+      for (const sub of composicao) {
+        if (!sub.produtoId || sub.qtd <= 0) continue;
+        saida.push({
+          produtoId: sub.produtoId,
+          qtd: sub.qtd * item.qtd,
+          retornavel: porId.get(sub.produtoId)?.retornavel ?? false,
+        });
+      }
+    } else {
+      saida.push({
+        produtoId: item.produtoId,
+        qtd: item.qtd,
+        retornavel: (item as { retornavel?: boolean }).retornavel ?? porId.get(item.produtoId)?.retornavel ?? false,
+      });
+    }
+  }
+  return saida;
+}
 
 export const brl = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
