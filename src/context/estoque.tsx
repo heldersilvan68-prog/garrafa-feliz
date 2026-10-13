@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { paraMovimentoVasilhame, paraProduto, type ProdutoRow, type VasilhameRow } from "@/lib/mapeadores";
-import type { Produto } from "@/lib/erp";
+import { expandirComposicao, type ItemComposicao, type Produto } from "@/lib/erp";
 import { aPrazo, PREFIXO_AVARIA_CARGA, type ModoVenda, type MotivoAvaria, type MovimentoVasilhame, type TipoMovVasilhame } from "@/lib/vasilhames";
 
 /** Dados completos da chegada de uma carga da fonte. */
@@ -33,7 +33,7 @@ export type ChegadaCarga = {
 };
 import { CATEGORIA_COMPRA_MERCADORIA, CATEGORIA_ENVASE } from "@/lib/despesas";
 
-export type ItemBaixa = { produtoId: string; qtd: number; modo?: ModoVenda; retornavel?: boolean };
+export type ItemBaixa = { produtoId: string; qtd: number; modo?: ModoVenda; retornavel?: boolean; composicao?: ItemComposicao[] };
 
 /** Dados financeiros opcionais de uma entrada de mercadoria (compra). */
 export type CompraEntrada = {
@@ -296,6 +296,8 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
       desconto_completa: p.descontoCompleta || 0,
       promo_qtd: Math.max(0, Math.floor(p.promoQtd || 0)),
       promo_preco: p.promoPreco || 0,
+      ocultar_pdv: !!p.ocultarPdv,
+      modalidades: p.modalidades ?? [],
     };
 
     const existe = produtos.some((x) => x.id === p.id);
