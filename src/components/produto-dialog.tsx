@@ -103,6 +103,13 @@ export function ProdutoDialog({
   const set = <K extends keyof Produto>(k: K, v: Produto[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
 
+  const modalidades = form.modalidades ?? [];
+  const setModalidades = (lista: ModalidadeProduto[]) => set("modalidades", lista);
+  const setModalidade = (id: string, dados: Partial<ModalidadeProduto>) =>
+    setModalidades(modalidades.map((m) => (m.id === id ? { ...m, ...dados } : m)));
+  // Produtos elegíveis para compor uma modalidade (nunca o próprio produto).
+  const produtosComposicao = produtos.filter((p) => p.id !== form.id);
+
   const upf = unidPorFardo(form);
   const usaEmbalagem = medidaPrincipal(form.unidade) === "fardo";
   const nomeMedida = usaEmbalagem ? nomeEmbalagem(form.unidade) : { singular: "unidade", plural: "unidades" };
@@ -138,6 +145,16 @@ export function ProdutoDialog({
     if (usaEmbalagem && upf <= 1) {
       toast.error(`Informe quantas unidades vêm em cada ${nomeMedida.singular}.`);
       return;
+    }
+    for (const m of modalidades) {
+      if (!m.nome.trim()) {
+        toast.error("Toda modalidade precisa de um nome.");
+        return;
+      }
+      if (m.composicao.length === 0 || m.composicao.some((c) => !c.produtoId || c.qtd <= 0)) {
+        toast.error(`A modalidade "${m.nome}" precisa de pelo menos 1 produto na composição.`);
+        return;
+      }
     }
     salvar({
       ...form,
