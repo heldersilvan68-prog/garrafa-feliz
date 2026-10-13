@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
-import { Upload } from "lucide-react";
+import { Plus, Trash2, Upload } from "lucide-react";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,6 +16,13 @@ import { Input } from "@/components/ui/input";
 import { Campo } from "@/components/ui/campo";
 import { InputNumero } from "@/components/ui/input-numero";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { SelectComCadastro } from "@/components/select-com-cadastro";
 import { ProdutoFoto } from "@/components/produto-foto";
 import { useEstoque } from "@/context/estoque";
@@ -30,6 +37,7 @@ import {
   paraUnidadesInternas,
   precoSugerido,
   unidPorFardo,
+  type ModalidadeProduto,
   type Produto,
 } from "@/lib/erp";
 
@@ -76,7 +84,7 @@ export function ProdutoDialog({
   produto?: Produto;
   children: ReactNode;
 }) {
-  const { salvar } = useEstoque();
+  const { salvar, produtos } = useEstoque();
   const [aberto, setAberto] = useState(false);
   const [form, setForm] = useState<Produto>(produto ?? vazio);
   const [quantidadeAtual, setQuantidadeAtual] = useState(0);
