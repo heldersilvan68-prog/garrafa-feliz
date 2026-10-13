@@ -407,6 +407,157 @@ export function ProdutoDialog({
 
           <div className="flex items-center justify-between rounded-xl border border-border bg-muted/40 p-4">
             <div className="min-w-0 pr-4">
+              <p className="text-sm font-medium">Ocultar da listagem principal do PDV</p>
+              <p className="text-xs text-muted-foreground">
+                O produto continua ativo para estoque, relatórios e CMV, mas não aparece como
+                card na tela de vendas (útil para insumos e vasilhames avulsos).
+              </p>
+            </div>
+            <Switch checked={!!form.ocultarPdv} onCheckedChange={(v) => set("ocultarPdv", v)} />
+          </div>
+
+          <div className="rounded-xl border border-border p-4">
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-sm font-medium">Modalidades / Opções do produto</p>
+                <p className="text-xs text-muted-foreground">
+                  Formas de venda com baixa composta no estoque (ex.: Troca de Refil, Venda
+                  Completa). No PDV, o card mostra um seletor com estas opções.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="shrink-0"
+                onClick={() =>
+                  setModalidades([
+                    ...modalidades,
+                    {
+                      id: crypto.randomUUID(),
+                      nome: "",
+                      preco: form.precoVenda || 0,
+                      composicao: [{ produtoId: "", qtd: 1 }],
+                    },
+                  ])
+                }
+              >
+                <Plus className="size-4" /> Adicionar
+              </Button>
+            </div>
+            {modalidades.length === 0 && (
+              <p className="text-xs text-muted-foreground">
+                Nenhuma modalidade cadastrada — o produto é vendido apenas no formato padrão.
+              </p>
+            )}
+            <div className="flex flex-col gap-3">
+              {modalidades.map((m) => (
+                <div key={m.id} className="rounded-lg border border-border bg-muted/30 p-3">
+                  <div className="flex items-start gap-2">
+                    <div className="grid flex-1 gap-3 sm:grid-cols-2">
+                      <Campo label="Nome da modalidade">
+                        <Input
+                          value={m.nome}
+                          onChange={(e) => setModalidade(m.id, { nome: e.target.value })}
+                          placeholder="Ex.: Troca de Refil"
+                        />
+                      </Campo>
+                      <Campo label="Preço de venda (R$)">
+                        <InputNumero
+                          decimal
+                          valor={m.preco}
+                          onValor={(n) => setModalidade(m.id, { preco: n })}
+                        />
+                      </Campo>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Remover modalidade"
+                      className="mt-5 shrink-0 text-destructive"
+                      onClick={() => setModalidades(modalidades.filter((x) => x.id !== m.id))}
+                    >
+                      <Trash2 />
+                    </Button>
+                  </div>
+                  <p className="mb-2 mt-3 text-xs font-medium text-muted-foreground">
+                    Composição de estoque (baixa por unidade vendida)
+                  </p>
+                  <div className="flex flex-col gap-2">
+                    {m.composicao.map((c, idx) => (
+                      <div key={idx} className="flex items-center gap-2">
+                        <Select
+                          value={c.produtoId}
+                          onValueChange={(v) =>
+                            setModalidade(m.id, {
+                              composicao: m.composicao.map((x, i) =>
+                                i === idx ? { ...x, produtoId: v } : x,
+                              ),
+                            })
+                          }
+                        >
+                          <SelectTrigger className="flex-1">
+                            <SelectValue placeholder="Selecione o produto" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {produtosComposicao.map((p) => (
+                              <SelectItem key={p.id} value={p.id}>
+                                {p.nome}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <div className="w-24 shrink-0">
+                          <InputNumero
+                            min={1}
+                            valor={c.qtd}
+                            onValor={(n) =>
+                              setModalidade(m.id, {
+                                composicao: m.composicao.map((x, i) =>
+                                  i === idx ? { ...x, qtd: Math.max(1, n || 1) } : x,
+                                ),
+                              })
+                            }
+                          />
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          aria-label="Remover item da composição"
+                          className="shrink-0 text-destructive"
+                          onClick={() =>
+                            setModalidade(m.id, {
+                              composicao: m.composicao.filter((_, i) => i !== idx),
+                            })
+                          }
+                        >
+                          <Trash2 />
+                        </Button>
+                      </div>
+                    ))}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-fit"
+                      onClick={() =>
+                        setModalidade(m.id, {
+                          composicao: [...m.composicao, { produtoId: "", qtd: 1 }],
+                        })
+                      }
+                    >
+                      <Plus className="size-4" /> Item da composição
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between rounded-xl border border-border bg-muted/40 p-4">
+            <div className="min-w-0 pr-4">
               <p className="text-sm font-medium">Produto retornável</p>
               <p className="text-xs text-muted-foreground">
                 Controla vasilhames cheios, vazios e patrimônio de cascos.
