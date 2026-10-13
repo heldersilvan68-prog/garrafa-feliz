@@ -39,6 +39,7 @@ import {
 } from "@/lib/pedidos";
 import { useClientes } from "@/context/clientes";
 import { saldoVasilhamesPedido } from "@/lib/vasilhames";
+import { expandirComposicao } from "@/lib/erp";
 
 type Parcela = { forma: FormaPagamento; valor: string };
 
@@ -223,8 +224,14 @@ export function EditarPedidoDialog({
     // Sincroniza o "Devido total" do cliente com os fiados que continuam em aberto.
     if (pedido.clienteId) {
       // Recalcula os cascos na rua: estorna o saldo antigo do pedido e aplica o novo.
-      const saldoAntigo = saldoVasilhamesPedido(pedido.itens, pedido.vaziosRecolhidos);
-      const saldoNovo = saldoVasilhamesPedido(itens, Math.max(0, Number(vazios) || 0));
+      const saldoAntigo = saldoVasilhamesPedido(
+        expandirComposicao(pedido.itens, produtos),
+        pedido.vaziosRecolhidos,
+      );
+      const saldoNovo = saldoVasilhamesPedido(
+        expandirComposicao(itens, produtos),
+        Math.max(0, Number(vazios) || 0),
+      );
       const deltaCascos = saldoNovo - saldoAntigo;
       if (deltaCascos !== 0) void ajustarVasilhames(pedido.clienteId, deltaCascos);
       const outros = pedidos
