@@ -24,6 +24,22 @@ export function AnaliseProdutos({ faixa }: { faixa: Faixa }) {
 
   const linhas = useMemo(() => {
     const validos = pedidos.filter((p) => p.status !== "cancelado" && dentroFaixa(p.criadoEm, faixa));
+    const porId = new Map(produtos.map((p) => [p.id, p]));
+    // Giro e CMV das modalidades são atribuídos a cada produto da composição.
+    const giroComposicao = new Map<string, { qtd: number; custo: number }>();
+    for (const ped of validos) {
+      for (const i of ped.itens) {
+        if (!i.composicao || i.composicao.length === 0) continue;
+        for (const sub of i.composicao) {
+          const sp = porId.get(sub.produtoId);
+          if (!sp) continue;
+          const acc = giroComposicao.get(sub.produtoId) ?? { qtd: 0, custo: 0 };
+          acc.qtd += sub.qtd * i.qtd;
+          acc.custo += custoUnidades(sp, sub.qtd * i.qtd);
+          giroComposicao.set(sub.produtoId, acc);
+        }
+      }
+    }
     return produtos
       .map((p) => {
         const upf = unidPorFardo(p);
@@ -33,6 +49,11 @@ export function AnaliseProdutos({ faixa }: { faixa: Faixa }) {
         for (const ped of validos) {
           for (const i of ped.itens) {
             if (i.produtoId !== p.id) continue;
+            if (i.composicao && i.composicao.length > 0) {
+              // Modalidade: faturamento fica no kit; giro/CMV vão para a composição.
+              faturamento += totalItemPedido(i);
+              continue;
+            }
             qtd += i.qtd;
             faturamento += totalItemPedido(i);
             custoVendido +=
@@ -43,6 +64,11 @@ export function AnaliseProdutos({ faixa }: { faixa: Faixa }) {
                     : custoUnidades(p, unidPorFardo(p)))
                 : custoUnidades(p, i.qtd);
           }
+        }
+        const giro = giroComposicao.get(p.id);
+        if (giro) {
+          qtd += giro.qtd;
+          custoVendido += giro.custo;
         }
         faturamento = Math.round(faturamento * 100) / 100;
         custoVendido = Math.round(custoVendido * 100) / 100;

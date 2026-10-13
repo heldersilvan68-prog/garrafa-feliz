@@ -36,6 +36,7 @@ import { useEstoque } from "@/context/estoque";
 import { brl } from "@/lib/erp";
 import { FILTROS_HISTORICO, LABEL_MOV, resumoVasilhames } from "@/lib/vasilhames";
 import { saldoVasilhamesPedido } from "@/lib/vasilhames";
+import { expandirComposicao } from "@/lib/erp";
 import { usePedidos } from "@/context/pedidos";
 
 export const Route = createFileRoute("/_authenticated/vasilhames")({
@@ -113,7 +114,10 @@ function Vasilhames() {
               (pedido) =>
                 pedido.clienteId === cliente.id &&
                 pedido.status !== "cancelado" &&
-                saldoVasilhamesPedido(pedido.itens, pedido.vaziosRecolhidos) > 0,
+                saldoVasilhamesPedido(
+                  expandirComposicao(pedido.itens, produtos),
+                  pedido.vaziosRecolhidos,
+                ) > 0,
             )
             .sort((a, b) => new Date(b.criadoEm).getTime() - new Date(a.criadoEm).getTime())[0];
           return { cliente, ultimoEmprestimo: ultimo?.criadoEm };

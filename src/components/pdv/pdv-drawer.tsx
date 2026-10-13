@@ -40,12 +40,14 @@ import { CATEGORIA_TAXA_CARTAO } from "@/lib/despesas";
 import { bairroDe, filtrarClientes, hojeISO, ordenarPorCodigo, rotuloCliente } from "@/lib/clientes";
 import {
   brl,
+  expandirComposicao,
   getDadosMedidaProduto,
   precoPorModo,
   totalComPromocao,
   unidPorFardo,
   rotuloEmbalagem,
   rotuloQuantidadeProduto,
+  type ItemComposicao,
 } from "@/lib/erp";
 import { BALCAO } from "@/lib/entregadores";
 import {
@@ -73,6 +75,10 @@ type Linha = {
   qtd: number;
   preco: number;
   retornavel: boolean;
+  /** Modalidade escolhida no card (quando o produto tem modalidades). */
+  modalidadeId?: string;
+  /** Baixa composta: produtos e quantidades por unidade vendida. */
+  composicao?: ItemComposicao[];
 };
 
 
@@ -108,6 +114,8 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
   const [modos, setModos] = useState<Record<string, ModoVenda>>({});
   // Embalagem escolhida por produto: unidade avulsa ou fardo fechado.
   const [embalagens, setEmbalagens] = useState<Record<string, "un" | "fardo">>({});
+  // Modalidade escolhida por produto ("" = formato padrão do cadastro).
+  const [modalidadeSel, setModalidadeSel] = useState<Record<string, string>>({});
   const [parcelas, setParcelas] = useState<Parcela[]>([{ forma: "PIX", valor: "" }]);
   const [trocoPara, setTrocoPara] = useState("");
   // Desconto manual aplicado sobre o total da venda.
@@ -136,10 +144,18 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
     return p ? getDadosMedidaProduto(p).principal : "un";
   };
 
+  /** Modalidade ativa no card do produto (undefined = formato padrão). */
+  const modalidadeDe = (id: string) => {
+    const p = produtos.find((x) => x.id === id);
+    const sel = modalidadeSel[id];
+    return p?.modalidades?.find((m) => m.id === sel);
+  };
+
   /** Passo de incremento no carrinho: 1 unidade ou o fardo inteiro. */
   const passoDe = (id: string) => {
     const p = produtos.find((x) => x.id === id);
     if (!p) return 1;
+    if (modalidadeDe(id)) return 1;
     return embalagemDe(id) === "fardo" ? unidPorFardo(p) : 1;
   };
 
@@ -151,6 +167,8 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
   const precoPadrao = (id: string) => {
     const p = produtos.find((x) => x.id === id);
     if (!p) return 0;
+    const modalidade = modalidadeDe(id);
+    if (modalidade) return modalidade.preco;
     if (embalagemDe(id) === "fardo") {
       return p.precoFardo > 0
         ? p.precoFardo
@@ -169,9 +187,14 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
    * fardo fechado = nº de fardos × preço do fardo (sem dividir por unidade);
    * avulso = promoção progressiva (combos fechados) + unidades restantes.
    */
-  const totalLinha = (l: Pick<Linha, "produtoId" | "qtd" | "embalagem" | "preco">) => {
+  const totalLinha = (
+    l: Pick<Linha, "produtoId" | "qtd" | "embalagem" | "preco" | "composicao">,
+  ) => {
     const p = produtos.find((x) => x.id === l.produtoId);
     if (!p || l.qtd <= 0) return 0;
+    // Modalidade: preço fechado por unidade vendida, sem promoção/embalagem.
+    if (l.composicao && l.composicao.length > 0)
+      return Math.round(l.qtd * l.preco * 100) / 100;
     if (l.embalagem === "fardo") {
       const fardos = Math.max(1, Math.round(l.qtd / unidPorFardo(p)));
       return Math.round(fardos * l.preco * 100) / 100;
@@ -202,10 +225,12 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
       toast.error("Informe a quantidade antes de adicionar.");
       return;
     }
-    const embalagem = embalagemDe(id);
-    const modo: ModoVenda = p.retornavel ? (modos[id] ?? "refil") : "refil";
+    const modalidade = modalidadeDe(id);
+    const embalagem = modalidade ? "un" : embalagemDe(id);
+    const modo: ModoVenda = !modalidade && p.retornavel ? (modos[id] ?? "refil") : "refil";
     const preco = precoVenda(id);
     const qtd = bruto * passo;
+    const nomeLinha = modalidade ? `${p.nome} (${modalidade.nome})` : p.nome;
     setLinhas((ls) => {
       // Mesma variação e mesmo preço somam na linha existente; o resto vira linha nova.
       const i = ls.findIndex(
@@ -213,6 +238,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
           l.produtoId === id &&
           l.modo === modo &&
           l.embalagem === embalagem &&
+          l.modalidadeId === modalidade?.id &&
           Math.abs(l.preco - preco) < 0.005,
       );
       if (i >= 0)
@@ -220,20 +246,22 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
       return [
         ...ls,
         {
-          key: `${id}-${modo}-${embalagem}-${Date.now()}-${ls.length}`,
+          key: `${id}-${modo}-${embalagem}-${modalidade?.id ?? "padrao"}-${Date.now()}-${ls.length}`,
           produtoId: id,
-          nome: p.nome,
+          nome: nomeLinha,
           modo,
           embalagem,
           qtd,
           preco,
-          retornavel: p.retornavel,
+          retornavel: modalidade ? false : p.retornavel,
+          modalidadeId: modalidade?.id,
+          composicao: modalidade?.composicao,
         },
       ];
     });
     setQtds((s) => ({ ...s, [id]: "" }));
     toast.success(
-      `${p.nome} adicionado${p.retornavel ? ` · ${LABEL_MODO[modo]}` : ""}`,
+      `${nomeLinha} adicionado${!modalidade && p.retornavel ? ` · ${LABEL_MODO[modo]}` : ""}`,
     );
   };
 
@@ -271,6 +299,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
         : undefined,
     retornavel: l.retornavel,
     modo: l.modo,
+    composicao: l.composicao,
   }));
 
 
@@ -459,7 +488,12 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
 
       // Pacote de vales não baixa estoque físico — só os itens de produto.
       await baixaVenda(
-        itensFisicos.map((i) => ({ produtoId: i.produtoId, qtd: i.qtd, modo: i.modo })),
+        itensFisicos.map((i) => ({
+          produtoId: i.produtoId,
+          qtd: i.qtd,
+          modo: i.modo,
+          composicao: i.composicao,
+        })),
         nVazios,
         { clienteId: cliente?.id, pedidoId: pedido.id, numeroPedido: pedido.numero },
       );
@@ -471,7 +505,10 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
         // Débito lançado exatamente igual ao valor informado como fiado.
         if (valorFiado > 0) ajustarDivida(cliente.id, valorFiado);
         // Saldo líquido: uma devolução excedente também baixa empréstimos antigos.
-        const deltaVasilhames = saldoVasilhamesPedido(itensFisicos, nVazios);
+        const deltaVasilhames = saldoVasilhamesPedido(
+          expandirComposicao(itensFisicos, produtos),
+          nVazios,
+        );
         if (deltaVasilhames !== 0) await ajustarVasilhames(cliente.id, deltaVasilhames);
       }
 
@@ -627,8 +664,9 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
               <div className="flex flex-col gap-2">
                 <p className="text-sm font-medium">Produtos</p>
                 <div className="grid min-w-0 gap-3 sm:grid-cols-2">
-                  {produtos.map((p) => {
+                  {produtos.filter((p) => !p.ocultarPdv).map((p) => {
                     const upf = unidPorFardo(p);
+                    const modalidadeAtiva = modalidadeDe(p.id);
                     const medida = getDadosMedidaProduto(p);
                     const emFardo = embalagemDe(p.id) === "fardo";
                     const bruto = Math.max(
@@ -679,8 +717,34 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                           </span>
                         </div>
 
+                        {/* Linha 3: modalidades do produto (quando cadastradas) */}
+                        {(p.modalidades?.length ?? 0) > 0 && (
+                          <Select
+                            value={modalidadeSel[p.id] ?? "padrao"}
+                            onValueChange={(v) => {
+                              setModalidadeSel((m) => ({
+                                ...m,
+                                [p.id]: v === "padrao" ? "" : v,
+                              }));
+                              limparPreco();
+                            }}
+                          >
+                            <SelectTrigger className="h-9 w-full min-w-0 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="padrao">Formato padrão</SelectItem>
+                              {p.modalidades!.map((m) => (
+                                <SelectItem key={m.id} value={m.id}>
+                                  {m.nome} — {brl(m.preco)}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+
                         {/* Linha 3: seleção de embalagem e/ou modo do retornável */}
-                        {upf > 1 && (
+                        {!modalidadeAtiva && upf > 1 && (
                           <Select
                             value={embalagemDe(p.id)}
                             onValueChange={(v) => {
@@ -703,7 +767,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                           </Select>
                         )}
 
-                        {p.retornavel && (
+                        {!modalidadeAtiva && p.retornavel && (
                           <Select
                             value={modos[p.id] ?? "refil"}
                             onValueChange={(v) => {

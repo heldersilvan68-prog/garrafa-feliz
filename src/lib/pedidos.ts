@@ -1,5 +1,5 @@
 import type { ModoVenda } from "@/lib/vasilhames";
-import { rotuloQuantidadeProduto, type Produto } from "@/lib/erp";
+import { rotuloQuantidadeProduto, type ItemComposicao, type Produto } from "@/lib/erp";
 
 export type StatusPedido = "pendente" | "em-rota" | "concluido" | "cancelado";
 
@@ -42,6 +42,8 @@ export type ItemPedido = {
   retornavel: boolean;
   /** Regra de vasilhame aplicada na venda (retornáveis). */
   modo: ModoVenda;
+  /** Composição de estoque da modalidade vendida (baixa individual por produto). */
+  composicao?: ItemComposicao[];
 };
 
 /** Total registrado da linha, sem ratear o preço do fardo em unidades avulsas. */

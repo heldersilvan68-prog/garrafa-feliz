@@ -39,6 +39,7 @@ import {
 } from "@/lib/pedidos";
 import { useClientes } from "@/context/clientes";
 import { saldoVasilhamesPedido } from "@/lib/vasilhames";
+import { expandirComposicao } from "@/lib/erp";
 
 type Parcela = { forma: FormaPagamento; valor: string };
 
@@ -102,19 +103,22 @@ export function EditarPedidoDialog({
         original?.embalagem === "fardo" &&
         original.qtd === qtd &&
         Math.abs(original.precoUnit - precoUnit) < 0.000001;
+      // Linhas de modalidade mantêm nome, preço e composição originais.
+      const deModalidade = (original?.composicao?.length ?? 0) > 0;
       return {
         produtoId: p.id,
-        nome: p.nome,
+        nome: deModalidade ? original!.nome : p.nome,
         qtd,
-        precoUnit,
+        precoUnit: deModalidade ? original!.precoUnit : precoUnit,
         embalagem: embalagemInalterada ? original.embalagem : "un",
         quantidadeEmbalagens: embalagemInalterada
           ? original.quantidadeEmbalagens
           : undefined,
         precoEmbalagem: embalagemInalterada ? original.precoEmbalagem : undefined,
         rotuloEmbalagem: embalagemInalterada ? original.rotuloEmbalagem : undefined,
-        retornavel: p.retornavel,
+        retornavel: deModalidade ? original!.retornavel : p.retornavel,
         modo: original?.modo ?? "refil",
+        composicao: original?.composicao,
       } satisfies ItemPedido;
     });
 
@@ -223,8 +227,14 @@ export function EditarPedidoDialog({
     // Sincroniza o "Devido total" do cliente com os fiados que continuam em aberto.
     if (pedido.clienteId) {
       // Recalcula os cascos na rua: estorna o saldo antigo do pedido e aplica o novo.
-      const saldoAntigo = saldoVasilhamesPedido(pedido.itens, pedido.vaziosRecolhidos);
-      const saldoNovo = saldoVasilhamesPedido(itens, Math.max(0, Number(vazios) || 0));
+      const saldoAntigo = saldoVasilhamesPedido(
+        expandirComposicao(pedido.itens, produtos),
+        pedido.vaziosRecolhidos,
+      );
+      const saldoNovo = saldoVasilhamesPedido(
+        expandirComposicao(itens, produtos),
+        Math.max(0, Number(vazios) || 0),
+      );
       const deltaCascos = saldoNovo - saldoAntigo;
       if (deltaCascos !== 0) void ajustarVasilhames(pedido.clienteId, deltaCascos);
       const outros = pedidos

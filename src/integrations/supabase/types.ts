@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.15"
   }
   public: {
     Tables: {
@@ -595,6 +595,7 @@ export type Database = {
       }
       order_items: {
         Row: {
+          composicao: Json | null
           created_at: string
           embalagem: string | null
           id: string
@@ -611,6 +612,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          composicao?: Json | null
           created_at?: string
           embalagem?: string | null
           id?: string
@@ -627,6 +629,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          composicao?: Json | null
           created_at?: string
           embalagem?: string | null
           id?: string
@@ -1039,7 +1042,9 @@ export type Database = {
           legacy_id: string | null
           marca: string | null
           margem_desejada: number
+          modalidades: Json
           nome: string
+          ocultar_pdv: boolean
           patrimonio_cascos: number
           preco_custo: number
           preco_custo_fardo: number
@@ -1068,7 +1073,9 @@ export type Database = {
           legacy_id?: string | null
           marca?: string | null
           margem_desejada?: number
+          modalidades?: Json
           nome: string
+          ocultar_pdv?: boolean
           patrimonio_cascos?: number
           preco_custo?: number
           preco_custo_fardo?: number
@@ -1097,7 +1104,9 @@ export type Database = {
           legacy_id?: string | null
           marca?: string | null
           margem_desejada?: number
+          modalidades?: Json
           nome?: string
+          ocultar_pdv?: boolean
           patrimonio_cascos?: number
           preco_custo?: number
           preco_custo_fardo?: number

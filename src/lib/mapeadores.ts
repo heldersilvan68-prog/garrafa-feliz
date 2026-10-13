@@ -1,5 +1,5 @@
 import { isoLocal, isoParaDataLocal } from "@/lib/periodo";
-import type { Categoria, Produto } from "@/lib/erp";
+import type { Categoria, ItemComposicao, ModalidadeProduto, Produto } from "@/lib/erp";
 import type { Cliente, Compra } from "@/lib/clientes";
 import type { FormaPagamento, ItemPedido, Pedido, StatusPedido } from "@/lib/pedidos";
 import type { Caixa, MovimentoCaixa, TipoMovimento } from "@/lib/caixa";
@@ -46,7 +46,54 @@ export const paraProduto = (r: ProdutoRow): Produto => ({
   promoQtd: r.promo_qtd ?? 0,
   promoPreco: num(r.promo_preco),
   patrimonioCascos: r.patrimonio_cascos ?? 0,
+  ocultarPdv: !!r.ocultar_pdv,
+  modalidades: paraModalidades(r.modalidades),
 });
+
+/** Converte o jsonb de modalidades em estrutura tipada e saneada. */
+const paraModalidades = (v: unknown): ModalidadeProduto[] => {
+  if (!Array.isArray(v)) return [];
+  return v
+    .map((m): ModalidadeProduto | null => {
+      if (!m || typeof m !== "object") return null;
+      const o = m as Record<string, unknown>;
+      const composicao: ItemComposicao[] = Array.isArray(o.composicao)
+        ? o.composicao
+            .map((c) => {
+              if (!c || typeof c !== "object") return null;
+              const co = c as Record<string, unknown>;
+              const produtoId = String(co.produtoId ?? "");
+              const qtd = Number(co.qtd ?? 0);
+              return produtoId && qtd > 0 ? { produtoId, qtd } : null;
+            })
+            .filter((c): c is ItemComposicao => !!c)
+        : [];
+      const nome = String(o.nome ?? "").trim();
+      if (!nome || composicao.length === 0) return null;
+      return {
+        id: String(o.id ?? crypto.randomUUID()),
+        nome,
+        preco: Number(o.preco ?? 0),
+        composicao,
+      };
+    })
+    .filter((m): m is ModalidadeProduto => !!m);
+};
+
+/** Converte o jsonb de composição gravado no item do pedido. */
+const paraComposicao = (v: unknown): ItemComposicao[] | undefined => {
+  if (!Array.isArray(v)) return undefined;
+  const lista = v
+    .map((c) => {
+      if (!c || typeof c !== "object") return null;
+      const co = c as Record<string, unknown>;
+      const produtoId = String(co.produtoId ?? "");
+      const qtd = Number(co.qtd ?? 0);
+      return produtoId && qtd > 0 ? { produtoId, qtd } : null;
+    })
+    .filter((c): c is ItemComposicao => !!c);
+  return lista.length > 0 ? lista : undefined;
+};
 
 
 export const paraCompra = (r: CompraRow): Compra => ({
@@ -117,6 +164,7 @@ export const paraItemPedido = (r: ItemPedidoRow): ItemPedido => ({
   rotuloEmbalagem: r.rotulo_embalagem ?? undefined,
   retornavel: r.retornavel,
   modo: (r.modo as ModoVenda | null) ?? "refil",
+  composicao: paraComposicao(r.composicao),
 });
 
 export const paraPedido = (

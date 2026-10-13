@@ -118,6 +118,16 @@ export function AcertoParcerias() {
       (s, p) =>
         s +
         p.itens.reduce((a, i) => {
+          // Modalidade: custo = soma dos produtos da composição.
+          if (i.composicao && i.composicao.length > 0) {
+            return (
+              a +
+              i.composicao.reduce((x, sub) => {
+                const sp = porProduto.get(sub.produtoId);
+                return x + (sp ? custoUnidades(sp, sub.qtd * i.qtd) : 0);
+              }, 0)
+            );
+          }
           const prod = porProduto.get(i.produtoId);
           return a + (prod ? custoUnidades(prod, i.qtd) : 0);
         }, 0),
