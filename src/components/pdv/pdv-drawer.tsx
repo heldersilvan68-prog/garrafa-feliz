@@ -664,8 +664,9 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
               <div className="flex flex-col gap-2">
                 <p className="text-sm font-medium">Produtos</p>
                 <div className="grid min-w-0 gap-3 sm:grid-cols-2">
-                  {produtos.map((p) => {
+                  {produtos.filter((p) => !p.ocultarPdv).map((p) => {
                     const upf = unidPorFardo(p);
+                    const modalidadeAtiva = modalidadeDe(p.id);
                     const medida = getDadosMedidaProduto(p);
                     const emFardo = embalagemDe(p.id) === "fardo";
                     const bruto = Math.max(
@@ -716,8 +717,34 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                           </span>
                         </div>
 
+                        {/* Linha 3: modalidades do produto (quando cadastradas) */}
+                        {(p.modalidades?.length ?? 0) > 0 && (
+                          <Select
+                            value={modalidadeSel[p.id] ?? "padrao"}
+                            onValueChange={(v) => {
+                              setModalidadeSel((m) => ({
+                                ...m,
+                                [p.id]: v === "padrao" ? "" : v,
+                              }));
+                              limparPreco();
+                            }}
+                          >
+                            <SelectTrigger className="h-9 w-full min-w-0 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="padrao">Formato padrão</SelectItem>
+                              {p.modalidades!.map((m) => (
+                                <SelectItem key={m.id} value={m.id}>
+                                  {m.nome} — {brl(m.preco)}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+
                         {/* Linha 3: seleção de embalagem e/ou modo do retornável */}
-                        {upf > 1 && (
+                        {!modalidadeAtiva && upf > 1 && (
                           <Select
                             value={embalagemDe(p.id)}
                             onValueChange={(v) => {
@@ -740,7 +767,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                           </Select>
                         )}
 
-                        {p.retornavel && (
+                        {!modalidadeAtiva && p.retornavel && (
                           <Select
                             value={modos[p.id] ?? "refil"}
                             onValueChange={(v) => {
