@@ -736,7 +736,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="padrao">Formato padrão</SelectItem>
+                              <SelectItem value="padrao">Água</SelectItem>
                               {p.modalidades!.map((m) => (
                                 <SelectItem key={m.id} value={m.id}>
                                   {m.nome} — {brl(m.preco)}
