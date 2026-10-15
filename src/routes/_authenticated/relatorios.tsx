@@ -29,7 +29,7 @@ import { useCaixa } from "@/context/caixa";
 import { useClientes } from "@/context/clientes";
 import { LABEL_MODO, type ModoVenda } from "@/lib/vasilhames";
 
-import { brl, rotuloQuantidadeProduto } from "@/lib/erp";
+import { brl, custoUnidades, expandirComposicao, rotuloQuantidadeProduto } from "@/lib/erp";
 import { dataBR } from "@/lib/despesas";
 import {
   STATUS_PEDIDO_LABEL,
@@ -212,6 +212,23 @@ function RelatoriosPage() {
         // o custo (CMV) continua contabilizado integralmente na saída.
         const fator = p.total > 0 ? valorFaturado(p) / p.total : 0;
         for (const i of p.itens) {
+          // Itens vendidos via Modalidades (com composição de estoque):
+          // classifica pela composição — produto principal + casco = completa;
+          // só casco/insumo = casco. O CMV é a soma do custo de cada item consumido.
+          if (i.composicao && i.composicao.length > 0) {
+            const subs = expandirComposicao([i], produtos);
+            const temPai = subs.some((s) => s.produtoId === i.produtoId);
+            const temOutros = subs.some((s) => s.produtoId !== i.produtoId);
+            const modoItem: ModoVenda = temPai && temOutros ? "completa" : temOutros ? "casco" : "refil";
+            if (modoItem !== id) continue;
+            qtd += i.qtd;
+            faturamento += totalItemPedido(i) * fator;
+            for (const s of subs) {
+              const sp = produtosPorId.get(s.produtoId);
+              if (sp) custo += custoUnidades(sp, s.qtd);
+            }
+            continue;
+          }
           if (!i.retornavel || (i.modo ?? "refil") !== id) continue;
           const prod = produtosPorId.get(i.produtoId);
           const envase = prod?.custoEnvase || prod?.precoCusto || 0;
