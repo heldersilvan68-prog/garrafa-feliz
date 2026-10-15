@@ -29,7 +29,7 @@ import { useCaixa } from "@/context/caixa";
 import { useClientes } from "@/context/clientes";
 import { LABEL_MODO, type ModoVenda } from "@/lib/vasilhames";
 
-import { brl, rotuloQuantidadeProduto } from "@/lib/erp";
+import { brl, custoUnidades, expandirComposicao, rotuloQuantidadeProduto } from "@/lib/erp";
 import { dataBR } from "@/lib/despesas";
 import {
   STATUS_PEDIDO_LABEL,
