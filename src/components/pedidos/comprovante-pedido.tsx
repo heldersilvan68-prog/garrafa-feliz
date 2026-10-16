@@ -102,7 +102,11 @@ function Cupom({ pedido }: { pedido: Pedido }) {
           className={imp.centralizarCabecalho !== false ? "cupom-centro" : undefined}
           style={{ fontSize: `${fonteTitulo}px` }}
         >
-          {imp.mostrarLogo ? <strong className="cupom-titulo">{empresa}</strong> : null}
+          {imp.mostrarLogo ? (
+            <strong className="cupom-titulo" style={{ fontSize: `${fonteTitulo + 2}px` }}>
+              {empresa}
+            </strong>
+          ) : null}
           {imp.mostrarEnderecoEmpresa ? (
             <>
               <div className="cupom-quebra">{enderecoEmpresa}</div>
