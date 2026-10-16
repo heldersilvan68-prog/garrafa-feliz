@@ -29,6 +29,12 @@ const PAGE_CSS: Record<string, string> = {
 
 const FONTE_PX: Record<string, number> = { pequeno: 10, medio: 12, grande: 14 };
 
+const DIVISOR_CSS: Record<string, string> = {
+  dupla: "3px double #000",
+  tracejada: "1px dashed #000",
+  solida: "1px solid #000",
+};
+
 const dataHora = (iso: string) =>
   new Date(iso).toLocaleString("pt-BR", {
     timeZone: TIMEZONE,
