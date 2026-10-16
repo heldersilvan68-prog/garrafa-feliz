@@ -40,7 +40,7 @@ export type Produto = {
   margemDesejada: number;
   /** Preço de venda do casco/vasilhame vazio (R$). */
   precoVendaCasco: number;
-  /** Desconto automático aplicado na venda completa (casco + água), em R$. */
+  /** Desconto automático por unidade (R$), deduzido do preço praticado no PDV. */
   descontoCompleta: number;
   /** Promoção de atacado: quantidade do combo (0 = sem promoção). */
   promoQtd: number;
@@ -335,7 +335,7 @@ export const totalComPromocao = (
 
 /** Preço de venda praticado conforme o modo de venda de um retornável. */
 export const precoPorModo = (
-  p: Pick<Produto, "precoVenda" | "precoVendaCasco" | "descontoCompleta" | "custoCasco">,
+  p: Pick<Produto, "precoVenda" | "precoVendaCasco" | "custoCasco">,
   modo: "refil" | "casco" | "completa",
 ) => {
   // Sem preço de venda do casco cadastrado, usa o custo do casco como base
@@ -343,12 +343,23 @@ export const precoPorModo = (
   const casco = p.precoVendaCasco || p.custoCasco || 0;
   if (modo === "casco") return Math.round(casco * 100) / 100;
   if (modo === "completa")
-    return Math.max(
-      0,
-      Math.round(((p.precoVenda || 0) + casco - (p.descontoCompleta || 0)) * 100) / 100,
-    );
+    return Math.round(((p.precoVenda || 0) + casco) * 100) / 100;
   return p.precoVenda || 0;
 };
+
+/**
+ * Desconto automático por unidade (R$) deduzido do preço praticado no PDV.
+ * Para fardo fechado, o desconto é multiplicado pelas unidades do fardo.
+ */
+export const precoComDesconto = (
+  preco: number,
+  p: Pick<Produto, "descontoCompleta">,
+  unidadesPorPreco = 1,
+) =>
+  Math.max(
+    0,
+    Math.round((preco - (p.descontoCompleta || 0) * Math.max(1, unidadesPorPreco)) * 100) / 100,
+  );
 
 /** Valor do estoque considerando fardos fechados + unidades avulsas. */
 export const valorEstoque = (p: Produto) => {

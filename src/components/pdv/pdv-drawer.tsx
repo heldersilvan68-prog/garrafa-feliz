@@ -42,6 +42,7 @@ import {
   brl,
   expandirComposicao,
   getDadosMedidaProduto,
+  precoComDesconto,
   precoPorModo,
   totalComPromocao,
   unidPorFardo,
@@ -162,7 +163,10 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
   /**
    * Preço da unidade de venda escolhida:
    * fardo fechado = preço cheio do fardo; retornável = preço do modo (refil,
-   * casco avulso ou venda completa já com o desconto automático).
+   * casco avulso ou venda completa). O desconto automático por unidade
+   * cadastrado no produto é deduzido do preço praticado (no fardo, o
+   * desconto é multiplicado pelas unidades do fardo). Modalidades têm
+   * preço fechado próprio e não sofrem o desconto.
    */
   const precoPadrao = (id: string) => {
     const p = produtos.find((x) => x.id === id);
@@ -170,12 +174,14 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
     const modalidade = modalidadeDe(id);
     if (modalidade) return modalidade.preco;
     if (embalagemDe(id) === "fardo") {
-      return p.precoFardo > 0
-        ? p.precoFardo
-        : Math.round(p.precoVenda * unidPorFardo(p) * 100) / 100;
+      const base =
+        p.precoFardo > 0
+          ? p.precoFardo
+          : Math.round(p.precoVenda * unidPorFardo(p) * 100) / 100;
+      return precoComDesconto(base, p, unidPorFardo(p));
     }
-    if (p.retornavel) return precoPorModo(p, modos[id] ?? "refil");
-    return p.precoVenda;
+    if (p.retornavel) return precoComDesconto(precoPorModo(p, modos[id] ?? "refil"), p);
+    return precoComDesconto(p.precoVenda, p);
   };
 
   /** Preço praticado (com edição manual) na unidade de venda escolhida. */
