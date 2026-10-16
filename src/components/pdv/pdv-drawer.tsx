@@ -410,6 +410,12 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
     setEndereco(enderecoPadrao);
     setBusca(c ? rotuloCliente(c) : "");
     setListaAberta(false);
+    // Fluxo por teclado: após escolher o cliente, o foco vai para os produtos.
+    setTimeout(() => {
+      const grade = document.getElementById("pdv-produtos");
+      const alvo = grade?.querySelector<HTMLElement>("button, input, [tabindex]");
+      alvo?.focus();
+    }, 0);
   };
 
   const finalizar = async (imprimirApos = false) => {
