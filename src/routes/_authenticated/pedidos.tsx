@@ -227,6 +227,7 @@ const PedidoCard = memo(function PedidoCard({ pedido, produtos }: { pedido: Pedi
 function PedidosPage() {
   const { pedidos } = usePedidos();
   const { produtos } = useEstoque();
+  const { clientes } = useClientes();
   const [filtro, setFiltro] = useState<Filtro>("todos");
   const [filtroForma, setFiltroForma] = useState<FiltroForma>("especie");
   const [busca, setBusca] = useState("");
