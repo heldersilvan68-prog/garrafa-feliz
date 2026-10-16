@@ -70,8 +70,15 @@ function Cupom({ pedido }: { pedido: Pedido }) {
   const troco = pedido.trocoPara ? pedido.trocoPara - pedido.total : 0;
 
   const largura = LARGURA_CSS[imp.largura] ?? "80mm";
-  const fonte = FONTE_PX[imp.tamanhoFonte] ?? 12;
+  const fonte = FONTE_PX[imp.fonteCorpo ?? imp.tamanhoFonte] ?? 12;
+  const fonteTitulo = FONTE_PX[imp.fonteTitulo ?? "grande"] ?? 14;
+  const fonteRodape = FONTE_PX[imp.fonteRodape ?? "medio"] ?? 12;
   const estreito = imp.largura === "58mm";
+  const txt = imp.textos;
+  const divisor = DIVISOR_CSS[imp.estiloDivisor ?? "tracejada"];
+  const hr = <hr style={divisor ? { borderTop: divisor } : undefined} />;
+  const margemSup = imp.margemSuperior ?? 3;
+  const margemInf = imp.margemInferior ?? 3;
 
   return (
     <>
@@ -88,10 +95,13 @@ function Cupom({ pedido }: { pedido: Pedido }) {
         style={{
           width: largura,
           fontSize: `${fonte}px`,
-          padding: estreito ? "2mm 2mm" : "3mm 4mm",
+          padding: `${margemSup}mm ${estreito ? "2mm" : "4mm"} ${margemInf}mm`,
         }}
       >
-        <div className="cupom-centro">
+        <div
+          className={imp.centralizarCabecalho !== false ? "cupom-centro" : undefined}
+          style={{ fontSize: `${fonteTitulo}px` }}
+        >
           {imp.mostrarLogo ? <strong className="cupom-titulo">{empresa}</strong> : null}
           {imp.mostrarEnderecoEmpresa ? (
             <>
@@ -99,24 +109,32 @@ function Cupom({ pedido }: { pedido: Pedido }) {
               <div>Telefone : {fone}</div>
             </>
           ) : null}
-          <div>Comprovante do Pedido nº {pedido.numero}</div>
+          <div>
+            {txt?.tituloRecibo || "Comprovante do Pedido nº"} {pedido.numero}
+          </div>
           <div>{dataHora(pedido.criadoEm)}</div>
         </div>
 
-        <hr />
+        {hr}
 
         {imp.mostrarCliente ? (
           <>
             <div className="cupom-quebra cupom-negrito">
-              Cliente: {pedido.clienteNome || "Consumidor Final / Balcão"}
+              {txt?.rotuloCliente || "Cliente:"} {pedido.clienteNome || "Consumidor Final / Balcão"}
             </div>
-            {!balcao ? <div>Entregador: {pedido.entregador}</div> : null}
-            {enderecoCompleto ? (
-              <div className="cupom-quebra cupom-endereco">ENDEREÇO: {enderecoCompleto}</div>
-            ) : balcao ? (
-              <div>Entrega: Retirada no Balcão</div>
+            {!balcao ? (
+              <div>
+                {txt?.rotuloEntregador || "Entregador:"} {pedido.entregador}
+              </div>
             ) : null}
-            <hr />
+            {enderecoCompleto ? (
+              <div className="cupom-quebra cupom-endereco">
+                {txt?.rotuloEndereco || "ENDEREÇO:"} {enderecoCompleto}
+              </div>
+            ) : balcao ? (
+              <div>{txt?.rotuloRetirada || "Entrega: Retirada no Balcão"}</div>
+            ) : null}
+            {hr}
           </>
         ) : null}
 
