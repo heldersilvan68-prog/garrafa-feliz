@@ -92,7 +92,7 @@ const normalizarBusca = (valor: string) =>
     .toLocaleLowerCase("pt-BR")
     .trim();
 
-const pedidoCorrespondeBusca = (pedido: Pedido, termo: string) => {
+const pedidoCorrespondeBusca = (pedido: Pedido, termo: string, codigoCliente?: string) => {
   const busca = normalizarBusca(termo).replace(/^#/, "");
   if (!busca) return true;
 
@@ -102,6 +102,7 @@ const pedidoCorrespondeBusca = (pedido: Pedido, termo: string) => {
     pedido.entregador,
     pedido.enderecoEntrega,
     pedido.endereco,
+    codigoCliente,
   ].some((valor) => normalizarBusca(valor ?? "").includes(busca));
 };
 
