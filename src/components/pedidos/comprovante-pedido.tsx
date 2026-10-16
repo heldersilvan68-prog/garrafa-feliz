@@ -325,6 +325,14 @@ export function ImprimirComprovante({
     );
   }, [onPrinted]);
 
+  const disparado = useRef(false);
+  useEffect(() => {
+    if (autoImprimir && !disparado.current) {
+      disparado.current = true;
+      imprimir();
+    }
+  }, [autoImprimir, imprimir]);
+
   return (
     <>
       <Button type="button" variant={variant} className={className} onClick={imprimir}>
