@@ -1171,7 +1171,14 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
             <Button variant="outline">Cancelar</Button>
           </DialogClose>
           <Button
-            onClick={finalizar}
+            variant="secondary"
+            onClick={() => finalizar(true)}
+            disabled={!caixaAberto || restante > 0.009 || isSubmitting}
+          >
+            <Printer className="size-4" /> Imprimir
+          </Button>
+          <Button
+            onClick={() => finalizar()}
             disabled={!caixaAberto || restante > 0.009 || isSubmitting}
           >
             {isSubmitting ? (
@@ -1188,30 +1195,14 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
       </DialogContent>
     </Dialog>
 
-      <Dialog open={!!pedidoCriado} onOpenChange={(v) => !v && setPedidoCriado(null)}>
-        <DialogContent className="rounded-3xl sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Venda registrada</DialogTitle>
-            <DialogDescription>
-              {pedidoCriado
-                ? `Pedido #${pedidoCriado.numero} · ${brl(pedidoCriado.total)} — ${pedidoCriado.clienteNome}`
-                : ""}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="flex-row justify-end gap-2">
-            <DialogClose asChild>
-              <Button variant="ghost">Fechar</Button>
-            </DialogClose>
-            {pedidoCriado ? (
-              <ImprimirComprovante
-                pedido={pedidoCriado}
-                variant="default"
-                onPrinted={() => setPedidoCriado(null)}
-              />
-            ) : null}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {pedidoImprimir ? (
+        <ImprimirComprovante
+          pedido={pedidoImprimir}
+          autoImprimir
+          className="hidden"
+          onPrinted={() => setPedidoImprimir(null)}
+        />
+      ) : null}
     </>
   );
 }
