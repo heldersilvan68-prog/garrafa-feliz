@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { MODELO_CUPOM_PADRAO } from "@/lib/cupom-template";
 
 export type FormaPagamentoConfig = {
   id: string;
@@ -86,6 +87,8 @@ export type ConfigImpressao = {
   margemSuperior: number;
   /** Margem inferior em mm (respiro para o corte do papel). */
   margemInferior: number;
+  /** Modelo bruto do cupom em texto puro com tags dinâmicas ({total_pedido} etc.). */
+  modeloCupom: string;
 };
 
 export const IMPRESSAO_PADRAO: ConfigImpressao = {
@@ -108,6 +111,7 @@ export const IMPRESSAO_PADRAO: ConfigImpressao = {
   estiloDivisor: "tracejada",
   margemSuperior: 3,
   margemInferior: 3,
+  modeloCupom: MODELO_CUPOM_PADRAO,
 };
 
 export type Configuracoes = Empresa & {

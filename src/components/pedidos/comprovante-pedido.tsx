@@ -10,6 +10,7 @@ import { useConfiguracoes, IMPRESSAO_PADRAO } from "@/context/configuracoes";
 import { useClientes } from "@/context/clientes";
 import { useEstoque } from "@/context/estoque";
 import { mascaraTelefone } from "@/lib/clientes";
+import { montarDadosCupom, renderizarModeloCupom } from "@/lib/cupom-template";
 
 const EMPRESA_PADRAO = "PK DISTRIBUIDORA";
 const ENDERECO_PADRAO = "AV LUIZ VIANA FILHO 285";
@@ -79,6 +80,41 @@ function Cupom({ pedido }: { pedido: Pedido }) {
   const hr = <hr style={divisor ? { borderTop: divisor } : undefined} />;
   const margemSup = imp.margemSuperior ?? 3;
   const margemInf = imp.margemInferior ?? 3;
+
+  // Modelo bruto editável: quando preenchido, o cupom é o texto puro com tags.
+  const modelo = imp.modeloCupom?.trim();
+  if (modelo) {
+    const texto = renderizarModeloCupom(modelo, montarDadosCupom(pedido, config, clientes, produtos));
+    return (
+      <>
+        <style>{`@media print { @page { size: ${PAGE_CSS[imp.largura] ?? "80mm auto"}; margin: ${
+          imp.largura === "A4" ? "10mm" : "0"
+        }; } }`}</style>
+        <div
+          className={`cupom${imp.altaDensidade ? " cupom-forte" : ""}${
+            imp.modoImpressora === "navegador" ? " cupom-navegador" : ""
+          }`}
+          style={{
+            width: largura,
+            fontSize: `${fonte}px`,
+            padding: `${margemSup}mm ${estreito ? "2mm" : "4mm"} ${margemInf}mm`,
+          }}
+        >
+          <pre
+            style={{
+              margin: 0,
+              fontFamily: "inherit",
+              fontSize: "inherit",
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-word",
+            }}
+          >
+            {texto}
+          </pre>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>

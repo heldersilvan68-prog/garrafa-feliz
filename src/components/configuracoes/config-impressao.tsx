@@ -1,11 +1,10 @@
-import { useEffect, useState } from "react";
-import { Printer, Save } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Printer, RotateCcw, Save, Upload } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Campo } from "@/components/ui/campo";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -14,46 +13,21 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import {
   IMPRESSAO_PADRAO,
   useConfiguracoes,
   type ConfigImpressao,
-  type TextosCupom,
 } from "@/context/configuracoes";
-import { brl } from "@/lib/erp";
-
-const EXIBICAO: { chave: keyof ConfigImpressao; label: string }[] = [
-  { chave: "mostrarLogo", label: "Exibir logomarca / nome da empresa no topo" },
-  { chave: "mostrarEnderecoEmpresa", label: "Exibir endereço e telefone da distribuidora" },
-  { chave: "mostrarCliente", label: "Exibir dados do cliente e endereço de entrega" },
-  { chave: "mostrarObservacoes", label: "Exibir linha de observações do pedido" },
-  { chave: "mostrarRodape", label: "Exibir rodapé com mensagem de agradecimento" },
-  { chave: "mostrarAssinatura", label: "Exibir campo de assinatura do cliente (fiado/entregas)" },
-];
-
-const TEXTOS: { chave: keyof TextosCupom; label: string }[] = [
-  { chave: "tituloRecibo", label: "Título do recibo" },
-  { chave: "rotuloCliente", label: "Rótulo do cliente" },
-  { chave: "rotuloEntregador", label: "Rótulo do entregador" },
-  { chave: "rotuloEndereco", label: "Rótulo do endereço" },
-  { chave: "rotuloRetirada", label: "Texto de retirada no balcão" },
-  { chave: "rotuloPagamento", label: "Título da forma de pagamento" },
-  { chave: "rotuloFiado", label: "Rótulo do fiado" },
-  { chave: "rotuloTrocoPara", label: "Rótulo do troco" },
-  { chave: "rotuloLevar", label: "Rótulo do troco a levar" },
-  { chave: "rotuloTotal", label: "Rótulo do total" },
-  { chave: "rotuloAssinatura", label: "Rótulo da assinatura" },
-  { chave: "mensagemRodape", label: "Rodapé — linha 1" },
-  { chave: "mensagemRodape2", label: "Rodapé — linha 2" },
-];
+import {
+  MODELO_CUPOM_PADRAO,
+  TAGS_CUPOM,
+  dadosExemploCupom,
+  renderizarModeloCupom,
+} from "@/lib/cupom-template";
 
 const FONTE_PX: Record<string, number> = { pequeno: 10, medio: 12, grande: 14 };
 const LARGURA_CSS: Record<string, string> = { "80mm": "80mm", "58mm": "58mm", A4: "190mm" };
-const DIVISOR_CSS: Record<string, string> = {
-  dupla: "3px double #000",
-  tracejada: "1px dashed #000",
-  solida: "1px solid #000",
-};
 
 const FONTE_OPCOES = (
   <>
@@ -63,17 +37,14 @@ const FONTE_OPCOES = (
   </>
 );
 
-/** Pré-visualização ao vivo do cupom com os valores do formulário (sem salvar). */
+/** Pré-visualização ao vivo: interpreta o modelo bruto com dados de exemplo. */
 function PreviaCupom({ form }: { form: ConfigImpressao }) {
   const { config } = useConfiguracoes();
-  const txt = form.textos;
   const fonte = FONTE_PX[form.fonteCorpo] ?? 12;
-  const fonteTitulo = FONTE_PX[form.fonteTitulo] ?? 14;
-  const fonteRodape = FONTE_PX[form.fonteRodape] ?? 12;
-  const hr = <hr style={{ borderTop: DIVISOR_CSS[form.estiloDivisor] }} />;
-  const empresa = config.nomeFantasia?.trim() || "PK DISTRIBUIDORA";
-  const endereco = config.endereco?.trim() || "AV LUIZ VIANA FILHO 285";
-  const fone = config.whatsapp?.trim() || "(75) 99872-3270";
+  const texto = renderizarModeloCupom(
+    form.modeloCupom?.trim() || MODELO_CUPOM_PADRAO,
+    dadosExemploCupom(config),
+  );
 
   return (
     <div className="rounded-lg border bg-muted/40 p-4">
@@ -94,107 +65,17 @@ function PreviaCupom({ form }: { form: ConfigImpressao }) {
             }mm`,
           }}
         >
-          <div
-            className={form.centralizarCabecalho ? "cupom-centro" : undefined}
-            style={{ fontSize: `${fonteTitulo}px` }}
+          <pre
+            style={{
+              margin: 0,
+              fontFamily: "inherit",
+              fontSize: "inherit",
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-word",
+            }}
           >
-            {form.mostrarLogo ? (
-              <strong className="cupom-titulo" style={{ fontSize: `${fonteTitulo + 2}px` }}>
-                {empresa}
-              </strong>
-            ) : null}
-            {form.mostrarEnderecoEmpresa ? (
-              <>
-                <div className="cupom-quebra">{endereco}</div>
-                <div>Telefone : {fone}</div>
-              </>
-            ) : null}
-            <div>
-              {txt.tituloRecibo} 1234
-            </div>
-            <div>15/10/2026 22:09</div>
-          </div>
-
-          {hr}
-
-          {form.mostrarCliente ? (
-            <>
-              <div className="cupom-quebra cupom-negrito">{txt.rotuloCliente} Maria Exemplo</div>
-              <div>
-                {txt.rotuloEntregador} João
-              </div>
-              <div className="cupom-quebra cupom-endereco">
-                {txt.rotuloEndereco} Rua das Flores, 100, Centro
-              </div>
-              {hr}
-            </>
-          ) : null}
-
-          <div className="cupom-item">
-            <div className="cupom-linha cupom-negrito">
-              <span className="cupom-quebra">1 un. × Água Mineral 20L</span>
-              <span>{brl(11)}</span>
-            </div>
-            <div>{brl(11)} / un.</div>
-          </div>
-          <div className="cupom-item">
-            <div className="cupom-linha cupom-negrito">
-              <span className="cupom-quebra">1 un. × Água Mineral 20L (Completo)</span>
-              <span>{brl(35)}</span>
-            </div>
-            <div>{brl(35)} / un.</div>
-          </div>
-
-          {hr}
-
-          <div className="cupom-centro cupom-pagamento">{txt.rotuloPagamento}</div>
-          <div className="cupom-linha cupom-pagamento">
-            <span>PIX</span>
-            <span>{brl(46)}</span>
-          </div>
-          <div className="cupom-linha cupom-pagamento">
-            <span>{txt.rotuloTrocoPara}</span>
-            <span>{brl(50)}</span>
-          </div>
-          <div className="cupom-linha cupom-pagamento">
-            <span>{txt.rotuloLevar}</span>
-            <span>{brl(4)}</span>
-          </div>
-
-          <div className="cupom-linha cupom-total">
-            <span>{txt.rotuloTotal}</span>
-            <span>{brl(46)}</span>
-          </div>
-
-          {form.mostrarObservacoes ? (
-            <>
-              {hr}
-              <div className="cupom-quebra">Obs.: Deixar na portaria</div>
-            </>
-          ) : null}
-
-          {form.mostrarAssinatura ? (
-            <>
-              {hr}
-              <div className="cupom-assinatura">
-                <div className="cupom-linha-assinatura" />
-                <div className="cupom-centro">{txt.rotuloAssinatura}</div>
-              </div>
-            </>
-          ) : null}
-
-          {form.mostrarRodape ? (
-            <>
-              {hr}
-              <div
-                className={form.centralizarRodape ? "cupom-centro" : undefined}
-                style={{ fontSize: `${fonteRodape}px` }}
-              >
-                {txt.mensagemRodape?.trim() ? <div>{txt.mensagemRodape}</div> : null}
-                {txt.mensagemRodape2?.trim() ? <div>{txt.mensagemRodape2}</div> : null}
-              </div>
-            </>
-          ) : null}
+            {texto}
+          </pre>
         </div>
       </div>
     </div>
@@ -204,14 +85,23 @@ function PreviaCupom({ form }: { form: ConfigImpressao }) {
 export function ConfigImpressaoCard() {
   const { config, salvarConfig } = useConfiguracoes();
   const [form, setForm] = useState<ConfigImpressao>(config.impressao ?? IMPRESSAO_PADRAO);
+  const arquivoRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => setForm(config.impressao ?? IMPRESSAO_PADRAO), [config.impressao]);
 
   const set = <K extends keyof ConfigImpressao>(k: K, v: ConfigImpressao[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
 
-  const setTexto = (k: keyof TextosCupom, v: string) =>
-    setForm((f) => ({ ...f, textos: { ...f.textos, [k]: v } }));
+  const importarArquivo = async (arquivo: File | undefined) => {
+    if (!arquivo) return;
+    const texto = await arquivo.text();
+    if (!texto.trim()) {
+      toast.error("O arquivo está vazio.");
+      return;
+    }
+    set("modeloCupom", texto.replace(/\r\n/g, "\n"));
+    toast.success(`Modelo "${arquivo.name}" carregado no editor.`);
+  };
 
   return (
     <Card className="shadow-[var(--shadow-card)]">
@@ -220,13 +110,71 @@ export function ConfigImpressaoCard() {
           <Printer className="size-4" /> Editor de cupom / recibo
         </CardTitle>
         <CardDescription>
-          Personalize textos, fontes e espaçamento do comprovante. A pré-visualização ao lado
+          Edite o modelo do cupom em texto livre com tags dinâmicas. A pré-visualização ao lado
           atualiza em tempo real e o botão Salvar aplica tudo na impressão real dos pedidos.
         </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-6 lg:grid-cols-[1fr_minmax(320px,420px)]">
         <div className="grid gap-4">
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm font-medium">Modelo do cupom (texto livre)</p>
+              <div className="flex gap-2">
+                <input
+                  ref={arquivoRef}
+                  type="file"
+                  accept=".txt,text/plain"
+                  className="hidden"
+                  onChange={(e) => {
+                    void importarArquivo(e.target.files?.[0]);
+                    e.target.value = "";
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => arquivoRef.current?.click()}
+                >
+                  <Upload className="size-4" /> Importar modelo (.txt)
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    set("modeloCupom", MODELO_CUPOM_PADRAO);
+                    toast.success("Modelo padrão restaurado.");
+                  }}
+                >
+                  <RotateCcw className="size-4" /> Restaurar modelo padrão
+                </Button>
+              </div>
+            </div>
+            <Textarea
+              value={form.modeloCupom}
+              onChange={(e) => set("modeloCupom", e.target.value)}
+              rows={22}
+              spellCheck={false}
+              className="font-mono text-xs leading-relaxed"
+              placeholder={MODELO_CUPOM_PADRAO}
+            />
+            <details className="rounded-lg border p-3 text-sm">
+              <summary className="cursor-pointer font-medium">
+                Tags disponíveis ({TAGS_CUPOM.length})
+              </summary>
+              <ul className="mt-2 grid gap-1 sm:grid-cols-2">
+                {TAGS_CUPOM.map((t) => (
+                  <li key={t.tag} className="flex items-baseline gap-2">
+                    <code className="rounded bg-muted px-1 py-0.5 text-xs">{t.tag}</code>
+                    <span className="text-xs text-muted-foreground">{t.descricao}</span>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
             <Campo label="Largura do papel" htmlFor="imp-largura">
               <Select
                 value={form.largura}
@@ -257,36 +205,9 @@ export function ConfigImpressaoCard() {
                 </SelectContent>
               </Select>
             </Campo>
-
-            <Campo label="Linhas divisórias" htmlFor="imp-divisor">
-              <Select
-                value={form.estiloDivisor}
-                onValueChange={(v) => set("estiloDivisor", v as ConfigImpressao["estiloDivisor"])}
-              >
-                <SelectTrigger id="imp-divisor">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="tracejada">Tracejada (----)</SelectItem>
-                  <SelectItem value="dupla">Dupla (====)</SelectItem>
-                  <SelectItem value="solida">Sólida (____)</SelectItem>
-                </SelectContent>
-              </Select>
-            </Campo>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-3">
-            <Campo label="Fonte do cabeçalho" htmlFor="imp-fonte-titulo">
-              <Select
-                value={form.fonteTitulo}
-                onValueChange={(v) => set("fonteTitulo", v as ConfigImpressao["fonteTitulo"])}
-              >
-                <SelectTrigger id="imp-fonte-titulo">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>{FONTE_OPCOES}</SelectContent>
-              </Select>
-            </Campo>
             <Campo label="Fonte do corpo" htmlFor="imp-fonte-corpo">
               <Select
                 value={form.fonteCorpo}
@@ -298,20 +219,6 @@ export function ConfigImpressaoCard() {
                 <SelectContent>{FONTE_OPCOES}</SelectContent>
               </Select>
             </Campo>
-            <Campo label="Fonte do rodapé" htmlFor="imp-fonte-rodape">
-              <Select
-                value={form.fonteRodape}
-                onValueChange={(v) => set("fonteRodape", v as ConfigImpressao["fonteRodape"])}
-              >
-                <SelectTrigger id="imp-fonte-rodape">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>{FONTE_OPCOES}</SelectContent>
-              </Select>
-            </Campo>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
             <Campo label="Margem superior (mm)" htmlFor="imp-margem-sup">
               <Input
                 id="imp-margem-sup"
@@ -334,68 +241,18 @@ export function ConfigImpressaoCard() {
             </Campo>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="flex items-start justify-between gap-4 rounded-lg border p-3">
-              <div>
-                <p className="text-sm font-medium">Alta densidade / texto escuro</p>
-                <p className="text-xs text-muted-foreground">
-                  Negrito e preto absoluto para leitura nítida em térmicas.
-                </p>
-              </div>
-              <Switch
-                checked={form.altaDensidade}
-                onCheckedChange={(v) => set("altaDensidade", v)}
-                aria-label="Alta densidade"
-              />
+          <div className="flex items-start justify-between gap-4 rounded-lg border p-3">
+            <div>
+              <p className="text-sm font-medium">Alta densidade / texto escuro</p>
+              <p className="text-xs text-muted-foreground">
+                Negrito e preto absoluto para leitura nítida em térmicas.
+              </p>
             </div>
-            <div className="flex items-start justify-between gap-4 rounded-lg border p-3">
-              <div>
-                <p className="text-sm font-medium">Centralizar cabeçalho e rodapé</p>
-                <p className="text-xs text-muted-foreground">
-                  Desmarque para alinhar à esquerda.
-                </p>
-              </div>
-              <div className="flex flex-col gap-2">
-                <Switch
-                  checked={form.centralizarCabecalho}
-                  onCheckedChange={(v) => set("centralizarCabecalho", v)}
-                  aria-label="Centralizar cabeçalho"
-                />
-                <Switch
-                  checked={form.centralizarRodape}
-                  onCheckedChange={(v) => set("centralizarRodape", v)}
-                  aria-label="Centralizar rodapé"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="grid gap-2">
-            <p className="text-sm font-medium">Textos e rótulos do cupom</p>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {TEXTOS.map((t) => (
-                <Campo key={t.chave} label={t.label} htmlFor={`imp-txt-${t.chave}`}>
-                  <Input
-                    id={`imp-txt-${t.chave}`}
-                    value={form.textos[t.chave]}
-                    onChange={(e) => setTexto(t.chave, e.target.value)}
-                  />
-                </Campo>
-              ))}
-            </div>
-          </div>
-
-          <div className="grid gap-2">
-            <p className="text-sm font-medium">Opções de exibição no cupom</p>
-            {EXIBICAO.map((o) => (
-              <label key={o.chave} className="flex items-center gap-2 text-sm">
-                <Checkbox
-                  checked={Boolean(form[o.chave])}
-                  onCheckedChange={(v) => set(o.chave, Boolean(v) as never)}
-                />
-                <Label className="cursor-pointer font-normal">{o.label}</Label>
-              </label>
-            ))}
+            <Switch
+              checked={form.altaDensidade}
+              onCheckedChange={(v) => set("altaDensidade", v)}
+              aria-label="Alta densidade"
+            />
           </div>
 
           <Button className="self-start" onClick={() => void salvarConfig({ impressao: form })}>
