@@ -23,6 +23,7 @@ import {
   MODELO_CUPOM_PADRAO,
   TAGS_CUPOM,
   dadosExemploCupom,
+  modeloEfetivoCupom,
   renderizarModeloCupom,
 } from "@/lib/cupom-template";
 
@@ -41,10 +42,7 @@ const FONTE_OPCOES = (
 function PreviaCupom({ form }: { form: ConfigImpressao }) {
   const { config } = useConfiguracoes();
   const fonte = FONTE_PX[form.fonteCorpo] ?? 12;
-  const texto = renderizarModeloCupom(
-    form.modeloCupom?.trim() || MODELO_CUPOM_PADRAO,
-    dadosExemploCupom(config),
-  );
+  const texto = renderizarModeloCupom(modeloEfetivoCupom(form.modeloCupom), dadosExemploCupom(config));
 
   return (
     <div className="rounded-lg border bg-muted/40 p-4">

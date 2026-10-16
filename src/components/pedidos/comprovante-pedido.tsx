@@ -10,7 +10,7 @@ import { useConfiguracoes, IMPRESSAO_PADRAO } from "@/context/configuracoes";
 import { useClientes } from "@/context/clientes";
 import { useEstoque } from "@/context/estoque";
 import { mascaraTelefone } from "@/lib/clientes";
-import { montarDadosCupom, renderizarModeloCupom } from "@/lib/cupom-template";
+import { modeloEfetivoCupom, montarDadosCupom, renderizarModeloCupom } from "@/lib/cupom-template";
 
 const EMPRESA_PADRAO = "PK DISTRIBUIDORA";
 const ENDERECO_PADRAO = "AV LUIZ VIANA FILHO 285";
@@ -81,9 +81,10 @@ function Cupom({ pedido }: { pedido: Pedido }) {
   const margemSup = imp.margemSuperior ?? 3;
   const margemInf = imp.margemInferior ?? 3;
 
-  // Modelo bruto editável: quando preenchido, o cupom é o texto puro com tags.
-  const modelo = imp.modeloCupom?.trim();
-  if (modelo) {
+  // Modelo bruto editável: o cupom é o texto puro com tags. Modelos salvos
+  // sem nenhuma tag (texto fixo legado) caem no padrão dinâmico.
+  const modelo = modeloEfetivoCupom(imp.modeloCupom);
+  {
     const texto = renderizarModeloCupom(modelo, montarDadosCupom(pedido, config, clientes, produtos));
     return (
       <>
@@ -215,7 +216,7 @@ function Cupom({ pedido }: { pedido: Pedido }) {
           <>
             <div className="cupom-linha cupom-pagamento">
               <span>{txt?.rotuloTrocoPara || "Troco para"}</span>
-              <span>{brl(pedido.trocoPara)}</span>
+              <span>{brl(pedido.trocoPara ?? 0)}</span>
             </div>
             {troco > 0 ? (
               <div className="cupom-linha cupom-pagamento">

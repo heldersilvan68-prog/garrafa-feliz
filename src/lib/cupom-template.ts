@@ -5,33 +5,42 @@ import { parcelasDe, rotuloItemPedido, totalItemPedido, type Pedido } from "@/li
 import { mascaraTelefone, type Cliente } from "@/lib/clientes";
 
 /** Modelo bruto padrão do cupom (texto puro com tags dinâmicas). */
-export const MODELO_CUPOM_PADRAO = `{nome_empresa}
-{endereco_empresa}
-Tel: {telefone_empresa}
-================================================
-Comprovante do Pedido nº {numero_pedido}
-{data_hora}
+export const MODELO_CUPOM_PADRAO = `================================================
+            {nome_empresa}
+       {endereco_empresa}
+       Telefone: {telefone_empresa}
+       Comprovante do Pedido nº {numero_pedido}
+            {data_hora}
 ------------------------------------------------
 Cliente: {nome_cliente}
 {entregador}
 {endereco_cliente}
-------------------------------------------------
+================================================
+ITEM                                       TOTAL
 {lista_itens}
-------------------------------------------------
-FORMA DE PAGAMENTO
-{forma_pagamento}
+================================================
+Forma de Pagamento    - {forma_pagamento}
 {troco}
 {levar}
+TOTAL                 - {total_pedido}
 ================================================
-TOTAL: {total_pedido}
 {observacao}
-------------------------------------------------
 
 ______________________________
 Assinatura do cliente
 
 Obrigado pela preferência!
 Água boa é água da P.K`;
+
+/**
+ * Modelo efetivo a usar: se o modelo salvo estiver vazio ou não contiver
+ * nenhuma tag dinâmica (texto fixo legado), cai no padrão com tags.
+ */
+export function modeloEfetivoCupom(modeloSalvo?: string): string {
+  const modelo = modeloSalvo?.trim();
+  if (!modelo) return MODELO_CUPOM_PADRAO;
+  return /\{[a-z_]+\}/.test(modelo) ? modelo : MODELO_CUPOM_PADRAO;
+}
 
 /** Tags dinâmicas disponíveis no modelo do cupom. */
 export const TAGS_CUPOM: { tag: string; descricao: string }[] = [
