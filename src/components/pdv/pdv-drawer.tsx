@@ -129,8 +129,8 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
   const [pacoteValorUnit, setPacoteValorUnit] = useState("");
   const [pacoteAberto, setPacoteAberto] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  // Último pedido criado: abre a confirmação com opção de imprimir o comprovante.
-  const [pedidoCriado, setPedidoCriado] = useState<Pedido | null>(null);
+  // Pedido recém-criado aguardando impressão automática do comprovante.
+  const [pedidoImprimir, setPedidoImprimir] = useState<Pedido | null>(null);
 
   const cliente = clientes.find((c) => c.id === clienteId);
 
@@ -411,7 +411,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
     setListaAberta(false);
   };
 
-  const finalizar = async () => {
+  const finalizar = async (imprimirApos = false) => {
     if (!caixaAberto) {
       toast.error("Abra o caixa para realizar vendas");
       return;
@@ -534,7 +534,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
       toast.success(`Pedido #${pedido.numero} criado — ${brl(total)}`, {
         description: `${cliente?.nome ?? CONSUMIDOR_FINAL} · ${pagamento} · ${entregador}`,
       });
-      setPedidoCriado(pedido);
+      if (imprimirApos) setPedidoImprimir(pedido);
       limpar();
       setAberto(false);
     } catch (e) {
@@ -555,7 +555,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
       }}
     >
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="max-w-4xl rounded-3xl p-0 shadow-2xl max-h-[90vh] overflow-hidden flex flex-col gap-0">
+      <DialogContent className="max-w-6xl rounded-3xl p-0 shadow-2xl max-h-[90vh] overflow-hidden flex flex-col gap-0">
         <DialogHeader className="p-6 pb-2 text-left">
           <DialogTitle className="flex items-center gap-2">
             <ShoppingCart className="size-5 text-primary" />
