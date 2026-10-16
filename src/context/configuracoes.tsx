@@ -189,10 +189,14 @@ export function ConfiguracoesProvider({ children }: { children: ReactNode }) {
               cnpj: s.cnpj ?? "",
               endereco: s.endereco ?? "",
               whatsapp: s.whatsapp ?? "",
-              impressao: {
-                ...IMPRESSAO_PADRAO,
-                ...((s.impressao as unknown as Partial<ConfigImpressao> | null) ?? {}),
-              },
+              impressao: (() => {
+                const salva = (s.impressao as unknown as Partial<ConfigImpressao> | null) ?? {};
+                return {
+                  ...IMPRESSAO_PADRAO,
+                  ...salva,
+                  textos: { ...TEXTOS_CUPOM_PADRAO, ...(salva.textos ?? {}) },
+                };
+              })(),
 
             }
           : CONFIG_PADRAO,
