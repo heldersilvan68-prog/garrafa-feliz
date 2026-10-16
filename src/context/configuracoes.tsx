@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { MODELO_CUPOM_PADRAO } from "@/lib/cupom-template";
 
 export type FormaPagamentoConfig = {
   id: string;
