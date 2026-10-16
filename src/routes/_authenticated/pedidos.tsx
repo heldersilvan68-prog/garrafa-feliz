@@ -27,6 +27,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePedidos } from "@/context/pedidos";
 import { useEstoque } from "@/context/estoque";
+import { useClientes } from "@/context/clientes";
 import { usePeriodo } from "@/hooks/use-periodo";
 import { dentroFaixa } from "@/lib/periodo";
 import { brl } from "@/lib/erp";
@@ -91,7 +92,7 @@ const normalizarBusca = (valor: string) =>
     .toLocaleLowerCase("pt-BR")
     .trim();
 
-const pedidoCorrespondeBusca = (pedido: Pedido, termo: string) => {
+const pedidoCorrespondeBusca = (pedido: Pedido, termo: string, codigoCliente?: string) => {
   const busca = normalizarBusca(termo).replace(/^#/, "");
   if (!busca) return true;
 
@@ -101,6 +102,7 @@ const pedidoCorrespondeBusca = (pedido: Pedido, termo: string) => {
     pedido.entregador,
     pedido.enderecoEntrega,
     pedido.endereco,
+    codigoCliente,
   ].some((valor) => normalizarBusca(valor ?? "").includes(busca));
 };
 
@@ -225,6 +227,7 @@ const PedidoCard = memo(function PedidoCard({ pedido, produtos }: { pedido: Pedi
 function PedidosPage() {
   const { pedidos } = usePedidos();
   const { produtos } = useEstoque();
+  const { clientes } = useClientes();
   const [filtro, setFiltro] = useState<Filtro>("todos");
   const [filtroForma, setFiltroForma] = useState<FiltroForma>("especie");
   const [busca, setBusca] = useState("");
@@ -236,9 +239,17 @@ function PedidosPage() {
     [pedidos, periodo.faixa],
   );
 
+  const codigoPorCliente = useMemo(
+    () => new Map(clientes.map((c) => [c.id, String(c.codigo ?? "")])),
+    [clientes],
+  );
+
   const pesquisados = useMemo(
-    () => doPeriodo.filter((pedido) => pedidoCorrespondeBusca(pedido, busca)),
-    [busca, doPeriodo],
+    () =>
+      doPeriodo.filter((pedido) =>
+        pedidoCorrespondeBusca(pedido, busca, codigoPorCliente.get(pedido.clienteId)),
+      ),
+    [busca, doPeriodo, codigoPorCliente],
   );
 
   const porForma = (forma: FiltroForma) =>
@@ -315,7 +326,7 @@ function PedidosPage() {
                 type="search"
                 value={busca}
                 onChange={(evento) => setBusca(evento.target.value)}
-                placeholder="Buscar por número do pedido, nome ou endereço..."
+                placeholder="Buscar por nº do pedido, código do cliente, nome ou endereço..."
                 aria-label="Buscar vendas por número do pedido, cliente, entregador ou endereço"
                 className="pl-9"
               />

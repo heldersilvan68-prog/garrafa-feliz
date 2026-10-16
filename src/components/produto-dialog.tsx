@@ -603,20 +603,20 @@ export function ProdutoDialog({
                   onValor={(n) => set("custoEnvase", n)}
                 />
               </Campo>
-              <Campo
-                label="Desconto automático na venda completa (R$)"
-                htmlFor="desc-completa"
-                className="sm:col-span-2"
-              >
-                <InputNumero
-                  id="desc-completa"
-                  decimal
-                  valor={form.descontoCompleta}
-                  onValor={(n) => set("descontoCompleta", n)}
-                />
-              </Campo>
             </div>
           )}
+
+          <Campo
+            label="Desconto automático na venda completa (R$)"
+            htmlFor="desc-completa"
+          >
+            <InputNumero
+              id="desc-completa"
+              decimal
+              valor={form.descontoCompleta}
+              onValor={(n) => set("descontoCompleta", n)}
+            />
+          </Campo>
         </div>
 
         <DialogFooter>
