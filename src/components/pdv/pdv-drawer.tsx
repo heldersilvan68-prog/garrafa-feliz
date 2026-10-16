@@ -42,6 +42,7 @@ import {
   brl,
   expandirComposicao,
   getDadosMedidaProduto,
+  precoComDesconto,
   precoPorModo,
   totalComPromocao,
   unidPorFardo,
