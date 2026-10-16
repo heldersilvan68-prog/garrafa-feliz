@@ -81,9 +81,10 @@ function Cupom({ pedido }: { pedido: Pedido }) {
   const margemSup = imp.margemSuperior ?? 3;
   const margemInf = imp.margemInferior ?? 3;
 
-  // Modelo bruto editável: quando preenchido, o cupom é o texto puro com tags.
-  const modelo = imp.modeloCupom?.trim();
-  if (modelo) {
+  // Modelo bruto editável: o cupom é o texto puro com tags. Modelos salvos
+  // sem nenhuma tag (texto fixo legado) caem no padrão dinâmico.
+  const modelo = modeloEfetivoCupom(imp.modeloCupom);
+  {
     const texto = renderizarModeloCupom(modelo, montarDadosCupom(pedido, config, clientes, produtos));
     return (
       <>
