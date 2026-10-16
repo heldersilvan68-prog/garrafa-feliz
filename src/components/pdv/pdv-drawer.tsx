@@ -710,7 +710,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
 
               <div className="flex flex-col gap-2">
                 <p className="text-sm font-medium">Produtos</p>
-                <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+                <div id="pdv-produtos" className="grid min-w-0 gap-3 sm:grid-cols-2">
                   {produtos.filter((p) => !p.ocultarPdv).map((p) => {
                     const upf = unidPorFardo(p);
                     const modalidadeAtiva = modalidadeDe(p.id);
