@@ -607,7 +607,7 @@ export function ProdutoDialog({
           )}
 
           <Campo
-            label="Desconto automático na venda completa (R$)"
+            label="Desconto automático por unidade (R$)"
             htmlFor="desc-completa"
           >
             <InputNumero
