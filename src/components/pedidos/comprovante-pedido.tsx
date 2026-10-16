@@ -154,9 +154,11 @@ function Cupom({ pedido }: { pedido: Pedido }) {
           </div>
         ))}
 
-        <hr />
+        {hr}
 
-        <div className="cupom-centro cupom-pagamento">FORMA DE PAGAMENTO</div>
+        <div className="cupom-centro cupom-pagamento">
+          {txt?.rotuloPagamento || "FORMA DE PAGAMENTO"}
+        </div>
         {parcelas.map((x, idx) => (
           <div key={`${x.forma}-${idx}`} className="cupom-linha cupom-pagamento">
             <span>{x.forma}</span>
@@ -165,19 +167,19 @@ function Cupom({ pedido }: { pedido: Pedido }) {
         ))}
         {pedido.valorFiado > 0 ? (
           <div className="cupom-linha cupom-pagamento">
-            <span>Em fiado</span>
+            <span>{txt?.rotuloFiado || "Em fiado"}</span>
             <span>{brl(pedido.valorFiado)}</span>
           </div>
         ) : null}
         {pedido.trocoPara ? (
           <>
             <div className="cupom-linha cupom-pagamento">
-              <span>Troco para</span>
+              <span>{txt?.rotuloTrocoPara || "Troco para"}</span>
               <span>{brl(pedido.trocoPara)}</span>
             </div>
             {troco > 0 ? (
               <div className="cupom-linha cupom-pagamento">
-                <span>Levar</span>
+                <span>{txt?.rotuloLevar || "Levar"}</span>
                 <span>{brl(troco)}</span>
               </div>
             ) : null}
@@ -185,33 +187,36 @@ function Cupom({ pedido }: { pedido: Pedido }) {
         ) : null}
 
         <div className="cupom-linha cupom-total">
-          <span>TOTAL</span>
+          <span>{txt?.rotuloTotal || "TOTAL"}</span>
           <span>{brl(pedido.total)}</span>
         </div>
 
         {imp.mostrarObservacoes && pedido.observacao?.trim() ? (
           <>
-            <hr />
+            {hr}
             <div className="cupom-quebra">Obs.: {pedido.observacao}</div>
           </>
         ) : null}
 
         {imp.mostrarAssinatura ? (
           <>
-            <hr />
+            {hr}
             <div className="cupom-assinatura">
               <div className="cupom-linha-assinatura" />
-              <div className="cupom-centro">Assinatura do cliente</div>
+              <div className="cupom-centro">{txt?.rotuloAssinatura || "Assinatura do cliente"}</div>
             </div>
           </>
         ) : null}
 
         {imp.mostrarRodape ? (
           <>
-            <hr />
-            <div className="cupom-centro">
-              <div>Obrigado pela preferência!</div>
-              <div>Água boa é água da P.K</div>
+            {hr}
+            <div
+              className={imp.centralizarRodape !== false ? "cupom-centro" : undefined}
+              style={{ fontSize: `${fonteRodape}px` }}
+            >
+              {txt?.mensagemRodape?.trim() ? <div>{txt.mensagemRodape}</div> : null}
+              {txt?.mensagemRodape2?.trim() ? <div>{txt.mensagemRodape2}</div> : null}
             </div>
           </>
         ) : null}
