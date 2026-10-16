@@ -270,12 +270,15 @@ export function ImprimirComprovante({
   className,
   rotulo = "Imprimir Comprovante",
   onPrinted,
+  autoImprimir = false,
 }: {
   pedido: Pedido;
   variant?: "outline" | "default" | "secondary" | "ghost";
   className?: string;
   rotulo?: string;
   onPrinted?: () => void;
+  /** Dispara a impressão automaticamente ao montar (fluxo "Criar e imprimir"). */
+  autoImprimir?: boolean;
 }) {
   const [alvo, setAlvo] = useState<HTMLElement | null>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
