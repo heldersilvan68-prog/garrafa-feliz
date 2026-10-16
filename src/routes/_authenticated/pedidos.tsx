@@ -326,7 +326,7 @@ function PedidosPage() {
                 type="search"
                 value={busca}
                 onChange={(evento) => setBusca(evento.target.value)}
-                placeholder="Buscar por número do pedido, nome ou endereço..."
+                placeholder="Buscar por nº do pedido, código do cliente, nome ou endereço..."
                 aria-label="Buscar vendas por número do pedido, cliente, entregador ou endereço"
                 className="pl-9"
               />
