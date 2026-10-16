@@ -602,8 +602,38 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                           setBusca(e.target.value);
                           setClienteId("");
                           setListaAberta(true);
+                          setDestaque(0);
                         }}
                         onClick={() => setListaAberta(true)}
+                        onKeyDown={(e) => {
+                          if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+                            e.preventDefault();
+                            if (!listaAberta) {
+                              setListaAberta(true);
+                              setDestaque(0);
+                              return;
+                            }
+                            if (filtrados.length === 0) return;
+                            setDestaque((atual) => {
+                              const proximo =
+                                e.key === "ArrowDown"
+                                  ? (atual + 1) % filtrados.length
+                                  : (atual - 1 + filtrados.length) % filtrados.length;
+                              document
+                                .getElementById(`pdv-cliente-opcao-${filtrados[proximo].id}`)
+                                ?.scrollIntoView({ block: "nearest" });
+                              return proximo;
+                            });
+                          } else if (e.key === "Enter") {
+                            if (listaAberta && filtrados.length > 0) {
+                              e.preventDefault();
+                              const alvo = filtrados[Math.min(destaque, filtrados.length - 1)];
+                              selecionar(alvo.id);
+                            }
+                          } else if (e.key === "Escape") {
+                            setListaAberta(false);
+                          }
+                        }}
                       />
                       <Button
                         type="button"
