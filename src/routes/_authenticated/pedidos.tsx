@@ -27,6 +27,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePedidos } from "@/context/pedidos";
 import { useEstoque } from "@/context/estoque";
+import { useClientes } from "@/context/clientes";
 import { usePeriodo } from "@/hooks/use-periodo";
 import { dentroFaixa } from "@/lib/periodo";
 import { brl } from "@/lib/erp";
