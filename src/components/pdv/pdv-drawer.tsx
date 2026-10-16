@@ -1,6 +1,6 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { ProdutoFoto } from "@/components/produto-foto";
-import { ChevronDown, ChevronUp, Loader2, Plus, ShoppingCart, Ticket, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Loader2, Plus, Printer, ShoppingCart, Ticket, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
