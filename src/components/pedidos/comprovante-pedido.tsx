@@ -216,7 +216,7 @@ function Cupom({ pedido }: { pedido: Pedido }) {
           <>
             <div className="cupom-linha cupom-pagamento">
               <span>{txt?.rotuloTrocoPara || "Troco para"}</span>
-              <span>{brl(pedido.trocoPara)}</span>
+              <span>{brl(pedido.trocoPara ?? 0)}</span>
             </div>
             {troco > 0 ? (
               <div className="cupom-linha cupom-pagamento">
