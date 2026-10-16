@@ -660,12 +660,16 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                           Nenhum cliente encontrado.
                         </p>
                       ) : (
-                        filtrados.map((c) => (
+                        filtrados.map((c, indice) => (
                           <button
                             key={c.id}
+                            id={`pdv-cliente-opcao-${c.id}`}
                             type="button"
                             onClick={() => selecionar(c.id)}
-                            className="flex w-full flex-col items-start gap-0.5 border-b border-border px-3 py-2 text-left last:border-0 hover:bg-muted/60"
+                            onMouseEnter={() => setDestaque(indice)}
+                            className={`flex w-full flex-col items-start gap-0.5 border-b border-border px-3 py-2 text-left last:border-0 hover:bg-muted/60 ${
+                              indice === destaque ? "bg-muted/60" : ""
+                            }`}
                           >
                             <span className="text-sm font-medium">{rotuloCliente(c)}</span>
                             <span className="text-xs text-muted-foreground">
