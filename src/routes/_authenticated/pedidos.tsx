@@ -239,9 +239,17 @@ function PedidosPage() {
     [pedidos, periodo.faixa],
   );
 
+  const codigoPorCliente = useMemo(
+    () => new Map(clientes.map((c) => [c.id, String(c.codigo ?? "")])),
+    [clientes],
+  );
+
   const pesquisados = useMemo(
-    () => doPeriodo.filter((pedido) => pedidoCorrespondeBusca(pedido, busca)),
-    [busca, doPeriodo],
+    () =>
+      doPeriodo.filter((pedido) =>
+        pedidoCorrespondeBusca(pedido, busca, codigoPorCliente.get(pedido.clienteId)),
+      ),
+    [busca, doPeriodo, codigoPorCliente],
   );
 
   const porForma = (forma: FiltroForma) =>
