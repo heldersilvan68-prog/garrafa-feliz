@@ -123,6 +123,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
   const [desconto, setDesconto] = useState(0);
   const [usarCredito, setUsarCredito] = useState(true);
   const [listaAberta, setListaAberta] = useState(false);
+  const [destaque, setDestaque] = useState(0);
   const [entregador, setEntregador] = useState<string>(BALCAO);
   // Pacote de vales: entrada financeira que gera crédito, sem baixa de estoque.
   const [pacoteQtd, setPacoteQtd] = useState("");
@@ -409,6 +410,12 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
     setEndereco(enderecoPadrao);
     setBusca(c ? rotuloCliente(c) : "");
     setListaAberta(false);
+    // Fluxo por teclado: após escolher o cliente, o foco vai para os produtos.
+    setTimeout(() => {
+      const grade = document.getElementById("pdv-produtos");
+      const alvo = grade?.querySelector<HTMLElement>("button, input, [tabindex]");
+      alvo?.focus();
+    }, 0);
   };
 
   const finalizar = async (imprimirApos = false) => {
@@ -595,8 +602,38 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                           setBusca(e.target.value);
                           setClienteId("");
                           setListaAberta(true);
+                          setDestaque(0);
                         }}
                         onClick={() => setListaAberta(true)}
+                        onKeyDown={(e) => {
+                          if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+                            e.preventDefault();
+                            if (!listaAberta) {
+                              setListaAberta(true);
+                              setDestaque(0);
+                              return;
+                            }
+                            if (filtrados.length === 0) return;
+                            setDestaque((atual) => {
+                              const proximo =
+                                e.key === "ArrowDown"
+                                  ? (atual + 1) % filtrados.length
+                                  : (atual - 1 + filtrados.length) % filtrados.length;
+                              document
+                                .getElementById(`pdv-cliente-opcao-${filtrados[proximo].id}`)
+                                ?.scrollIntoView({ block: "nearest" });
+                              return proximo;
+                            });
+                          } else if (e.key === "Enter") {
+                            if (listaAberta && filtrados.length > 0) {
+                              e.preventDefault();
+                              const alvo = filtrados[Math.min(destaque, filtrados.length - 1)];
+                              selecionar(alvo.id);
+                            }
+                          } else if (e.key === "Escape") {
+                            setListaAberta(false);
+                          }
+                        }}
                       />
                       <Button
                         type="button"
@@ -623,12 +660,16 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                           Nenhum cliente encontrado.
                         </p>
                       ) : (
-                        filtrados.map((c) => (
+                        filtrados.map((c, indice) => (
                           <button
                             key={c.id}
+                            id={`pdv-cliente-opcao-${c.id}`}
                             type="button"
                             onClick={() => selecionar(c.id)}
-                            className="flex w-full flex-col items-start gap-0.5 border-b border-border px-3 py-2 text-left last:border-0 hover:bg-muted/60"
+                            onMouseEnter={() => setDestaque(indice)}
+                            className={`flex w-full flex-col items-start gap-0.5 border-b border-border px-3 py-2 text-left last:border-0 hover:bg-muted/60 ${
+                              indice === destaque ? "bg-muted/60" : ""
+                            }`}
                           >
                             <span className="text-sm font-medium">{rotuloCliente(c)}</span>
                             <span className="text-xs text-muted-foreground">
@@ -669,7 +710,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
 
               <div className="flex flex-col gap-2">
                 <p className="text-sm font-medium">Produtos</p>
-                <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+                <div id="pdv-produtos" className="grid min-w-0 gap-3 sm:grid-cols-2">
                   {produtos.filter((p) => !p.ocultarPdv).map((p) => {
                     const upf = unidPorFardo(p);
                     const modalidadeAtiva = modalidadeDe(p.id);
