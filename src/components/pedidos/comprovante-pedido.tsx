@@ -10,7 +10,7 @@ import { useConfiguracoes, IMPRESSAO_PADRAO } from "@/context/configuracoes";
 import { useClientes } from "@/context/clientes";
 import { useEstoque } from "@/context/estoque";
 import { mascaraTelefone } from "@/lib/clientes";
-import { montarDadosCupom, renderizarModeloCupom } from "@/lib/cupom-template";
+import { modeloEfetivoCupom, montarDadosCupom, renderizarModeloCupom } from "@/lib/cupom-template";
 
 const EMPRESA_PADRAO = "PK DISTRIBUIDORA";
 const ENDERECO_PADRAO = "AV LUIZ VIANA FILHO 285";
