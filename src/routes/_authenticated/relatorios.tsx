@@ -199,7 +199,7 @@ function RelatoriosPage() {
   const porModalidade = useMemo(() => {
     const produtosPorId = new Map(produtos.map((produto) => [produto.id, produto]));
     const modos: { id: ModoVenda; label: string }[] = [
-      { id: "refil", label: "Água" },
+      { id: "refil", label: "Venda de Água" },
       { id: "completa", label: LABEL_MODO.completa },
       { id: "casco", label: LABEL_MODO.casco },
     ];
