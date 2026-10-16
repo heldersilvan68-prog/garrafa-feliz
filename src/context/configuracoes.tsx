@@ -25,6 +25,40 @@ export type Empresa = {
 export type LarguraPapel = "80mm" | "58mm" | "A4";
 export type TamanhoFonte = "pequeno" | "medio" | "grande";
 export type ModoImpressora = "termica" | "navegador";
+export type EstiloDivisor = "dupla" | "tracejada" | "solida";
+
+/** Textos e rótulos personalizáveis do cupom. */
+export type TextosCupom = {
+  tituloRecibo: string;
+  rotuloCliente: string;
+  rotuloEntregador: string;
+  rotuloEndereco: string;
+  rotuloRetirada: string;
+  rotuloPagamento: string;
+  rotuloFiado: string;
+  rotuloTrocoPara: string;
+  rotuloLevar: string;
+  rotuloTotal: string;
+  rotuloAssinatura: string;
+  mensagemRodape: string;
+  mensagemRodape2: string;
+};
+
+export const TEXTOS_CUPOM_PADRAO: TextosCupom = {
+  tituloRecibo: "Comprovante do Pedido nº",
+  rotuloCliente: "Cliente:",
+  rotuloEntregador: "Entregador:",
+  rotuloEndereco: "ENDEREÇO:",
+  rotuloRetirada: "Entrega: Retirada no Balcão",
+  rotuloPagamento: "FORMA DE PAGAMENTO",
+  rotuloFiado: "Em fiado",
+  rotuloTrocoPara: "Troco para",
+  rotuloLevar: "Levar",
+  rotuloTotal: "TOTAL",
+  rotuloAssinatura: "Assinatura do cliente",
+  mensagemRodape: "Obrigado pela preferência!",
+  mensagemRodape2: "Água boa é água da P.K",
+};
 
 /** Preferências do cupom / comprovante impresso. */
 export type ConfigImpressao = {
@@ -38,6 +72,20 @@ export type ConfigImpressao = {
   mostrarObservacoes: boolean;
   mostrarRodape: boolean;
   mostrarAssinatura: boolean;
+  textos: TextosCupom;
+  /** Tamanho da fonte do cabeçalho (nome da empresa / título). */
+  fonteTitulo: TamanhoFonte;
+  /** Tamanho da fonte do corpo do pedido (itens e pagamentos). */
+  fonteCorpo: TamanhoFonte;
+  /** Tamanho da fonte do rodapé. */
+  fonteRodape: TamanhoFonte;
+  centralizarCabecalho: boolean;
+  centralizarRodape: boolean;
+  estiloDivisor: EstiloDivisor;
+  /** Margem superior em mm (respiro para o corte do papel). */
+  margemSuperior: number;
+  /** Margem inferior em mm (respiro para o corte do papel). */
+  margemInferior: number;
 };
 
 export const IMPRESSAO_PADRAO: ConfigImpressao = {
@@ -51,6 +99,15 @@ export const IMPRESSAO_PADRAO: ConfigImpressao = {
   mostrarObservacoes: true,
   mostrarRodape: true,
   mostrarAssinatura: true,
+  textos: TEXTOS_CUPOM_PADRAO,
+  fonteTitulo: "grande",
+  fonteCorpo: "medio",
+  fonteRodape: "medio",
+  centralizarCabecalho: true,
+  centralizarRodape: true,
+  estiloDivisor: "tracejada",
+  margemSuperior: 3,
+  margemInferior: 3,
 };
 
 export type Configuracoes = Empresa & {
