@@ -123,6 +123,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
   const [desconto, setDesconto] = useState(0);
   const [usarCredito, setUsarCredito] = useState(true);
   const [listaAberta, setListaAberta] = useState(false);
+  const [destaque, setDestaque] = useState(0);
   const [entregador, setEntregador] = useState<string>(BALCAO);
   // Pacote de vales: entrada financeira que gera crédito, sem baixa de estoque.
   const [pacoteQtd, setPacoteQtd] = useState("");
