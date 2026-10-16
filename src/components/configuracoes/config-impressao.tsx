@@ -23,6 +23,7 @@ import {
   MODELO_CUPOM_PADRAO,
   TAGS_CUPOM,
   dadosExemploCupom,
+  modeloEfetivoCupom,
   renderizarModeloCupom,
 } from "@/lib/cupom-template";
 
