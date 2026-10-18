@@ -34,3 +34,8 @@
 - [x] Modalidades: liberar o próprio produto no seletor de composição + fallback 1 un. do produto quando composição vazia
 - [x] Modalidades: relatório Produtos & Reposição — Vendido soma unidades consumidas por produto; rateio de faturamento/custo na composição
 - [x] PDV: ocultar o seletor antigo de modo de vasilhames quando o produto tiver modalidades ativas (manter só "Formato padrão" + modalidades)
+
+# Filtro de período na equipe de entregas
+- [x] Adicionar o seletor de período padrão ao topo da tela de Entregadores
+- [x] Conectar a conferência de vasilhames e financeiro ao período escolhido
+- [x] Validar os números em Hoje, Mês atual, 30 dias e Todo o período
