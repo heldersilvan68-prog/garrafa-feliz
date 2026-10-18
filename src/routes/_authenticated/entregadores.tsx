@@ -35,8 +35,10 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { ListaCarregando } from "@/components/lista-carregando";
+import { FiltroPeriodo } from "@/components/filtro-periodo";
 import { AcertoEntregador } from "@/components/entregadores/acerto-entregador";
 import { useEntregadores } from "@/context/entregadores";
+import { usePeriodo } from "@/hooks/use-periodo";
 import { mascaraTelefone } from "@/lib/clientes";
 import {
   TIPOS_ENTREGADOR,
@@ -239,6 +241,7 @@ function ExcluirDialog({ entregador }: { entregador: Entregador }) {
 
 function EntregadoresPage() {
   const { entregadores, carregando } = useEntregadores();
+  const periodo = usePeriodo("hoje");
 
   return (
     <div className="flex flex-col gap-6">
@@ -249,12 +252,15 @@ function EntregadoresPage() {
             Cadastro real da equipe — usado nos pedidos, no PDV e nas comissões.
           </p>
         </div>
-        <EntregadorDialog>
-          <Button>
-            <Plus className="size-4" />
-            Novo cadastro
-          </Button>
-        </EntregadorDialog>
+        <div className="flex flex-wrap items-end gap-2">
+          <FiltroPeriodo estado={periodo} />
+          <EntregadorDialog>
+            <Button>
+              <Plus className="size-4" />
+              Novo cadastro
+            </Button>
+          </EntregadorDialog>
+        </div>
       </header>
 
       <Card>
@@ -318,7 +324,7 @@ function EntregadoresPage() {
         </CardContent>
       </Card>
 
-      <AcertoEntregador />
+      <AcertoEntregador faixa={periodo.faixa} />
     </div>
   );
 }

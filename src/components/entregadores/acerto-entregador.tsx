@@ -23,13 +23,8 @@ import { useEstoque } from "@/context/estoque";
 import { useEntregadores } from "@/context/entregadores";
 import { brl } from "@/lib/erp";
 import { STATUS_PEDIDO_LABEL, resumoItens } from "@/lib/pedidos";
-import {
-  dinheiroRecebido,
-  entregasDoEntregador,
-  hojeISO,
-  unidadesRetornaveis,
-  vaziosRecolhidos,
-} from "@/lib/caixa";
+import { dentroFaixa, rotuloFaixa, type Faixa } from "@/lib/periodo";
+import { dinheiroRecebido, unidadesRetornaveis, vaziosRecolhidos } from "@/lib/caixa";
 
 function ValorLinha({
   label,
@@ -56,26 +51,31 @@ function ValorLinha({
   );
 }
 
-/** Conferência de turno, vasilhames e financeiro de cada entregador. */
-export function AcertoEntregador() {
+/** Conferência de vasilhames e financeiro de cada entregador no período selecionado. */
+export function AcertoEntregador({ faixa }: { faixa: Faixa }) {
   const { pedidos } = usePedidos();
   const { produtos } = useEstoque();
   const { opcoes: ENTREGADORES } = useEntregadores();
   const [entregador, setEntregador] = useState("");
   const selecionado = entregador || ENTREGADORES[1] || ENTREGADORES[0] || "";
-  const dia = hojeISO();
 
   const entregas = useMemo(
-    () => entregasDoEntregador(pedidos, selecionado, dia),
-    [pedidos, selecionado, dia],
+    () =>
+      pedidos.filter(
+        (p) =>
+          p.entregador === selecionado &&
+          p.status === "concluido" &&
+          dentroFaixa(p.criadoEm, faixa),
+      ),
+    [pedidos, selecionado, faixa],
   );
   const emRota = useMemo(
     () =>
       pedidos.filter(
         (p) =>
-          p.entregador === selecionado && p.status === "em-rota" && p.criadoEm.slice(0, 10) === dia,
+          p.entregador === selecionado && p.status === "em-rota" && dentroFaixa(p.criadoEm, faixa),
       ),
-    [pedidos, selecionado, dia],
+    [pedidos, selecionado, faixa],
   );
 
   const cheiosSaida = unidadesRetornaveis([...entregas, ...emRota]);
@@ -97,7 +97,7 @@ export function AcertoEntregador() {
             <Truck className="size-4 text-primary" />
             Acerto do entregador
           </CardTitle>
-          <CardDescription>Conferência do turno de hoje</CardDescription>
+          <CardDescription>Conferência do período: {rotuloFaixa(faixa)}</CardDescription>
         </div>
         <Select value={selecionado} onValueChange={setEntregador}>
           <SelectTrigger className="w-[220px]">
@@ -130,7 +130,7 @@ export function AcertoEntregador() {
               <Separator />
               <ValorLinha label="Vazios recolhidos de clientes" valor={`${vazios} un`} />
               <ValorLinha
-                label="Vazios hoje no depósito"
+                label="Vazios no depósito"
                 valor={`${vaziosEstoque} un`}
                 destaque="forte"
               />
@@ -163,11 +163,11 @@ export function AcertoEntregador() {
         <div>
           <p className="mb-2 flex items-center gap-2 text-sm font-semibold">
             <Package className="size-4 text-muted-foreground" />
-            Entregas do turno ({entregas.length + emRota.length})
+            Entregas do período ({entregas.length + emRota.length})
           </p>
           {entregas.length + emRota.length === 0 ? (
             <p className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-              Nenhuma entrega registrada hoje para {selecionado || "este entregador"}.
+              Nenhuma entrega registrada no período para {selecionado || "este entregador"}.
             </p>
           ) : (
             <div className="overflow-x-auto rounded-lg border border-border">
