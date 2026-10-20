@@ -14,3 +14,5 @@
 - Treasury adjustments use identified `cash_movements`: cash as supplies/withdrawals and digital as signed receipts, so the existing real-time balance remains the single source of truth.
 - Accounts payable share the page's date range; expand month-to-date to the full month only for due-date listings, preserving other financial calculations.
 - Expense chart colors use semantic category tokens and a shared color resolver so slices and legends always match.
+- The performance module derives read-only analytics from the existing ERP providers in a pure shared calculator, with URL-backed periods and tabs; this preserves realtime updates, tenant access and testable formulas without duplicating persisted financial data.
+- Performance break-even is an explicitly estimated constant-operating-cost scenario, not a fixed/variable-cost accounting result; current records do not classify those costs or snapshot historical product costs.

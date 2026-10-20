@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import {
   Droplets,
+  Activity,
   FileBarChart,
   Truck,
 
@@ -36,7 +37,10 @@ import {
 const grupos = [
   {
     label: "Visão geral",
-    itens: [{ titulo: "Dashboard Geral", url: "/", icon: LayoutDashboard }],
+    itens: [
+      { titulo: "Dashboard Geral", url: "/", icon: LayoutDashboard },
+      { titulo: "Desempenho", url: "/desempenho", icon: Activity },
+    ],
   },
   {
     label: "Operação",
