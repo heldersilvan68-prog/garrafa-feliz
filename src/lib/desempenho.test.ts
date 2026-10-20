@@ -1,5 +1,10 @@
-/// <reference types="bun" />
-import { describe, expect, test } from "bun:test";
+import { describe, it as test } from "node:test";
+import assert from "node:assert/strict";
+const expect = (actual: unknown) => ({
+  toBe: (expected: unknown) => assert.equal(actual, expected),
+  toBeNull: () => assert.equal(actual, null),
+  toBeCloseTo: (expected: number) => assert.ok(typeof actual === "number" && Math.abs(actual - expected) < 0.005),
+});
 import { analisarDesempenho, estimarEquilibrio, simularResultado } from "./desempenho";
 import type { Pedido } from "./pedidos";
 import type { Produto } from "./erp";
