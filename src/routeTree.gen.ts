@@ -16,6 +16,7 @@ import { Route as AuthenticatedCaixaRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedClientesRouteImport } from './routes/_authenticated/clientes'
 import { Route as AuthenticatedComissoesRouteImport } from './routes/_authenticated/comissoes'
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
+import { Route as AuthenticatedDesempenhoRouteImport } from './routes/_authenticated/desempenho'
 import { Route as AuthenticatedDespesasRouteImport } from './routes/_authenticated/despesas'
 import { Route as AuthenticatedEntregadoresRouteImport } from './routes/_authenticated/entregadores'
 import { Route as AuthenticatedFinanceiroRouteImport } from './routes/_authenticated/financeiro'
@@ -59,6 +60,11 @@ const AuthenticatedConfiguracoesRoute =
     path: '/configuracoes',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedDesempenhoRoute = AuthenticatedDesempenhoRouteImport.update({
+  id: '/desempenho',
+  path: '/desempenho',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedDespesasRoute = AuthenticatedDespesasRouteImport.update({
   id: '/despesas',
   path: '/despesas',
@@ -103,6 +109,7 @@ export interface FileRoutesByFullPath {
   '/clientes': typeof AuthenticatedClientesRoute
   '/comissoes': typeof AuthenticatedComissoesRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
+  '/desempenho': typeof AuthenticatedDesempenhoRoute
   '/despesas': typeof AuthenticatedDespesasRoute
   '/entregadores': typeof AuthenticatedEntregadoresRoute
   '/financeiro': typeof AuthenticatedFinanceiroRoute
@@ -117,6 +124,7 @@ export interface FileRoutesByTo {
   '/clientes': typeof AuthenticatedClientesRoute
   '/comissoes': typeof AuthenticatedComissoesRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
+  '/desempenho': typeof AuthenticatedDesempenhoRoute
   '/despesas': typeof AuthenticatedDespesasRoute
   '/entregadores': typeof AuthenticatedEntregadoresRoute
   '/financeiro': typeof AuthenticatedFinanceiroRoute
@@ -134,6 +142,7 @@ export interface FileRoutesById {
   '/_authenticated/clientes': typeof AuthenticatedClientesRoute
   '/_authenticated/comissoes': typeof AuthenticatedComissoesRoute
   '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
+  '/_authenticated/desempenho': typeof AuthenticatedDesempenhoRoute
   '/_authenticated/despesas': typeof AuthenticatedDespesasRoute
   '/_authenticated/entregadores': typeof AuthenticatedEntregadoresRoute
   '/_authenticated/financeiro': typeof AuthenticatedFinanceiroRoute
@@ -152,6 +161,7 @@ export interface FileRouteTypes {
     | '/clientes'
     | '/comissoes'
     | '/configuracoes'
+    | '/desempenho'
     | '/despesas'
     | '/entregadores'
     | '/financeiro'
@@ -166,6 +176,7 @@ export interface FileRouteTypes {
     | '/clientes'
     | '/comissoes'
     | '/configuracoes'
+    | '/desempenho'
     | '/despesas'
     | '/entregadores'
     | '/financeiro'
@@ -182,6 +193,7 @@ export interface FileRouteTypes {
     | '/_authenticated/clientes'
     | '/_authenticated/comissoes'
     | '/_authenticated/configuracoes'
+    | '/_authenticated/desempenho'
     | '/_authenticated/despesas'
     | '/_authenticated/entregadores'
     | '/_authenticated/financeiro'
@@ -248,6 +260,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedConfiguracoesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/desempenho': {
+      id: '/_authenticated/desempenho'
+      path: '/desempenho'
+      fullPath: '/desempenho'
+      preLoaderRoute: typeof AuthenticatedDesempenhoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/despesas': {
       id: '/_authenticated/despesas'
       path: '/despesas'
@@ -305,6 +324,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedClientesRoute: typeof AuthenticatedClientesRoute
   AuthenticatedComissoesRoute: typeof AuthenticatedComissoesRoute
   AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
+  AuthenticatedDesempenhoRoute: typeof AuthenticatedDesempenhoRoute
   AuthenticatedDespesasRoute: typeof AuthenticatedDespesasRoute
   AuthenticatedEntregadoresRoute: typeof AuthenticatedEntregadoresRoute
   AuthenticatedFinanceiroRoute: typeof AuthenticatedFinanceiroRoute
@@ -320,6 +340,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedClientesRoute: AuthenticatedClientesRoute,
   AuthenticatedComissoesRoute: AuthenticatedComissoesRoute,
   AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
+  AuthenticatedDesempenhoRoute: AuthenticatedDesempenhoRoute,
   AuthenticatedDespesasRoute: AuthenticatedDespesasRoute,
   AuthenticatedEntregadoresRoute: AuthenticatedEntregadoresRoute,
   AuthenticatedFinanceiroRoute: AuthenticatedFinanceiroRoute,
