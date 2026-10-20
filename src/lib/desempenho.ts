@@ -7,6 +7,7 @@ import { totalItemPedido, valorFaturado, type Pedido } from "@/lib/pedidos";
 export const pedidoRealizado = (p: Pedido) => p.status === "concluido" || p.status === "em-rota";
 const somar = <T,>(lista: T[], valor: (item: T) => number) => lista.reduce((s, i) => s + valor(i), 0);
 const percentual = (a: number, b: number) => b > 0 ? a / b * 100 : 0;
+const compraMercadoria = (categoria: string) => categoria === CATEGORIA_COMPRA_MERCADORIA || categoria.trim().toLocaleLowerCase("pt-BR") === "compra de mercadoria";
 export type LinhaRanking = { id: string; nome: string; vendas: number; custo: number; pedidos: number; qtd: number };
 export function estimarEquilibrio(vendas: number, cmv: number, taxas: number, despesasBase: number) {
   const contribuicao = vendas - cmv - taxas;
@@ -26,8 +27,9 @@ export function simularResultado(vendas: number, cmv: number, taxas: number, des
 export function analisarDesempenho(faixa: Faixa, pedidos: Pedido[], despesas: Despesa[], produtos: Produto[], hoje = new Date()) {
   const realizados = pedidos.filter(pedidoRealizado);
   const selecionados = realizados.filter(p => dentroFaixa(p.criadoEm, faixa));
-  const resumo = calcularResumo(faixa, realizados, despesas, produtos, { hoje });
-  const anterior = calcularResumo(faixaAnterior(faixa), realizados, despesas, produtos, { hoje });
+  const despesasNormalizadas = despesas.map(d => compraMercadoria(d.categoria) ? { ...d, categoria: CATEGORIA_COMPRA_MERCADORIA } : d);
+  const resumo = calcularResumo(faixa, realizados, despesasNormalizadas, produtos, { hoje });
+  const anterior = calcularResumo(faixaAnterior(faixa), realizados, despesasNormalizadas, produtos, { hoje });
   const porProduto = new Map(produtos.map(p => [p.id, p]));
   const custoPedido = (p: Pedido) => somar(expandirComposicao(p.itens, produtos), i => (porProduto.get(i.produtoId)?.precoCusto ?? 0) * i.qtd);
   const clientes = new Map<string, LinhaRanking>();
@@ -76,7 +78,7 @@ export function analisarDesempenho(faixa: Faixa, pedidos: Pedido[], despesas: De
   }
   for (const p of selecionados) { const l = obter(isoLocal(p.criadoEm)); l.vendas += valorFaturado(p); l.custo += custoPedido(p); }
   const categorias = new Map<string, number>();
-  for (const d of despesas.filter(d => d.status === "Pago" && dentroFaixa(d.data, faixa) && d.categoria !== CATEGORIA_COMPRA_MERCADORIA)) {
+  for (const d of despesas.filter(d => d.status === "Pago" && dentroFaixa(d.data, faixa) && !compraMercadoria(d.categoria))) {
     obter(d.data).despesas += d.valor;
     categorias.set(d.categoria, (categorias.get(d.categoria) ?? 0) + d.valor);
   }

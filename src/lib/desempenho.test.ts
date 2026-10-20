@@ -1,3 +1,4 @@
+/// <reference types="bun" />
 import { describe, expect, test } from "bun:test";
 import { analisarDesempenho, estimarEquilibrio, simularResultado } from "./desempenho";
 import type { Pedido } from "./pedidos";
@@ -13,6 +14,10 @@ describe("desempenho empresarial", () => {
   test("resultado exclui compras e não desconta taxas duas vezes", () => {
     const d = analisarDesempenho(faixa, [pedido], [despesa(CATEGORIA_COMPRA_MERCADORIA, 100), despesa(CATEGORIA_TAXA_CARTAO, 1), despesa("Aluguel", 3), despesa("Outros", 50, "Pendente")], [produto]);
     expect(d.opReais).toBe(3); expect(d.resumo.lucroLiquido).toBe(10);
+  });
+  test("categoria antiga de compra de mercadoria também é excluída", () => {
+    const d = analisarDesempenho(faixa, [pedido], [despesa("Compra de Mercadoria", 100)], [produto]);
+    expect(d.opReais).toBe(0); expect(d.resumo.lucroLiquido).toBe(14);
   });
   test("só vendas concluídas e em rota entram nos indicadores", () => {
     const d = analisarDesempenho(faixa, [pedido, { ...pedido, id: "2", status: "pendente" }, { ...pedido, id: "3", status: "cancelado" }, { ...pedido, id: "4", status: "em-rota" }], [], [produto]);
