@@ -1,7 +1,7 @@
 import { calcularResumo } from "@/lib/dashboard";
 import { CATEGORIA_COMPRA_MERCADORIA, CATEGORIA_TAXA_CARTAO, corCategoriaDespesa, type Despesa } from "@/lib/despesas";
 import { expandirComposicao, type Produto } from "@/lib/erp";
-import { dentroFaixa, faixaAnterior, isoLocal, isoParaDataLocal, type Faixa } from "@/lib/periodo";
+import { dentroFaixa, faixaAnterior, isoLocal, isoParaDataLocal, somarDiasIso, type Faixa } from "@/lib/periodo";
 import { totalItemPedido, valorFaturado, type Pedido } from "@/lib/pedidos";
 
 export const pedidoRealizado = (p: Pedido) => p.status === "concluido" || p.status === "em-rota";
@@ -71,6 +71,9 @@ export function analisarDesempenho(faixa: Faixa, pedidos: Pedido[], despesas: De
     const l = serieMap.get(data) ?? { data, vendas: 0, despesas: 0, custo: 0, lucro: 0 };
     serieMap.set(data, l); return l;
   };
+  if (!mensal && inicio <= fim) {
+    for (let i = 0; i < numeroDias; i++) obter(somarDiasIso(inicio, i));
+  }
   for (const p of selecionados) { const l = obter(isoLocal(p.criadoEm)); l.vendas += valorFaturado(p); l.custo += custoPedido(p); }
   const categorias = new Map<string, number>();
   for (const d of despesas.filter(d => d.status === "Pago" && dentroFaixa(d.data, faixa) && d.categoria !== CATEGORIA_COMPRA_MERCADORIA)) {

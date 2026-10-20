@@ -6,7 +6,7 @@ import type { Despesa } from "./despesas";
 import { CATEGORIA_COMPRA_MERCADORIA, CATEGORIA_TAXA_CARTAO } from "./despesas";
 
 const produto = { id: "agua", nome: "Água", precoCusto: 6, retornavel: true, estoqueCheio: 10, unidadesPorFardo: 1 } as Produto;
-const pedido = { id: "p1", numero: 1, clienteId: "c1", clienteNome: "Cliente", entregador: "Helder", total: 20, desconto: 0, pagamento: "PIX", pagamentos: [{ forma: "PIX", valor: 20 }], pago: true, status: "concluido", criadoEm: "2026-10-10T15:00:00Z", itens: [{ produtoId: "agua", nome: "Água", qtd: 1, precoUnit: 20, retornavel: true, modo: "troca" }], vaziosRecolhidos: 1 } as Pedido;
+const pedido: Pedido = { id: "p1", numero: 1, clienteId: "c1", clienteNome: "Cliente", telefone: "", enderecoEntrega: "", endereco: "", bairro: "", valorFiado: 0, valesCredito: 0, valesResgatados: 0, entregador: "Helder", total: 20, desconto: 0, pagamento: "PIX", pagamentos: [{ forma: "PIX", valor: 20 }], pago: true, status: "concluido", criadoEm: "2026-10-10T15:00:00Z", itens: [{ produtoId: "agua", nome: "Água", qtd: 1, precoUnit: 20, retornavel: true, modo: "refil" }], vaziosRecolhidos: 1 };
 const despesa = (categoria: string, valor: number, status: "Pago" | "Pendente" = "Pago", data = "2026-10-10") => ({ id: categoria, categoria, valor, status, data, descricao: categoria } as Despesa);
 const faixa = { inicio: "2026-10-01", fim: "2026-10-19" };
 describe("desempenho empresarial", () => {
