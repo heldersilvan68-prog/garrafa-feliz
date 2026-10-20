@@ -39,3 +39,8 @@
 - [x] Adicionar o seletor de período padrão ao topo da tela de Entregadores
 - [x] Conectar a conferência de vasilhames e financeiro ao período escolhido
 - [x] Validar os números em Hoje, Mês atual, 30 dias e Todo o período
+
+# Módulo de Desempenho
+- [x] Consolidar resultados, evolução e rankings com os dados reais
+- [x] Organizar saúde financeira, equilíbrio estimado e decisões em abas
+- [x] Validar cálculos, filtros e navegação com dados reais
