@@ -147,3 +147,42 @@ export const demonstrativoDebito = (c: Cliente, compras: Compra[], saldo: number
   ].join("\n");
   return `https://wa.me/${c.telefone}?text=${encodeURIComponent(texto)}`;
 };
+
+/**
+ * Compras do histórico que pertencem a pedidos cancelados: vinculadas pelo pedido
+ * ou, em registros antigos sem vínculo, pela mesma data e valor do pedido cancelado.
+ */
+export const comprasDeCancelados = (
+  historico: Compra[],
+  pedidos: Pedido[],
+  clienteId: string,
+): Compra[] => {
+  const cancelados = pedidos.filter((p) => p.clienteId === clienteId && p.status === "cancelado");
+  if (!cancelados.length) return [];
+  const ids = new Set(cancelados.map((p) => p.id));
+  const ativos = pedidos.filter((p) => p.clienteId === clienteId && p.status !== "cancelado");
+  const chave = (data: string, valor: number) => `${data}|${Math.round(valor * 100)}`;
+  const dataLocal = (iso: string) => {
+    const d = new Date(iso);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
+  const sobra = new Map<string, number>();
+  for (const p of cancelados) {
+    const k = chave(dataLocal(p.criadoEm), p.total);
+    sobra.set(k, (sobra.get(k) ?? 0) + 1);
+  }
+  // Pedidos ativos com mesma data/valor mantêm sua compra antiga sem vínculo.
+  const ativosPorChave = new Map<string, number>();
+  for (const p of ativos) {
+    const k = chave(dataLocal(p.criadoEm), p.total);
+    ativosPorChave.set(k, (ativosPorChave.get(k) ?? 0) + 1);
+  }
+  const vistos = new Map<string, number>();
+  return historico.filter((h) => {
+    if (h.pedidoId) return ids.has(h.pedidoId);
+    const k = chave(h.data, h.valor);
+    const n = (vistos.get(k) ?? 0) + 1;
+    vistos.set(k, n);
+    return n > (ativosPorChave.get(k) ?? 0) && n <= (ativosPorChave.get(k) ?? 0) + (sobra.get(k) ?? 0);
+  });
+};
