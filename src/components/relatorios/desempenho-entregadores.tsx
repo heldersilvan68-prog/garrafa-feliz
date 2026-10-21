@@ -28,6 +28,8 @@ import type { Produto } from "@/lib/erp";
 import { dentroFaixa, faixaAnterior, isoLocal, rotuloFaixa, type Faixa } from "@/lib/periodo";
 import { FiltroPeriodo } from "@/components/filtro-periodo";
 import { usePeriodo } from "@/hooks/use-periodo";
+import { useEntregadores } from "@/context/entregadores";
+import { BALCAO } from "@/lib/entregadores";
 import { analisarEntregador } from "@/lib/analise-entregador.functions";
 import { cn } from "@/lib/utils";
 
@@ -144,10 +146,16 @@ export function DesempenhoEntregadores({
   const anterior = useMemo(() => faixaAnterior(faixa), [faixa]);
   const produtosPorId = useMemo(() => new Map(produtos.map((p) => [p.id, p])), [produtos]);
 
-  const linhasTodas = useMemo(() => agrupar(pedidos, produtos, faixa), [pedidos, produtos, faixa]);
+  const { entregadores } = useEntregadores();
+  // Entregadores excluídos do cadastro não aparecem mais no relatório.
+  const pedidosValidos = useMemo(() => {
+    const nomes = new Set([BALCAO, "Sem entregador", ...entregadores.map((e) => e.nome.trim())]);
+    return pedidos.filter((p) => nomes.has(nomeEntregador(p)));
+  }, [pedidos, entregadores]);
+  const linhasTodas = useMemo(() => agrupar(pedidosValidos, produtos, faixa), [pedidosValidos, produtos, faixa]);
   const linhasAntTodas = useMemo(
-    () => agrupar(pedidos, produtos, anterior),
-    [pedidos, produtos, anterior],
+    () => agrupar(pedidosValidos, produtos, anterior),
+    [pedidosValidos, produtos, anterior],
   );
 
   const nomesDisponiveis = useMemo(
