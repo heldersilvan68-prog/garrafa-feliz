@@ -1,3 +1,4 @@
+import { supabase } from "@/integrations/supabase/client";
 import { useMemo, useState, type ReactNode } from "react";
 import { ProdutoFoto } from "@/components/produto-foto";
 import { ChevronDown, ChevronUp, Loader2, Plus, Printer, ShoppingCart, Ticket, Trash2 } from "lucide-react";
