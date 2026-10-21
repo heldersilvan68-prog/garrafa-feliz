@@ -224,7 +224,9 @@ function ComissoesPage() {
   const { opcoes: ENTREGADORES } = useEntregadores();
   const { pedidos } = usePedidos();
   const dia = hojeISO();
-  const [entregador, setEntregador] = useState(ENTREGADORES[1] ?? ENTREGADORES[0]);
+  const [escolhido, setEntregador] = useState(ENTREGADORES[1] ?? ENTREGADORES[0]);
+  // Entregador excluído deixa de ser selecionável.
+  const entregador = ENTREGADORES.includes(escolhido) ? escolhido : (ENTREGADORES[1] ?? ENTREGADORES[0]);
 
   const regra =
     regras.find((r) => r.entregador === entregador) ??

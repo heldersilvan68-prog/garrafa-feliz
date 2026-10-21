@@ -125,6 +125,8 @@ export type Pedido = {
   acertoParceriaId?: string;
   /** Comissão de parceria registrada no acerto. */
   comissaoParceria?: number;
+  /** Crédito em R$ da ficha do cliente usado nesta venda. */
+  creditoUsado?: number;
 };
 
 /** Pedido em fiado ainda não quitado. */

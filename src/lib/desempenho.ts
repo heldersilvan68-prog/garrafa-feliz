@@ -24,7 +24,7 @@ export function simularResultado(vendas: number, cmv: number, taxas: number, des
   return { receita, custo, taxa, operacional, lucro: receita - custo - taxa - operacional };
 }
 
-export function analisarDesempenho(faixa: Faixa, pedidos: Pedido[], despesas: Despesa[], produtos: Produto[], hoje = new Date()) {
+export function analisarDesempenho(faixa: Faixa, pedidos: Pedido[], despesas: Despesa[], produtos: Produto[], hoje = new Date(), equipeValida?: Set<string>) {
   const realizados = pedidos.filter(pedidoRealizado);
   const selecionados = realizados.filter(p => dentroFaixa(p.criadoEm, faixa));
   const despesasNormalizadas = despesas.map(d => compraMercadoria(d.categoria) ? { ...d, categoria: CATEGORIA_COMPRA_MERCADORIA } : d);
@@ -48,7 +48,7 @@ export function analisarDesempenho(faixa: Faixa, pedidos: Pedido[], despesas: De
     const custo = custoPedido(p);
     const dia = isoLocal(p.criadoEm);
     acumular(clientes, p.clienteId || p.clienteNome || "sem-cliente", p.clienteNome || "Sem cliente", venda, custo);
-    acumular(equipe, p.entregador || "sem-equipe", p.entregador || "Sem entregador", venda, custo);
+    if (!equipeValida || !p.entregador || equipeValida.has(p.entregador.trim())) acumular(equipe, p.entregador || "sem-equipe", p.entregador || "Sem entregador", venda, custo);
     acumular(dias, dia, dia, venda, custo);
     acumular(meses, dia.slice(0, 7), dia.slice(0, 7), venda, custo);
     const s = semana[isoParaDataLocal(dia).getUTCDay()];

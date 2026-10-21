@@ -57,7 +57,8 @@ export function AcertoEntregador({ faixa }: { faixa: Faixa }) {
   const { produtos } = useEstoque();
   const { opcoes: ENTREGADORES } = useEntregadores();
   const [entregador, setEntregador] = useState("");
-  const selecionado = entregador || ENTREGADORES[1] || ENTREGADORES[0] || "";
+  const selecionado =
+    (ENTREGADORES.includes(entregador) ? entregador : "") || ENTREGADORES[1] || ENTREGADORES[0] || "";
 
   const entregas = useMemo(
     () =>

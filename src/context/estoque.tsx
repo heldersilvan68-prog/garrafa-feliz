@@ -78,7 +78,11 @@ type Ctx = {
     vaziosRecolhidos: number,
     vinculo?: { clienteId?: string; pedidoId?: string; numeroPedido?: number },
   ) => Promise<void>;
-  estornarVenda: (itens: ItemBaixa[], vaziosRecolhidos: number) => Promise<void>;
+  estornarVenda: (
+    itens: ItemBaixa[],
+    vaziosRecolhidos: number,
+    vinculo?: { clienteId?: string; pedidoId?: string; numeroPedido?: number },
+  ) => Promise<void>;
 };
 
 const EstoqueContext = (((globalThis as Record<string, unknown>).__ctx_EstoqueContext ??= createContext<Ctx | null>(null)) as React.Context<Ctx | null>);
@@ -597,10 +601,12 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
     mutationFn: async ({
       itens,
       vaziosRecolhidos,
+      vinculo,
     }: {
       itens: ItemBaixa[];
       vaziosRecolhidos: number;
-    }) => aplicarVenda(itens, vaziosRecolhidos, -1),
+      vinculo?: { clienteId?: string; pedidoId?: string; numeroPedido?: number };
+    }) => aplicarVenda(itens, vaziosRecolhidos, -1, vinculo),
     onSuccess: invalidar,
     onError: (e: Error) => toast.error(`Não foi possível estornar o estoque: ${e.message}`),
   });
@@ -768,8 +774,8 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
       registrarAvaria: (dados) => avariaMut.mutateAsync(dados).then(() => undefined),
       devolucaoCliente: (produtoId, qtd, clienteId) =>
         devolucaoMut.mutateAsync({ produtoId, qtd, clienteId }).then(() => undefined),
-      estornarVenda: (itens, vaziosRecolhidos) =>
-        estornoMut.mutateAsync({ itens, vaziosRecolhidos }).then(() => undefined),
+      estornarVenda: (itens, vaziosRecolhidos, vinculo) =>
+        estornoMut.mutateAsync({ itens, vaziosRecolhidos, vinculo }).then(() => undefined),
        baixaVenda: (itens, vaziosRecolhidos, vinculo) =>
          baixaMut.mutateAsync({ itens, vaziosRecolhidos, vinculo }).then(() => undefined),
     }),

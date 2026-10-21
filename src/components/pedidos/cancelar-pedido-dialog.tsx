@@ -34,8 +34,8 @@ export function CancelarPedidoDialog({
 }) {
   const { cancelar, pedidos } = usePedidos();
   const { estornarVenda, produtos } = useEstoque();
-  const { definirDivida, ajustarVasilhames, ajustarVales, removerCompraPorPedido } = useClientes();
-  const { despesas, removerDespesa } = useDespesas();
+  const { definirDivida, ajustarVasilhames, ajustarVales, ajustarCredito, removerCompraPorPedido } = useClientes();
+  useDespesas();
   const { caixaAberto, registrarMovimento } = useCaixa();
   const qc = useQueryClient();
   const [aberto, setAberto] = useState(false);
@@ -109,7 +109,11 @@ export function CancelarPedidoDialog({
 
       // 2) Produtos e vasilhames voltam ao depósito.
       if (estorna) {
-        await estornarVenda(pedido.itens, pedido.vaziosRecolhidos);
+        await estornarVenda(pedido.itens, pedido.vaziosRecolhidos, {
+          clienteId: pedido.clienteId || undefined,
+          pedidoId: pedido.id,
+          numeroPedido: pedido.numero,
+        });
       }
 
       if (pedido.clienteId) {
@@ -123,6 +127,9 @@ export function CancelarPedidoDialog({
         const deltaVales = (pedido.valesResgatados ?? 0) - (pedido.valesCredito ?? 0);
         if (deltaVales !== 0) await ajustarVales(pedido.clienteId, deltaVales);
 
+        // Crédito em R$ usado da ficha volta para o cliente.
+        if ((pedido.creditoUsado ?? 0) > 0) await ajustarCredito(pedido.clienteId, pedido.creditoUsado ?? 0);
+
         // 5) Cascos que ficaram na rua nesta venda voltam a não pertencer ao cliente.
         const deltaVasilhames = saldoVasilhamesPedido(
           expandirComposicao(pedido.itens, produtos),
@@ -134,10 +141,11 @@ export function CancelarPedidoDialog({
       }
 
       // 6) Taxa de maquininha lançada automaticamente na venda deixa de existir.
-      const taxa = despesas.find(
-        (d) => d.descricao === `Taxa de cartão — Pedido #${pedido.numero}`,
-      );
-      if (taxa) removerDespesa(taxa.id);
+      await supabase
+        .from("expenses")
+        .delete()
+        .eq("descricao", `Taxa de cartão — Pedido #${pedido.numero}`);
+      qc.invalidateQueries({ queryKey: ["despesas"] });
 
       // 7) Remove do histórico de compras do cliente a compra vinculada a este pedido.
       await removerCompraPorPedido(pedido.id);

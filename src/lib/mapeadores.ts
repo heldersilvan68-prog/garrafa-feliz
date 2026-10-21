@@ -191,6 +191,7 @@ export const paraPedido = (
   valorFiado: num(r.valor_fiado),
   trocoPara: r.troco_para === null ? undefined : num(r.troco_para),
   desconto: num(r.desconto),
+  creditoUsado: num((r as { credito_usado?: number | null }).credito_usado ?? 0),
   valesCredito: r.vales_credito ?? 0,
   valesResgatados: r.vales_resgatados ?? 0,
   vaziosRecolhidos: r.vazios_recolhidos,

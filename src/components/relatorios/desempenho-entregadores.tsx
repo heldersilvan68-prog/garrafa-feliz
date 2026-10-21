@@ -346,7 +346,7 @@ export function DesempenhoEntregadores({
         </CardContent>
       </Card>
 
-      <AnaliseIA pedidos={pedidos} produtos={produtos} nomes={nomesDisponiveis} />
+      <AnaliseIA pedidos={pedidosValidos} produtos={produtos} nomes={nomesDisponiveis} />
     </div>
   );
 }
