@@ -5,6 +5,8 @@ export type Compra = {
   data: string; // ISO yyyy-mm-dd
   descricao: string;
   valor: number;
+  /** Pedido que gerou a compra (quando vinculado). */
+  pedidoId?: string;
 };
 
 export type Cliente = {

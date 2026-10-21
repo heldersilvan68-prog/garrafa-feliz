@@ -101,6 +101,7 @@ export const paraCompra = (r: CompraRow): Compra => ({
   data: r.data,
   descricao: r.descricao,
   valor: num(r.valor),
+  pedidoId: r.order_id ?? undefined,
 });
 
 /** Média de dias entre compras reais do cliente (mínimo 1 dia). */
