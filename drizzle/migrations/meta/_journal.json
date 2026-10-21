@@ -29,6 +29,13 @@
       "when": 1791852857853,
       "tag": "0003_modalidades_produtos",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792585238374,
+      "tag": "0004_credito_usado_pedido",
+      "breakpoints": true
     }
   ]
 }

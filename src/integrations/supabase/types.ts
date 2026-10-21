@@ -527,6 +527,7 @@ export type Database = {
           id: string
           legacy_id: string | null
           observacoes: string | null
+          order_id: string | null
           recorrencia_dia: number | null
           recorrencia_id: string | null
           recorrencia_meses: number | null
@@ -547,6 +548,7 @@ export type Database = {
           id?: string
           legacy_id?: string | null
           observacoes?: string | null
+          order_id?: string | null
           recorrencia_dia?: number | null
           recorrencia_id?: string | null
           recorrencia_meses?: number | null
@@ -567,6 +569,7 @@ export type Database = {
           id?: string
           legacy_id?: string | null
           observacoes?: string | null
+          order_id?: string | null
           recorrencia_dia?: number | null
           recorrencia_id?: string | null
           recorrencia_meses?: number | null
@@ -705,6 +708,7 @@ export type Database = {
           cliente_nome: string
           comissao_parceria: number
           created_at: string
+          credito_usado: number
           desconto: number
           endereco: string
           endereco_entrega: string | null
@@ -739,6 +743,7 @@ export type Database = {
           cliente_nome?: string
           comissao_parceria?: number
           created_at?: string
+          credito_usado?: number
           desconto?: number
           endereco?: string
           endereco_entrega?: string | null
@@ -773,6 +778,7 @@ export type Database = {
           cliente_nome?: string
           comissao_parceria?: number
           created_at?: string
+          credito_usado?: number
           desconto?: number
           endereco?: string
           endereco_entrega?: string | null
@@ -1280,6 +1286,7 @@ export type Database = {
           cliente_nome: string
           comissao_parceria: number
           created_at: string
+          credito_usado: number
           desconto: number
           endereco: string
           endereco_entrega: string | null
