@@ -133,6 +133,18 @@ export function ClientesProvider({ children }: { children: ReactNode }) {
       .delete()
       .eq("order_id", pedidoId);
     if (error) throw error;
+    // Recalcula a última compra do cliente sem o pedido removido.
+    const { data: pedido } = await supabase.from("orders").select("client_id").eq("id", pedidoId).maybeSingle();
+    if (pedido?.client_id) {
+      const { data: ultima } = await supabase
+        .from("client_purchases")
+        .select("data")
+        .eq("client_id", pedido.client_id)
+        .order("data", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      await supabase.from("clients").update({ ultima_compra: ultima?.data ?? null }).eq("id", pedido.client_id);
+    }
   }, "Não foi possível remover a compra do histórico");
 
   const dividaMut = useMutacao<{ id: string; delta: number }>(async ({ id, delta }) => {

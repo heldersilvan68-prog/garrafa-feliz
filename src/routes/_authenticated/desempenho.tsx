@@ -1,3 +1,5 @@
+import { useEntregadores } from "@/context/entregadores";
+import { BALCAO } from "@/lib/entregadores";
 import { useMemo } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
@@ -46,7 +48,9 @@ function DesempenhoPage() {
   const { config } = useConfiguracoes();
   const { userId } = useAuth(); const queryClient = useQueryClient();
   const faixa = useMemo(() => faixaPeriodo(search.periodo, { inicio: search.inicio, fim: search.fim }), [search.periodo, search.inicio, search.fim]);
-  const dados = useMemo(() => analisarDesempenho(faixa, pedidos, despesas, produtos), [faixa, pedidos, despesas, produtos]);
+  const { entregadores } = useEntregadores();
+  const equipeValida = useMemo(() => new Set([BALCAO, ...entregadores.map(e => e.nome.trim())]), [entregadores]);
+  const dados = useMemo(() => analisarDesempenho(faixa, pedidos, despesas, produtos, new Date(), equipeValida), [faixa, pedidos, despesas, produtos, equipeValida]);
   const saldos = useMemo(() => calcularSaldos(pedidos, despesas, caixas), [pedidos, despesas, caixas]);
   const filtro = {
     periodo: search.periodo, custom: { inicio: search.inicio, fim: search.fim }, faixa,

@@ -179,7 +179,25 @@ export function DespesasProvider({ children }: { children: ReactNode }) {
   });
 
   const removerMut = useMutacao<string>(async (id) => {
+    const { data: atual } = await supabase.from("expenses").select("*").eq("id", id).maybeSingle();
     const { error } = await supabase.from("expenses").delete().eq("id", id);
+    // Despesa paga com dinheiro do caixa aberto: desfaz a sangria automática.
+    if (!error && atual && atual.forma === "Dinheiro do Caixa" && atual.status === "Pago") {
+      const { data: mov } = await supabase
+        .from("cash_movements")
+        .select("id, cash_registers!inner(fechado_em)")
+        .eq("tipo", "sangria")
+        .eq("motivo", `Despesa: ${atual.descricao}`)
+        .eq("valor", atual.valor)
+        .is("cash_registers.fechado_em", null)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (mov) {
+        await supabase.from("cash_movements").delete().eq("id", mov.id);
+        void queryClient.invalidateQueries();
+      }
+    }
     if (error) throw error;
   }, "Não foi possível remover a despesa");
 
