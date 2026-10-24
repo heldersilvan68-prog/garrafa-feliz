@@ -38,6 +38,8 @@ export const Route = createFileRoute("/_authenticated/despesas")({
         content:
           "Controle total das despesas operacionais: categorias, status, formas de pagamento e sangria automática no caixa.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: DespesasPage,

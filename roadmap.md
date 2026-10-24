@@ -1,4 +1,5 @@
 # Performance
+- [x] Ajustar chegada da carga: avarias por motivo, quantidade automática de vazios e contraste do histórico; validar regras e tela
 - [x] Endurecer cleanup e reduzir rajadas do Realtime
 - [x] Paginar histórico de vasilhames no banco
 - [x] Limitar renderização inicial de vendas e clientes com carregamento sob demanda

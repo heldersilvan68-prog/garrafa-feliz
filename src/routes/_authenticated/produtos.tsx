@@ -43,6 +43,8 @@ export const Route = createFileRoute("/_authenticated/produtos")({
         property: "og:description",
         content: "Cadastre e edite produtos da distribuidora de bebidas.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Produtos,

@@ -91,6 +91,17 @@ export const FILTROS_HISTORICO: Record<"geral" | "cargas" | "rua", TipoMovVasilh
 
 export type MotivoAvaria = (typeof MOTIVOS_AVARIA)[number];
 
+/** Separa a perda em trânsito da quebra de cheios já disponíveis no depósito. */
+export function calcularChegadaCarga(enviados: number, quebrados: number, retornados: number, motivo: MotivoAvaria) {
+  const carga = Math.max(0, Math.floor(enviados));
+  const perdas = Math.max(0, Math.floor(quebrados));
+  const vaziosRetornados = carga > 0 ? Math.max(0, Math.floor(retornados)) : 0;
+  const quebraCheio = motivo === "Quebra Interna no Depósito" ? perdas : 0;
+  const quebraCarga = carga > 0 && quebraCheio === 0 ? perdas : 0;
+  const recebidos = carga > 0 ? carga - quebraCarga - vaziosRetornados : 0;
+  return { recebidos, quebraCarga, quebraCheio, deltaCheio: quebraCheio > 0 ? -quebraCheio : 0, deltaVazio: 0, deltaPatrimonio: perdas > 0 ? -perdas : 0 };
+}
+
 /** Modo de venda de um item retornável. */
 export type ModoVenda = "refil" | "casco" | "completa";
 
