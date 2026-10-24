@@ -25,7 +25,6 @@ import { InputMoeda } from "@/components/ui/input-moeda";
 import { brl, getDadosMedidaProduto } from "@/lib/erp";
 import { hojeISO } from "@/lib/caixa";
 import { aPrazo, calcularChegadaCarga, FORMAS_COMPRA, MOTIVOS_AVARIA, type MotivoAvaria } from "@/lib/vasilhames";
-import { supabase } from "@/integrations/supabase/client";
 import { CATEGORIA_COMPRA_MERCADORIA, CATEGORIA_ENVASE } from "@/lib/despesas";
 
 function MovimentoDialog({

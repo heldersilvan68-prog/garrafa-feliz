@@ -99,7 +99,7 @@ export function calcularChegadaCarga(enviados: number, quebrados: number, retorn
   const quebraCheio = motivo === "Quebra Interna no Depósito" ? perdas : 0;
   const quebraCarga = carga > 0 && quebraCheio === 0 ? perdas : 0;
   const recebidos = carga > 0 ? carga - quebraCarga - vaziosRetornados : 0;
-  return { recebidos, quebraCarga, quebraCheio, deltaCheio: -quebraCheio, deltaVazio: 0, deltaPatrimonio: -perdas };
+  return { recebidos, quebraCarga, quebraCheio, deltaCheio: quebraCheio > 0 ? -quebraCheio : 0, deltaVazio: 0, deltaPatrimonio: perdas > 0 ? -perdas : 0 };
 }
 
 /** Modo de venda de um item retornável. */
