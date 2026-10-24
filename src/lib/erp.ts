@@ -82,12 +82,14 @@ export type ModalidadeProduto = {
 export function expandirComposicao<T extends { produtoId: string; qtd: number }>(
   itens: T[],
   produtos: Pick<Produto, "id" | "retornavel">[],
-): Array<{ produtoId: string; qtd: number; retornavel: boolean }> {
+): Array<{ produtoId: string; qtd: number; retornavel: boolean; modo?: "refil" | "casco" | "completa" }> {
   const porId = new Map(produtos.map((p) => [p.id, p]));
-  const saida: Array<{ produtoId: string; qtd: number; retornavel: boolean }> = [];
+  const saida: Array<{ produtoId: string; qtd: number; retornavel: boolean; modo?: "refil" | "casco" | "completa" }> = [];
   for (const item of itens) {
     const composicao = (item as { composicao?: ItemComposicao[] }).composicao;
     if (composicao && composicao.length > 0) {
+      // Modalidade tem preço fechado: o casco da composição é pago na venda,
+      // então nada dela gera empréstimo de vasilhame (modo "completa").
       let paiIncluido = false;
       for (const sub of composicao) {
         if (!sub.produtoId || sub.qtd <= 0) continue;
@@ -96,6 +98,7 @@ export function expandirComposicao<T extends { produtoId: string; qtd: number }>
           produtoId: sub.produtoId,
           qtd: sub.qtd * item.qtd,
           retornavel: porId.get(sub.produtoId)?.retornavel ?? false,
+          modo: "completa",
         });
       }
       if (!paiIncluido) {
@@ -103,6 +106,7 @@ export function expandirComposicao<T extends { produtoId: string; qtd: number }>
           produtoId: item.produtoId,
           qtd: item.qtd,
           retornavel: porId.get(item.produtoId)?.retornavel ?? false,
+          modo: "completa",
         });
       }
     } else {
@@ -110,6 +114,7 @@ export function expandirComposicao<T extends { produtoId: string; qtd: number }>
         produtoId: item.produtoId,
         qtd: item.qtd,
         retornavel: (item as { retornavel?: boolean }).retornavel ?? porId.get(item.produtoId)?.retornavel ?? false,
+        modo: (item as { modo?: "refil" | "casco" | "completa" }).modo,
       });
     }
   }

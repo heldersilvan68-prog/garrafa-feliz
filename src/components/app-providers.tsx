@@ -11,6 +11,7 @@ import { DespesasProvider } from "@/context/despesas";
 import { EntregadoresProvider } from "@/context/entregadores";
 import { SincronizacaoRealtime } from "@/hooks/use-realtime-sync";
 import { LimpezaCancelados } from "@/components/limpeza-cancelados";
+import { LimpezaVasilhamesModalidades } from "@/components/limpeza-vasilhames-modalidades";
 
 /**
  * Toda a pilha de contextos vive em um único módulo para garantir que
@@ -30,6 +31,7 @@ export function AppProviders({ children }: { children: ReactNode }) {
                 <EntregadoresProvider>
                   <SincronizacaoRealtime />
                   <LimpezaCancelados />
+                  <LimpezaVasilhamesModalidades />
                   {children}
                 </EntregadoresProvider>
               </DespesasProvider>
