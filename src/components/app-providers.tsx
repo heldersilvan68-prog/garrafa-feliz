@@ -31,6 +31,7 @@ export function AppProviders({ children }: { children: ReactNode }) {
                 <EntregadoresProvider>
                   <SincronizacaoRealtime />
                   <LimpezaCancelados />
+                  <LimpezaVasilhamesModalidades />
                   {children}
                 </EntregadoresProvider>
               </DespesasProvider>
