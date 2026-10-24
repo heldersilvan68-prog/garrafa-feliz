@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { paraMovimentoVasilhame, paraProduto, type ProdutoRow, type VasilhameRow } from "@/lib/mapeadores";
 import { expandirComposicao, type ItemComposicao, type Produto } from "@/lib/erp";
-import { aPrazo, PREFIXO_AVARIA_CARGA, type ModoVenda, type MotivoAvaria, type MovimentoVasilhame, type TipoMovVasilhame } from "@/lib/vasilhames";
+import { aPrazo, calcularChegadaCarga, PREFIXO_AVARIA_CARGA, type ModoVenda, type MotivoAvaria, type MovimentoVasilhame, type TipoMovVasilhame } from "@/lib/vasilhames";
 
 /** Dados completos da chegada de uma carga da fonte. */
 export type ChegadaCarga = {
@@ -622,21 +622,19 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
       const retornados = Math.max(0, Math.floor(c.retornados));
       const novos = Math.max(0, Math.floor(c.novos ?? 0));
       const avulsa = c.enviados <= 0;
-      const recebidos = avulsa ? 0 : c.enviados - quebrados - retornados;
+      const { recebidos, quebraCarga, quebraCheio } = calcularChegadaCarga(c.enviados, quebrados, retornados, c.motivoAvaria);
       if (recebidos < 0) throw new Error("Avarias + retornos excedem a quantidade da carga");
       const r2 = (n: number) => Math.round(n * 100) / 100;
       const valorFinal = r2(Math.max(0, recebidos * c.custoEnvase));
 
-      // Avaria avulsa (sem carga): sai do depósito — primeiro vazios, depois cheios.
-      const quebraVazio = avulsa ? Math.min(quebrados, p.estoqueVazio) : 0;
-      const quebraCheio = avulsa ? Math.min(quebrados - quebraVazio, p.estoqueCheio) : 0;
-
       const novosCheios = c.novosComo === "cheio" ? novos : 0;
       const novosVazios = novos - novosCheios;
+      if (quebraCheio > p.estoqueCheio + recebidos + novosCheios)
+        throw new Error("Estoque cheio insuficiente para a quebra interna no depósito");
 
       await patch(p.id, {
         estoque_cheio: p.estoqueCheio + recebidos + novosCheios - quebraCheio,
-        estoque_vazio: p.estoqueVazio + (avulsa ? 0 : retornados) + novosVazios - quebraVazio,
+        estoque_vazio: p.estoqueVazio + (avulsa ? 0 : retornados) + novosVazios,
         patrimonio_cascos: Math.max(0, (p.patrimonioCascos || 0) - quebrados + novos),
       });
 
@@ -725,11 +723,11 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
         }
         await logar({
           produtoId: p.id,
-          tipo: avulsa && quebraCheio > 0 && quebraVazio === 0 ? "avaria_cheio" : avulsa ? "avaria_vazio" : "avaria_cheio",
+          tipo: "avaria_cheio",
           qtd: quebrados,
-          motivo: avulsa ? c.motivoAvaria : `${PREFIXO_AVARIA_CARGA} ${c.motivoAvaria}`,
+          motivo: `${quebraCarga > 0 ? `${PREFIXO_AVARIA_CARGA} ` : ""}${c.motivoAvaria} · Saldos impactados: Patrimônio${quebraCheio > 0 ? " e Estoque Cheio" : " (Estoque Cheio preservado)"}`,
           deltaCheio: -quebraCheio,
-          deltaVazio: -quebraVazio,
+          deltaVazio: 0,
           deltaPatrimonio: -quebrados,
           valorTotal: r2(c.valorPerda),
           formaPagamento: c.pagamentosPerda?.map((x) => x.forma).join(" + ") || c.formaPerda,

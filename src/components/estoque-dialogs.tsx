@@ -24,7 +24,7 @@ import { Campo } from "@/components/ui/campo";
 import { InputMoeda } from "@/components/ui/input-moeda";
 import { brl, getDadosMedidaProduto } from "@/lib/erp";
 import { hojeISO } from "@/lib/caixa";
-import { aPrazo, FORMAS_COMPRA, MOTIVOS_AVARIA, type MotivoAvaria } from "@/lib/vasilhames";
+import { aPrazo, calcularChegadaCarga, FORMAS_COMPRA, MOTIVOS_AVARIA, type MotivoAvaria } from "@/lib/vasilhames";
 import { supabase } from "@/integrations/supabase/client";
 import { CATEGORIA_COMPRA_MERCADORIA, CATEGORIA_ENVASE } from "@/lib/despesas";
 
@@ -566,18 +566,18 @@ export function RetornoEnvaseDialog({ children, produtoId }: { children: ReactNo
   const nQuebra = Math.max(0, Math.floor(Number(quebrados) || 0));
   const nRetorno = avulsa ? 0 : Math.max(0, Math.floor(Number(retornados) || 0));
   const nNovos = Math.max(0, Math.floor(Number(novos) || 0));
-  const recebidos = avulsa ? 0 : enviados - nQuebra - nRetorno;
+  const { recebidos, quebraCarga, quebraCheio } = calcularChegadaCarga(enviados, nQuebra, nRetorno, motivo);
   const forma = pgEnvase[0]?.forma ?? "PIX";
   const prazo = pgEnvase.length === 1 && aPrazo(forma);
   const r2 = (n: number) => Math.round(n * 100) / 100;
   const totalEnvase = r2(enviados * custoEnvase);
-  const abatAvaria = avulsa ? 0 : r2(nQuebra * custoEnvase);
+  const abatAvaria = r2(quebraCarga * custoEnvase);
   const abatRetorno = r2(nRetorno * custoEnvase);
   const valorFinal = r2(Math.max(0, totalEnvase - abatAvaria - abatRetorno));
   const perdaTotal = perdaTotalManual ?? r2(nQuebra * perdaUnit);
   const totalNovos = novoTotalManual ?? r2(nNovos * novoUnit);
 
-  // Ao abrir/trocar de produto: custo padrão e quantidade da última carga enviada.
+  // Ao abrir/trocar de produto, sugere os vazios disponíveis sem sobrescrever edição manual.
   useEffect(() => {
     if (!aberto || !produto) return;
     setCustoEnvase(produto.custoEnvase || 0);
@@ -585,20 +585,7 @@ export function RetornoEnvaseDialog({ children, produtoId }: { children: ReactNo
     setNovoUnit(produto.custoCasco || 0);
     setPerdaTotalManual(null);
     setNovoTotalManual(null);
-    let ativo = true;
-    void supabase
-      .from("returnable_movements")
-      .select("qtd")
-      .eq("product_id", produto.id)
-      .eq("tipo", "envasado")
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .then(({ data }) => {
-        if (ativo) setQtd(String(data?.[0]?.qtd ?? 0));
-      });
-    return () => {
-      ativo = false;
-    };
+    setQtd(String(produto.estoqueVazio));
   }, [aberto, produto?.id]);
 
   const resetar = () => {
@@ -818,7 +805,7 @@ export function RetornoEnvaseDialog({ children, produtoId }: { children: ReactNo
             {!avulsa && (
               <>
                 <div className="flex justify-between"><span>Valor total do envase ({enviados} un.)</span><span className="tabular-nums">{brl(totalEnvase)}</span></div>
-                <div className="flex justify-between text-destructive"><span>− Abatimento por avaria ({nQuebra} un.)</span><span className="tabular-nums">{brl(abatAvaria)}</span></div>
+                <div className="flex justify-between text-destructive"><span>− Abatimento por avaria ({quebraCarga} un.)</span><span className="tabular-nums">{brl(abatAvaria)}</span></div>
                 <div className="flex justify-between text-destructive"><span>− Abatimento por retorno ({nRetorno} un.)</span><span className="tabular-nums">{brl(abatRetorno)}</span></div>
                 <div className="mt-1 flex justify-between border-t border-border pt-2 font-semibold"><span>Valor final a pagar à fonte</span><span className="tabular-nums">{brl(valorFinal)}</span></div>
               </>
@@ -831,7 +818,7 @@ export function RetornoEnvaseDialog({ children, produtoId }: { children: ReactNo
             )}
             <p className="text-xs text-muted-foreground">
               {recebidos >= 0
-                ? `${avulsa ? "Sem entrada de carga" : `Entram ${recebidos} cheio(s) no estoque`}${nRetorno ? `, ${nRetorno} vazio(s) voltam ao depósito` : ""}${nNovos ? `, +${nNovos} casco(s) novos no patrimônio` : ""}${nQuebra ? ` e ${nQuebra} casco(s) saem do patrimônio` : ""}.`
+                ? `${avulsa ? "Sem entrada de carga" : `Entram ${recebidos} cheio(s) no estoque`}${nRetorno ? `, ${nRetorno} vazio(s) voltam ao depósito` : ""}${nNovos ? `, +${nNovos} casco(s) novos no patrimônio` : ""}${nQuebra ? ` e ${nQuebra} casco(s) saem do patrimônio${quebraCheio ? `; baixa de ${quebraCheio} cheio(s) por quebra interna` : "; sem baixa dos cheios no depósito"}` : ""}.`
                 : "Avarias + retornos excedem a quantidade da carga."}
             </p>
           </div>

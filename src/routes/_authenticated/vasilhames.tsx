@@ -217,7 +217,7 @@ function Vasilhames() {
           </div>
         </CardHeader>
         <CardContent className="overflow-x-auto">
-          <Table>
+          <Table className="text-history-foreground font-medium [&_th]:text-history-foreground [&_th]:font-medium">
             <TableHeader>
               <TableRow>
                 <TableHead>Data/Hora</TableHead>
@@ -230,7 +230,7 @@ function Vasilhames() {
             <TableBody>
               {movimentos.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-sm text-muted-foreground">
+                  <TableCell colSpan={5} className="text-sm">
                     Nenhuma movimentação registrada ainda.
                   </TableCell>
                 </TableRow>
@@ -241,7 +241,7 @@ function Vasilhames() {
                     {new Date(m.em).toLocaleString("pt-BR")}
                   </TableCell>
                   <TableCell>{LABEL_MOV[m.tipo] ?? m.tipo}</TableCell>
-                  <TableCell className="text-muted-foreground">
+                  <TableCell>
                     {m.motivo ?? "—"}
                     <span className="ml-1 text-xs">
                       ({m.deltaCheio >= 0 ? "+" : ""}
@@ -251,7 +251,7 @@ function Vasilhames() {
                     </span>
                   </TableCell>
                   <TableCell className="text-right tabular-nums">{m.qtd}</TableCell>
-                  <TableCell className="text-muted-foreground">{m.usuario ?? "—"}</TableCell>
+                  <TableCell>{m.usuario ?? "—"}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
