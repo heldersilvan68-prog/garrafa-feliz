@@ -64,6 +64,8 @@ export const Route = createFileRoute("/_authenticated/clientes")({
         property: "og:description",
         content: "Previsão de recompra e lembretes automáticos por WhatsApp.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: ClientesPage,
