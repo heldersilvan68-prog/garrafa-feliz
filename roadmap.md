@@ -42,6 +42,8 @@
 - [x] Validar os números em Hoje, Mês atual, 30 dias e Todo o período
 
 # Módulo de Desempenho
+- [x] Criar curvas ABC de clientes e produtos com período, gráfico, classificação e exportação
+- [x] Testar cálculos ABC e verificar abas com dados reais
 - [x] Consolidar resultados, evolução e rankings com os dados reais
 - [x] Organizar saúde financeira, equilíbrio estimado e decisões em abas
 - [x] Validar cálculos, filtros e navegação com dados reais
