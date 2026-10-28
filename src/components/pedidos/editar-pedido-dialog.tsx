@@ -400,7 +400,7 @@ export function EditarPedidoDialog({
                     step="0.01"
                     placeholder="0,00"
                     className="w-32"
-                    value={x.valor}
+                    value={x.forma === "Vale" ? String(pagamentosEfetivos[idx]?.valor ?? 0) : x.valor}
                     onChange={(e) =>
                       setParcelas((ps) =>
                         ps.map((y, i) => (i === idx ? { ...y, valor: e.target.value } : y)),
