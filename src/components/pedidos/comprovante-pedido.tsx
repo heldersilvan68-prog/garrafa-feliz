@@ -2,19 +2,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { brl } from "@/lib/erp";
-import { TIMEZONE } from "@/lib/periodo";
-import { BALCAO } from "@/lib/entregadores";
-import { parcelasDe, rotuloItemPedido, totalItemPedido, type Pedido } from "@/lib/pedidos";
+import { type Pedido } from "@/lib/pedidos";
 import { useConfiguracoes, IMPRESSAO_PADRAO } from "@/context/configuracoes";
 import { useClientes } from "@/context/clientes";
 import { useEstoque } from "@/context/estoque";
-import { mascaraTelefone } from "@/lib/clientes";
-import { modeloEfetivoCupom, montarDadosCupom, renderizarModeloCupom } from "@/lib/cupom-template";
+import { modeloEfetivoCupom, montarDadosCupom } from "@/lib/cupom-template";
 
-const EMPRESA_PADRAO = "PK DISTRIBUIDORA";
-const ENDERECO_PADRAO = "AV LUIZ VIANA FILHO 285";
-const FONE_PADRAO = "(75) 99872-3270";
+import { TextoCupom } from "@/components/pedidos/texto-cupom";
 
 const LARGURA_CSS: Record<string, string> = {
   "80mm": "80mm",
@@ -30,240 +24,19 @@ const PAGE_CSS: Record<string, string> = {
 
 const FONTE_PX: Record<string, number> = { pequeno: 10, medio: 12, grande: 14 };
 
-const DIVISOR_CSS: Record<string, string> = {
-  dupla: "3px double #000",
-  tracejada: "1px dashed #000",
-  solida: "1px solid #000",
-};
-
-const dataHora = (iso: string) =>
-  new Date(iso).toLocaleString("pt-BR", {
-    timeZone: TIMEZONE,
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-
-/** Cupom térmico renderizado fora da tela — visível apenas na impressão. */
+/** Prévia e impressão compartilham o mesmo texto e interpretador seguro. */
 function Cupom({ pedido }: { pedido: Pedido }) {
   const { config } = useConfiguracoes();
   const { clientes } = useClientes();
   const { produtos } = useEstoque();
-  const produtosPorId = new Map(produtos.map((p) => [p.id, p]));
   const imp = config.impressao ?? IMPRESSAO_PADRAO;
-  const parcelas = parcelasDe(pedido);
-  const balcao = !pedido.entregador || pedido.entregador === BALCAO;
-  const cliente = pedido.clienteId ? clientes.find((c) => c.id === pedido.clienteId) : undefined;
-
-  const empresa = config.nomeFantasia?.trim() || EMPRESA_PADRAO;
-  const enderecoEmpresa = config.endereco?.trim() || ENDERECO_PADRAO;
-  const fone = config.whatsapp?.trim() ? mascaraTelefone(config.whatsapp) : FONE_PADRAO;
-
-  // O pedido é a fonte do endereço da entrega. O cadastro só atende registros antigos.
-  const enderecoCompleto =
-    pedido.enderecoEntrega?.trim() ||
-    [pedido.endereco?.trim() || cliente?.endereco?.trim(), pedido.bairro?.trim() || cliente?.bairro?.trim()]
-      .filter(Boolean)
-      .join(", ");
-
-  const troco = pedido.trocoPara ? pedido.trocoPara - pedido.total : 0;
-
-  const largura = LARGURA_CSS[imp.largura] ?? "80mm";
   const fonte = FONTE_PX[imp.fonteCorpo ?? imp.tamanhoFonte] ?? 12;
-  const fonteTitulo = FONTE_PX[imp.fonteTitulo ?? "grande"] ?? 14;
-  const fonteRodape = FONTE_PX[imp.fonteRodape ?? "medio"] ?? 12;
-  const estreito = imp.largura === "58mm";
-  const txt = imp.textos;
-  const divisor = DIVISOR_CSS[imp.estiloDivisor ?? "tracejada"];
-  const hr = <hr style={divisor ? { borderTop: divisor } : undefined} />;
-  const margemSup = imp.margemSuperior ?? 3;
-  const margemInf = imp.margemInferior ?? 3;
-
-  // Modelo bruto editável: o cupom é o texto puro com tags. Modelos salvos
-  // sem nenhuma tag (texto fixo legado) caem no padrão dinâmico.
-  const modelo = modeloEfetivoCupom(imp.modeloCupom);
-  {
-    const texto = renderizarModeloCupom(modelo, montarDadosCupom(pedido, config, clientes, produtos));
-    return (
-      <>
-        <style>{`@media print { @page { size: ${PAGE_CSS[imp.largura] ?? "80mm auto"}; margin: ${
-          imp.largura === "A4" ? "10mm" : "0"
-        }; } }`}</style>
-        <div
-          className={`cupom${imp.altaDensidade ? " cupom-forte" : ""}${
-            imp.modoImpressora === "navegador" ? " cupom-navegador" : ""
-          }`}
-          style={{
-            width: largura,
-            fontSize: `${fonte}px`,
-            padding: `${margemSup}mm ${estreito ? "2mm" : "4mm"} ${margemInf}mm`,
-          }}
-        >
-          <pre
-            style={{
-              margin: 0,
-              fontFamily: "inherit",
-              fontSize: "inherit",
-              whiteSpace: "pre-wrap",
-              wordBreak: "break-word",
-            }}
-          >
-            {texto}
-          </pre>
-        </div>
-      </>
-    );
-  }
-
-  return (
-    <>
-      <style>{`@media print { @page { size: ${PAGE_CSS[imp.largura] ?? "80mm auto"}; margin: ${
-        imp.largura === "A4" ? "10mm" : "0"
-      }; } }
-        .cupom-endereco { font-size: 1.2em; font-weight: 700; text-transform: uppercase; }
-        .cupom-pagamento { font-weight: 600; font-size: 1.05em; }
-      `}</style>
-      <div
-        className={`cupom${imp.altaDensidade ? " cupom-forte" : ""}${
-          imp.modoImpressora === "navegador" ? " cupom-navegador" : ""
-        }`}
-        style={{
-          width: largura,
-          fontSize: `${fonte}px`,
-          padding: `${margemSup}mm ${estreito ? "2mm" : "4mm"} ${margemInf}mm`,
-        }}
-      >
-        <div
-          className={imp.centralizarCabecalho !== false ? "cupom-centro" : undefined}
-          style={{ fontSize: `${fonteTitulo}px` }}
-        >
-          {imp.mostrarLogo ? (
-            <strong className="cupom-titulo" style={{ fontSize: `${fonteTitulo + 2}px` }}>
-              {empresa}
-            </strong>
-          ) : null}
-          {imp.mostrarEnderecoEmpresa ? (
-            <>
-              <div className="cupom-quebra">{enderecoEmpresa}</div>
-              <div>Telefone : {fone}</div>
-            </>
-          ) : null}
-          <div>
-            {txt?.tituloRecibo || "Comprovante do Pedido nº"} {pedido.numero}
-          </div>
-          <div>{dataHora(pedido.criadoEm)}</div>
-        </div>
-
-        {hr}
-
-        {imp.mostrarCliente ? (
-          <>
-            <div className="cupom-quebra cupom-negrito">
-              {txt?.rotuloCliente || "Cliente:"} {pedido.clienteNome || "Consumidor Final / Balcão"}
-            </div>
-            {!balcao ? (
-              <div>
-                {txt?.rotuloEntregador || "Entregador:"} {pedido.entregador}
-              </div>
-            ) : null}
-            {enderecoCompleto ? (
-              <div className="cupom-quebra cupom-endereco">
-                {txt?.rotuloEndereco || "ENDEREÇO:"} {enderecoCompleto}
-              </div>
-            ) : balcao ? (
-              <div>{txt?.rotuloRetirada || "Entrega: Retirada no Balcão"}</div>
-            ) : null}
-            {hr}
-          </>
-        ) : null}
-
-        {pedido.itens.map((i, idx) => (
-          <div key={`${i.produtoId}-${i.nome}-${i.modo}-${i.embalagem}-${idx}`} className="cupom-item">
-            <div className="cupom-linha cupom-negrito">
-              <span className="cupom-quebra">
-                 {rotuloItemPedido(i, produtosPorId.get(i.produtoId))}
-              </span>
-               <span>{brl(totalItemPedido(i))}</span>
-            </div>
-             <div>
-               {i.embalagem === "fardo" && i.precoEmbalagem !== undefined
-                 ? `${brl(i.precoEmbalagem)} / ${i.rotuloEmbalagem || "Fardo"}`
-                 : `${brl(i.precoUnit)} / un.`}
-             </div>
-          </div>
-        ))}
-
-        {hr}
-
-        <div className="cupom-centro cupom-pagamento">
-          {txt?.rotuloPagamento || "FORMA DE PAGAMENTO"}
-        </div>
-        {parcelas.map((x, idx) => (
-          <div key={`${x.forma}-${idx}`} className="cupom-linha cupom-pagamento">
-            <span>{x.forma}</span>
-            <span>{brl(x.valor)}</span>
-          </div>
-        ))}
-        {pedido.valorFiado > 0 ? (
-          <div className="cupom-linha cupom-pagamento">
-            <span>{txt?.rotuloFiado || "Em fiado"}</span>
-            <span>{brl(pedido.valorFiado)}</span>
-          </div>
-        ) : null}
-        {pedido.trocoPara ? (
-          <>
-            <div className="cupom-linha cupom-pagamento">
-              <span>{txt?.rotuloTrocoPara || "Troco para"}</span>
-              <span>{brl(pedido.trocoPara ?? 0)}</span>
-            </div>
-            {troco > 0 ? (
-              <div className="cupom-linha cupom-pagamento">
-                <span>{txt?.rotuloLevar || "Levar"}</span>
-                <span>{brl(troco)}</span>
-              </div>
-            ) : null}
-          </>
-        ) : null}
-
-        <div className="cupom-linha cupom-total">
-          <span>{txt?.rotuloTotal || "TOTAL"}</span>
-          <span>{brl(pedido.total)}</span>
-        </div>
-
-        {imp.mostrarObservacoes && pedido.observacao?.trim() ? (
-          <>
-            {hr}
-            <div className="cupom-quebra">Obs.: {pedido.observacao}</div>
-          </>
-        ) : null}
-
-        {imp.mostrarAssinatura ? (
-          <>
-            {hr}
-            <div className="cupom-assinatura">
-              <div className="cupom-linha-assinatura" />
-              <div className="cupom-centro">{txt?.rotuloAssinatura || "Assinatura do cliente"}</div>
-            </div>
-          </>
-        ) : null}
-
-        {imp.mostrarRodape ? (
-          <>
-            {hr}
-            <div
-              className={imp.centralizarRodape !== false ? "cupom-centro" : undefined}
-              style={{ fontSize: `${fonteRodape}px` }}
-            >
-              {txt?.mensagemRodape?.trim() ? <div>{txt.mensagemRodape}</div> : null}
-              {txt?.mensagemRodape2?.trim() ? <div>{txt.mensagemRodape2}</div> : null}
-            </div>
-          </>
-        ) : null}
-      </div>
-    </>
-  );
+  return <>
+    <style>{`@media print { @page { size: ${PAGE_CSS[imp.largura] ?? "80mm auto"}; margin: ${imp.largura === "A4" ? "10mm" : "0"}; } }`}</style>
+    <div className={`cupom${imp.altaDensidade ? " cupom-forte" : ""}`} style={{ width: LARGURA_CSS[imp.largura] ?? "80mm", fontSize: `${fonte}px`, padding: `${imp.margemSuperior ?? 3}mm ${imp.largura === "58mm" ? "2mm" : "4mm"} ${imp.margemInferior ?? 3}mm` }}>
+      <TextoCupom modelo={modeloEfetivoCupom(imp.modeloCupom)} dados={montarDadosCupom(pedido, config, clientes, produtos)} />
+    </div>
+  </>;
 }
 
 /** Cria um iframe invisível no DOM da página, usado exclusivamente na impressão. */

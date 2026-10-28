@@ -19,3 +19,4 @@
 - Arrival forms and stock persistence share the pure arrival calculator in `src/lib/vasilhames.ts` so receipt, damage and transit quantities cannot diverge.
 - Sale creation and editing share voucher payment normalization and quantity calculation in `src/lib/vales.ts`; persist redemption counts for quantity-based cancellation and read the latest client balance before applying deltas.
 - ABC client and product views classify the existing performance revenue rankings through the pure calculator in `src/lib/curva-abc.ts`; keep period and tab selection URL-backed and never persist derived classes.
+- Receipt preview and printing share `TextoCupom` and the pure allowlisted parser in `src/lib/cupom-template.ts`; parse styling from templates only, render substituted data as escaped text, and preserve literal whitespace and tag-free/empty templates.

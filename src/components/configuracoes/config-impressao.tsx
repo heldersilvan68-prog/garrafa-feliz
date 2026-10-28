@@ -24,8 +24,8 @@ import {
   TAGS_CUPOM,
   dadosExemploCupom,
   modeloEfetivoCupom,
-  renderizarModeloCupom,
 } from "@/lib/cupom-template";
+import { TextoCupom } from "@/components/pedidos/texto-cupom";
 
 const FONTE_PX: Record<string, number> = { pequeno: 10, medio: 12, grande: 14 };
 const LARGURA_CSS: Record<string, string> = { "80mm": "80mm", "58mm": "58mm", A4: "190mm" };
@@ -42,7 +42,6 @@ const FONTE_OPCOES = (
 function PreviaCupom({ form }: { form: ConfigImpressao }) {
   const { config } = useConfiguracoes();
   const fonte = FONTE_PX[form.fonteCorpo] ?? 12;
-  const texto = renderizarModeloCupom(modeloEfetivoCupom(form.modeloCupom), dadosExemploCupom(config));
 
   return (
     <div className="rounded-lg border bg-muted/40 p-4">
@@ -63,17 +62,7 @@ function PreviaCupom({ form }: { form: ConfigImpressao }) {
             }mm`,
           }}
         >
-          <pre
-            style={{
-              margin: 0,
-              fontFamily: "inherit",
-              fontSize: "inherit",
-              whiteSpace: "pre-wrap",
-              wordBreak: "break-word",
-            }}
-          >
-            {texto}
-          </pre>
+          <TextoCupom modelo={modeloEfetivoCupom(form.modeloCupom)} dados={dadosExemploCupom(config)} />
         </div>
       </div>
     </div>
@@ -97,7 +86,7 @@ export function ConfigImpressaoCard() {
       toast.error("O arquivo está vazio.");
       return;
     }
-    set("modeloCupom", texto.replace(/\r\n/g, "\n"));
+    set("modeloCupom", texto);
     toast.success(`Modelo "${arquivo.name}" carregado no editor.`);
   };
 
@@ -150,6 +139,7 @@ export function ConfigImpressaoCard() {
               </div>
             </div>
             <Textarea
+              aria-label="Modelo do cupom"
               value={form.modeloCupom}
               onChange={(e) => set("modeloCupom", e.target.value)}
               rows={22}
@@ -157,6 +147,7 @@ export function ConfigImpressaoCard() {
               className="font-mono text-xs leading-relaxed"
               placeholder={MODELO_CUPOM_PADRAO}
             />
+            <p className="text-xs leading-relaxed text-muted-foreground">Use <code>[G]texto[/G]</code> ou <code>{"<grande>texto</grande>"}</code> para fonte 1,5×; <code>[A]texto[/A]</code> ou <code>{"<alto>texto</alto>"}</code> para 2×; <code>[N]texto[/N]</code> ou <code>{"<b>texto</b>"}</code> para negrito; <code>[P]texto[/P]</code> ou <code>{"<pequeno>texto</pequeno>"}</code> para fonte reduzida. Marcadores podem envolver tags de dados.</p>
             <details className="rounded-lg border p-3 text-sm">
               <summary className="cursor-pointer font-medium">
                 Tags disponíveis ({TAGS_CUPOM.length})
