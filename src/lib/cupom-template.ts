@@ -33,8 +33,7 @@ Obrigado pela preferência!
 Água boa é água da P.K`;
 
 /**
- * Modelo efetivo a usar: se o modelo salvo estiver vazio ou não contiver
- * nenhuma tag dinâmica (texto fixo legado), cai no padrão com tags.
+ * Usa o padrão somente quando não existe modelo salvo; texto literal e vazio são válidos.
  */
 export function modeloEfetivoCupom(modeloSalvo?: string): string {
   return modeloSalvo ?? MODELO_CUPOM_PADRAO;
@@ -153,8 +152,7 @@ export function dadosExemploCupom(config: {
 }
 
 /**
- * Substitui as tags do modelo pelos dados. Linhas que ficam vazias por causa
- * de uma tag opcional ausente (ex.: {troco} sem troco) são removidas.
+ * Substituição literal de dados conhecidos sem tocar em espaços ou quebras.
  */
 export function renderizarModeloCupom(modelo: string, dados: DadosCupom): string {
   return modelo.replace(/\{([a-z_]+)\}/g, (tag, chave: string) => dados[chave] ?? tag);
