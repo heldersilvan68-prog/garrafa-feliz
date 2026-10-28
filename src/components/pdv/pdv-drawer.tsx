@@ -61,6 +61,7 @@ import {
 } from "@/lib/pedidos";
 import { ImprimirComprovante } from "@/components/pedidos/comprovante-pedido";
 import { LABEL_MODO, saldoVasilhamesPedido, type ModoVenda } from "@/lib/vasilhames";
+import { ajustarPagamentosVale, quantidadeValesResgatados } from "@/lib/vales";
 
 type Parcela = { forma: FormaPagamento; valor: string };
 
@@ -342,20 +343,16 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
     .filter((i) => i.retornavel && i.modo === "refil")
     .reduce((s, i) => s + i.qtd, 0);
 
-  const informado = parcelas.reduce((s, x) => s + (Number(x.valor) || 0), 0);
+  const pagamentosEfetivos = ajustarPagamentosVale(total, parcelas.map((x) => ({ forma: x.forma, valor: Number(x.valor) || 0 })));
+  const informado = pagamentosEfetivos.reduce((s, x) => s + x.valor, 0);
   const restante = Math.round((total - informado) * 100) / 100;
   const valorFiado = parcelas
     .filter((x) => x.forma === "Fiado")
     .reduce((s, x) => s + (Number(x.valor) || 0), 0);
-  const valorVale = parcelas
+  const valorVale = pagamentosEfetivos
     .filter((x) => x.forma === "Vale")
     .reduce((s, x) => s + (Number(x.valor) || 0), 0);
-  // Vales resgatados: galões retornáveis do carrinho (ou unidades físicas, se não houver).
-  const unidadesFisicas = itensFisicos.reduce((s, i) => s + i.qtd, 0);
-  const valesResgatados =
-    valorVale > 0
-      ? itensFisicos.filter((i) => i.retornavel).reduce((s, i) => s + i.qtd, 0) || unidadesFisicas
-      : 0;
+  const valesResgatados = quantidadeValesResgatados(itensFisicos, pagamentosEfetivos);
   const saldoVales = cliente?.valesSaldo ?? 0;
   // Taxa de maquininha: percentual configurado sobre cada parcela em cartão.
   const taxaCartao =
@@ -368,8 +365,8 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
     .filter((x) => x.forma === "Dinheiro")
     .reduce((s, x) => s + (Number(x.valor) || 0), 0);
   const pagamento: FormaPagamento =
-    parcelas.reduce<Parcela | null>(
-      (m, x) => (!m || (Number(x.valor) || 0) > (Number(m.valor) || 0) ? x : m),
+    pagamentosEfetivos.reduce<(typeof pagamentosEfetivos)[number] | null>(
+      (m, x) => (!m || x.valor > m.valor ? x : m),
       null,
     )?.forma ?? "PIX";
   // Pré-preenche com a soma de retornáveis do carrinho, mas segue editável.
@@ -452,8 +449,8 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
       toast.error(`Pagamentos passam do total em ${brl(excedente)}. Ajuste os valores.`);
       return;
     }
-    const pagamentosAjustados = parcelas
-      .map((x) => ({ forma: x.forma, valor: Number(x.valor) || 0 }))
+    const pagamentosAjustados = pagamentosEfetivos
+      .slice()
       .reverse()
       .map((x) => {
         if (excedente > 0 && x.forma === "Dinheiro") {
@@ -1014,7 +1011,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                       step="0.01"
                       className="w-28"
                       placeholder="0,00"
-                      value={x.valor}
+                      value={x.forma === "Vale" ? String(pagamentosEfetivos[idx]?.valor ?? 0) : x.valor}
                       onChange={(e) =>
                         setParcelas((ps) =>
                           ps.map((y, i) => (i === idx ? { ...y, valor: e.target.value } : y)),
