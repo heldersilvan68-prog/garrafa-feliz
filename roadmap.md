@@ -1,4 +1,7 @@
 # Performance
+- [ ] Liberar texto literal no cupom e tags atômicas sem estrutura automática
+- [ ] Compartilhar estilos inline entre prévia e impressão e adicionar guia
+- [ ] Testar substituições, preservação de espaços e impressão real
 - [x] Ajustar chegada da carga: avarias por motivo, quantidade automática de vazios e contraste do histórico; validar regras e tela
 - [x] Endurecer cleanup e reduzir rajadas do Realtime
 - [x] Paginar histórico de vasilhames no banco
