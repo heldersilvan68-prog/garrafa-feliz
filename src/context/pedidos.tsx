@@ -25,7 +25,7 @@ type Ctx = {
   carregando: boolean;
   criar: (p: NovoPedido) => Promise<Pedido>;
   alterarStatus: (id: string, status: StatusPedido) => void;
-  atualizar: (id: string, dados: Partial<Pedido>) => void;
+  atualizar: (id: string, dados: Partial<Pedido>) => Promise<void>;
   cancelar: (id: string, motivo: string, observacao?: string) => Promise<void>;
   /**
    * Baixa de fiado. Com `converterParcelas`, a venda deixa de ser fiado e passa
@@ -168,6 +168,7 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
         linha["endereco_entrega"] = dados.enderecoEntrega;
       if (dados.bairro !== undefined) linha["bairro"] = dados.bairro;
       if (dados.total !== undefined) linha["total"] = dados.total;
+      if (dados.valesResgatados !== undefined) linha["vales_resgatados"] = dados.valesResgatados;
       if (dados.pagamento !== undefined) linha["pagamento"] = dados.pagamento;
       if (dados.pago !== undefined) linha["pago"] = dados.pago;
       if (dados.valorFiado !== undefined) linha["valor_fiado"] = dados.valorFiado;
@@ -296,13 +297,13 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
       carregando: isLoading,
       criar: (p) => criarMut.mutateAsync(p),
       alterarStatus: (id, status) => statusMut.mutate({ id, status }),
-      atualizar: (id, dados) => atualizarMut.mutate({ id, dados }),
+      atualizar: (id, dados) => atualizarMut.mutateAsync({ id, dados }),
       cancelar: (id, motivo, observacao) =>
         cancelarMut.mutateAsync({ id, motivo, observacao }).then(() => undefined),
       darBaixa: (id, forma, converterParcelas) =>
         baixaMut.mutate({ id, forma, converterParcelas }),
     }),
-    [pedidos, isLoading, criarMut.mutateAsync, statusMut.mutate, atualizarMut.mutate, cancelarMut.mutateAsync, baixaMut.mutate],
+    [pedidos, isLoading, criarMut.mutateAsync, statusMut.mutate, atualizarMut.mutateAsync, cancelarMut.mutateAsync, baixaMut.mutate],
   );
 
   return (

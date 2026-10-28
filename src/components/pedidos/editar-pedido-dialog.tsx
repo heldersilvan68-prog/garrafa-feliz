@@ -40,6 +40,7 @@ import {
 import { useClientes } from "@/context/clientes";
 import { saldoVasilhamesPedido } from "@/lib/vasilhames";
 import { expandirComposicao } from "@/lib/erp";
+import { ajustarPagamentosVale, quantidadeValesResgatados } from "@/lib/vales";
 
 type Parcela = { forma: FormaPagamento; valor: string };
 
@@ -52,10 +53,11 @@ export function EditarPedidoDialog({
 }) {
   const { produtos } = useEstoque();
   const { atualizar, pedidos } = usePedidos();
-  const { definirDivida, ajustarCredito, ajustarVasilhames } = useClientes();
+  const { clientes, definirDivida, ajustarCredito, ajustarVasilhames, ajustarVales } = useClientes();
   const { opcoes } = useEntregadores();
 
   const [aberto, setAberto] = useState(false);
+  const [salvando, setSalvando] = useState(false);
   const [carrinho, setCarrinho] = useState<Record<string, number>>({});
   const [precos, setPrecos] = useState<Record<string, string>>({});
   const [endereco, setEndereco] = useState(pedido.enderecoEntrega);
@@ -126,7 +128,9 @@ export function EditarPedidoDialog({
   const bruto = itens.reduce((s, i) => s + totalItemPedido(i), 0);
   const descontoAplicado = Math.min(Math.max(0, desconto), bruto);
   const total = Math.round((bruto - descontoAplicado) * 100) / 100;
-  const pago = Math.round(parcelas.reduce((s, x) => s + (Number(x.valor) || 0), 0) * 100) / 100;
+  const pagamentosEfetivos = ajustarPagamentosVale(total, parcelas.map((x) => ({ forma: x.forma, valor: Number(x.valor) || 0 })));
+  const valesResgatados = quantidadeValesResgatados(itens, pagamentosEfetivos);
+  const pago = Math.round(pagamentosEfetivos.reduce((s, x) => s + x.valor, 0) * 100) / 100;
   const restante = Math.round((total - pago) * 100) / 100;
   const valorFiado =
     Math.round(
@@ -172,7 +176,7 @@ export function EditarPedidoDialog({
 
   const dinheiroInformado = parcelas.some((x) => x.forma === "Dinheiro");
   const formaPrincipal =
-    [...parcelas]
+    [...pagamentosEfetivos]
       .filter((x) => (Number(x.valor) || 0) > 0)
       .sort((a, b) => (Number(b.valor) || 0) - (Number(a.valor) || 0))[0]?.forma ??
     parcelas[0]?.forma ??
@@ -187,7 +191,8 @@ export function EditarPedidoDialog({
       return next;
     });
 
-  const salvar = () => {
+  const salvar = async () => {
+    if (salvando) return;
     if (itens.length === 0) {
       toast.error("O pedido precisa ter pelo menos um produto.");
       return;
@@ -208,7 +213,18 @@ export function EditarPedidoDialog({
       );
       return;
     }
-    atualizar(pedido.id, {
+    const saldoVales = clientes.find((c) => c.id === pedido.clienteId)?.valesSaldo ?? 0;
+    if (valesResgatados > saldoVales + (pedido.valesResgatados ?? 0)) {
+      toast.error("Saldo de vales insuficiente para esta alteração.");
+      return;
+    }
+    if (valesResgatados > 0 && !pedido.clienteId) {
+      toast.error("Vales exigem um cliente cadastrado.");
+      return;
+    }
+    setSalvando(true);
+    try {
+    await atualizar(pedido.id, {
       itens,
       total,
       desconto: descontoAplicado,
@@ -216,9 +232,8 @@ export function EditarPedidoDialog({
       pagamento: formaPrincipal,
       pago: valorFiado <= 0,
       valorFiado,
-      pagamentos: parcelas
-        .filter((x) => (Number(x.valor) || 0) > 0)
-        .map((x) => ({ forma: x.forma, valor: Number(x.valor) })),
+      pagamentos: pagamentosEfetivos.filter((x) => x.valor > 0),
+      valesResgatados,
       trocoPara: dinheiroInformado ? Number(trocoPara) || undefined : undefined,
       vaziosRecolhidos: Math.max(0, Number(vazios) || 0),
       entregador,
@@ -226,6 +241,8 @@ export function EditarPedidoDialog({
 
     // Sincroniza o "Devido total" do cliente com os fiados que continuam em aberto.
     if (pedido.clienteId) {
+      const deltaVales = (pedido.valesResgatados ?? 0) - valesResgatados;
+      if (deltaVales !== 0) await ajustarVales(pedido.clienteId, deltaVales);
       // Recalcula os cascos na rua: estorna o saldo antigo do pedido e aplica o novo.
       const saldoAntigo = saldoVasilhamesPedido(
         expandirComposicao(pedido.itens, produtos),
@@ -252,6 +269,11 @@ export function EditarPedidoDialog({
 
     toast.success(`Pedido #${pedido.numero} atualizado — ${brl(total)}`);
     setAberto(false);
+    } catch {
+      toast.error("Não foi possível concluir a alteração do pedido e dos vales.");
+    } finally {
+      setSalvando(false);
+    }
   };
 
   return (
@@ -378,7 +400,7 @@ export function EditarPedidoDialog({
                     step="0.01"
                     placeholder="0,00"
                     className="w-32"
-                    value={x.valor}
+                    value={x.forma === "Vale" ? String(pagamentosEfetivos[idx]?.valor ?? 0) : x.valor}
                     onChange={(e) =>
                       setParcelas((ps) =>
                         ps.map((y, i) => (i === idx ? { ...y, valor: e.target.value } : y)),
@@ -535,7 +557,7 @@ export function EditarPedidoDialog({
           <Button variant="outline" onClick={() => setAberto(false)}>
             Cancelar
           </Button>
-          <Button onClick={salvar}>Salvar alterações</Button>
+          <Button onClick={salvar} disabled={salvando}>{salvando ? "Salvando…" : "Salvar alterações"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

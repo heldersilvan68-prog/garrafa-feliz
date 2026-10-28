@@ -174,7 +174,9 @@ export function ClientesProvider({ children }: { children: ReactNode }) {
   }, "Não foi possível atualizar os vasilhames do cliente");
 
   const valesMut = useMutacao<{ id: string; delta: number }>(async ({ id, delta }) => {
-    const atual = clientes.find((c) => c.id === id)?.valesSaldo ?? 0;
+    const { data, error: erroSaldo } = await supabase.from("clients").select("vales_saldo").eq("id", id).single();
+    if (erroSaldo) throw erroSaldo;
+    const atual = data.vales_saldo ?? 0;
     const { error } = await supabase
       .from("clients")
       .update({ vales_saldo: Math.max(0, atual + delta) })

@@ -1,6 +1,23 @@
 /** Histórico de vales (galões pré-pagos) derivado dos pedidos.
  *  Fonte única: `valesCredito` (pacote comprado) e `valesResgatados` (retirada). */
-import { totalItemPedido, valorPorForma, type Pedido } from "@/lib/pedidos";
+import { totalItemPedido, valorPorForma, type Pedido, type ItemPedido, type PagamentoPedido } from "@/lib/pedidos";
+
+/** Vale quita a parte restante da venda; seu preço de compra não limita o resgate. */
+export function ajustarPagamentosVale(total: number, pagamentos: PagamentoPedido[]): PagamentoPedido[] {
+  const primeiroVale = pagamentos.findIndex((p) => p.forma === "Vale");
+  if (primeiroVale < 0) return pagamentos;
+  const outros = pagamentos.filter((p) => p.forma !== "Vale").reduce((s, p) => s + p.valor, 0);
+  const cobertura = Math.max(0, Math.round((total - outros) * 100) / 100);
+  return pagamentos.map((p, i) => p.forma === "Vale" ? { ...p, valor: i === primeiroVale ? cobertura : 0 } : p);
+}
+
+/** Resgate em unidades físicas, nunca por divisão do valor pelo preço do vale. */
+export function quantidadeValesResgatados(itens: ItemPedido[], pagamentos: PagamentoPedido[]): number {
+  if (!pagamentos.some((p) => p.forma === "Vale" && p.valor > 0)) return 0;
+  const fisicos = itens.filter((i) => Boolean(i.produtoId));
+  const retornaveis = fisicos.filter((i) => i.retornavel);
+  return Math.max(0, Math.round((retornaveis.length ? retornaveis : fisicos).reduce((s, i) => s + i.qtd, 0)));
+}
 
 export type TipoLancamentoVale = "compra" | "resgate";
 
