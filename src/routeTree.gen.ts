@@ -25,6 +25,8 @@ import { Route as AuthenticatedProdutosRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedRelatoriosRouteImport } from './routes/_authenticated/relatorios'
 import { Route as AuthenticatedVasilhamesRouteImport } from './routes/_authenticated/vasilhames'
 import { Route as ApiAssistenteRouteImport } from './routes/api/assistente'
+import { Route as AuthenticatedAssistenteIndexRouteImport } from './routes/_authenticated/assistente.index'
+import { Route as AuthenticatedAssistenteThreadIdRouteImport } from './routes/_authenticated/assistente.$threadId'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
@@ -107,6 +109,18 @@ const ApiAssistenteRoute = ApiAssistenteRouteImport.update({
   path: '/api/assistente',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAssistenteIndexRoute =
+  AuthenticatedAssistenteIndexRouteImport.update({
+    id: '/assistente/',
+    path: '/assistente/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAssistenteThreadIdRoute =
+  AuthenticatedAssistenteThreadIdRouteImport.update({
+    id: '/assistente/$threadId',
+    path: '/assistente/$threadId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -124,6 +138,8 @@ export interface FileRoutesByFullPath {
   '/relatorios': typeof AuthenticatedRelatoriosRoute
   '/vasilhames': typeof AuthenticatedVasilhamesRoute
   '/api/assistente': typeof ApiAssistenteRoute
+  '/assistente/$threadId': typeof AuthenticatedAssistenteThreadIdRoute
+  '/assistente/': typeof AuthenticatedAssistenteIndexRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
@@ -141,6 +157,8 @@ export interface FileRoutesByTo {
   '/vasilhames': typeof AuthenticatedVasilhamesRoute
   '/api/assistente': typeof ApiAssistenteRoute
   '/': typeof AuthenticatedIndexRoute
+  '/assistente/$threadId': typeof AuthenticatedAssistenteThreadIdRoute
+  '/assistente': typeof AuthenticatedAssistenteIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -160,6 +178,8 @@ export interface FileRoutesById {
   '/_authenticated/vasilhames': typeof AuthenticatedVasilhamesRoute
   '/api/assistente': typeof ApiAssistenteRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/assistente/$threadId': typeof AuthenticatedAssistenteThreadIdRoute
+  '/_authenticated/assistente/': typeof AuthenticatedAssistenteIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -179,6 +199,8 @@ export interface FileRouteTypes {
     | '/relatorios'
     | '/vasilhames'
     | '/api/assistente'
+    | '/assistente/$threadId'
+    | '/assistente/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
@@ -196,6 +218,8 @@ export interface FileRouteTypes {
     | '/vasilhames'
     | '/api/assistente'
     | '/'
+    | '/assistente/$threadId'
+    | '/assistente'
   id:
     | '__root__'
     | '/_authenticated'
@@ -214,6 +238,8 @@ export interface FileRouteTypes {
     | '/_authenticated/vasilhames'
     | '/api/assistente'
     | '/_authenticated/'
+    | '/_authenticated/assistente/$threadId'
+    | '/_authenticated/assistente/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -336,6 +362,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAssistenteRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/assistente/': {
+      id: '/_authenticated/assistente/'
+      path: '/assistente'
+      fullPath: '/assistente/'
+      preLoaderRoute: typeof AuthenticatedAssistenteIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/assistente/$threadId': {
+      id: '/_authenticated/assistente/$threadId'
+      path: '/assistente/$threadId'
+      fullPath: '/assistente/$threadId'
+      preLoaderRoute: typeof AuthenticatedAssistenteThreadIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -353,6 +393,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRelatoriosRoute: typeof AuthenticatedRelatoriosRoute
   AuthenticatedVasilhamesRoute: typeof AuthenticatedVasilhamesRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedAssistenteThreadIdRoute: typeof AuthenticatedAssistenteThreadIdRoute
+  AuthenticatedAssistenteIndexRoute: typeof AuthenticatedAssistenteIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -369,6 +411,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRelatoriosRoute: AuthenticatedRelatoriosRoute,
   AuthenticatedVasilhamesRoute: AuthenticatedVasilhamesRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedAssistenteThreadIdRoute: AuthenticatedAssistenteThreadIdRoute,
+  AuthenticatedAssistenteIndexRoute: AuthenticatedAssistenteIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
