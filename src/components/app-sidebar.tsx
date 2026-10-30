@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/use-auth";
 import {
   Droplets,
   Activity,
+  MessagesSquare,
   FileBarChart,
   Truck,
 
@@ -40,6 +41,7 @@ const grupos = [
     itens: [
       { titulo: "Dashboard Geral", url: "/", icon: LayoutDashboard },
       { titulo: "Desempenho", url: "/desempenho", icon: Activity },
+      { titulo: "Assistente IA", url: "/assistente", icon: MessagesSquare },
     ],
   },
   {
