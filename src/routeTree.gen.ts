@@ -24,6 +24,7 @@ import { Route as AuthenticatedPedidosRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedProdutosRouteImport } from './routes/_authenticated/produtos'
 import { Route as AuthenticatedRelatoriosRouteImport } from './routes/_authenticated/relatorios'
 import { Route as AuthenticatedVasilhamesRouteImport } from './routes/_authenticated/vasilhames'
+import { Route as ApiAssistenteRouteImport } from './routes/api/assistente'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
@@ -101,6 +102,11 @@ const AuthenticatedVasilhamesRoute = AuthenticatedVasilhamesRouteImport.update({
   path: '/vasilhames',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiAssistenteRoute = ApiAssistenteRouteImport.update({
+  id: '/api/assistente',
+  path: '/api/assistente',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -117,6 +123,7 @@ export interface FileRoutesByFullPath {
   '/produtos': typeof AuthenticatedProdutosRoute
   '/relatorios': typeof AuthenticatedRelatoriosRoute
   '/vasilhames': typeof AuthenticatedVasilhamesRoute
+  '/api/assistente': typeof ApiAssistenteRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
@@ -132,6 +139,7 @@ export interface FileRoutesByTo {
   '/produtos': typeof AuthenticatedProdutosRoute
   '/relatorios': typeof AuthenticatedRelatoriosRoute
   '/vasilhames': typeof AuthenticatedVasilhamesRoute
+  '/api/assistente': typeof ApiAssistenteRoute
   '/': typeof AuthenticatedIndexRoute
 }
 export interface FileRoutesById {
@@ -150,6 +158,7 @@ export interface FileRoutesById {
   '/_authenticated/produtos': typeof AuthenticatedProdutosRoute
   '/_authenticated/relatorios': typeof AuthenticatedRelatoriosRoute
   '/_authenticated/vasilhames': typeof AuthenticatedVasilhamesRoute
+  '/api/assistente': typeof ApiAssistenteRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
 }
 export interface FileRouteTypes {
@@ -169,6 +178,7 @@ export interface FileRouteTypes {
     | '/produtos'
     | '/relatorios'
     | '/vasilhames'
+    | '/api/assistente'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
@@ -184,6 +194,7 @@ export interface FileRouteTypes {
     | '/produtos'
     | '/relatorios'
     | '/vasilhames'
+    | '/api/assistente'
     | '/'
   id:
     | '__root__'
@@ -201,12 +212,14 @@ export interface FileRouteTypes {
     | '/_authenticated/produtos'
     | '/_authenticated/relatorios'
     | '/_authenticated/vasilhames'
+    | '/api/assistente'
     | '/_authenticated/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiAssistenteRoute: typeof ApiAssistenteRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -316,6 +329,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedVasilhamesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/assistente': {
+      id: '/api/assistente'
+      path: '/api/assistente'
+      fullPath: '/api/assistente'
+      preLoaderRoute: typeof ApiAssistenteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -357,6 +377,7 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiAssistenteRoute: ApiAssistenteRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
