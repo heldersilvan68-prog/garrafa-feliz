@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { ConfirmarExclusao } from "@/components/confirmar-exclusao";
-import { CircleAlert, CircleCheck, Layers, Pencil, Plus, Receipt, Repeat, Trash2 } from "lucide-react";
+import { CircleAlert, CircleCheck, Layers, Pencil, Plus, Receipt, Repeat, Search, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -51,6 +51,7 @@ function DespesasPage() {
   const [porCategoria, setPorCategoria] = useState(false);
   const [soRecorrentes, setSoRecorrentes] = useState(false);
   const [editando, setEditando] = useState<Despesa | undefined>();
+  const [busca, setBusca] = useState("");
   const periodo = usePeriodo("mes");
 
   const doPeriodo = despesas.filter(
@@ -58,6 +59,20 @@ function DespesasPage() {
   );
   const pagas = doPeriodo.filter((d) => d.status === "Pago");
   const pendentes = doPeriodo.filter((d) => d.status === "Pendente");
+
+  const termo = busca.trim().toLowerCase();
+  const filtradas = useMemo(
+    () =>
+      termo
+        ? doPeriodo.filter((d) =>
+            [d.descricao, d.categoria, d.forma, d.status, d.observacoes ?? ""]
+              .join(" ")
+              .toLowerCase()
+              .includes(termo),
+          )
+        : doPeriodo,
+    [doPeriodo, termo],
+  );
 
   const cards = [
     {
