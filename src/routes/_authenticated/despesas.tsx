@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { ConfirmarExclusao } from "@/components/confirmar-exclusao";
-import { CircleAlert, CircleCheck, Layers, Pencil, Plus, Receipt, Repeat, Trash2 } from "lucide-react";
+import { CircleAlert, CircleCheck, Layers, Pencil, Plus, Receipt, Repeat, Search, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -51,6 +51,7 @@ function DespesasPage() {
   const [porCategoria, setPorCategoria] = useState(false);
   const [soRecorrentes, setSoRecorrentes] = useState(false);
   const [editando, setEditando] = useState<Despesa | undefined>();
+  const [busca, setBusca] = useState("");
   const periodo = usePeriodo("mes");
 
   const doPeriodo = despesas.filter(
@@ -58,6 +59,20 @@ function DespesasPage() {
   );
   const pagas = doPeriodo.filter((d) => d.status === "Pago");
   const pendentes = doPeriodo.filter((d) => d.status === "Pendente");
+
+  const termo = busca.trim().toLowerCase();
+  const filtradas = useMemo(
+    () =>
+      termo
+        ? doPeriodo.filter((d) =>
+            [d.descricao, d.categoria, d.forma, d.status, d.observacoes ?? ""]
+              .join(" ")
+              .toLowerCase()
+              .includes(termo),
+          )
+        : doPeriodo,
+    [doPeriodo, termo],
+  );
 
   const cards = [
     {
@@ -80,7 +95,7 @@ function DespesasPage() {
     },
   ];
 
-  const ordenadas = [...doPeriodo].sort((a, b) => (a.data < b.data ? 1 : -1));
+  const ordenadas = [...filtradas].sort((a, b) => (a.data < b.data ? 1 : -1));
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
@@ -137,11 +152,23 @@ function DespesasPage() {
       <Card className="shadow-[var(--shadow-card)]">
         <CardHeader>
           <CardTitle className="text-base">Despesas registradas</CardTitle>
+          <div className="relative mt-2 w-full sm:max-w-xs">
+            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              placeholder="Buscar por descrição, categoria, forma, status..."
+              aria-label="Buscar despesas"
+              className="h-9 w-full rounded-md border border-input bg-transparent py-1 pr-3 pl-9 text-sm shadow-xs outline-none transition-[color,box-shadow] placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            />
+          </div>
         </CardHeader>
         <CardContent>
           {ordenadas.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Nenhuma despesa registrada. Clique em “Nova Despesa” para começar.
+              {termo
+                ? "Nenhuma despesa encontrada para essa busca no período."
+                : "Nenhuma despesa registrada. Clique em “Nova Despesa” para começar."}
             </p>
           ) : (
             <div className="overflow-x-auto">
