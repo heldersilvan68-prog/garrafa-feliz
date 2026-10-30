@@ -3,7 +3,6 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { BarChart3, Database } from "lucide-react";
 import {
   Conversation,
   ConversationContent,
@@ -144,18 +143,9 @@ export function ChatAssistente({ threadId, iniciais }: { threadId: string; inici
                         errorText?: string;
                       };
                       const nome = p.type.slice(5);
-                      const Icone = nome === "analisar_periodo" ? BarChart3 : Database;
                       return (
                         <Tool key={i} defaultOpen={false}>
-                          <div className="flex items-center gap-2 pl-3">
-                            <Icone className="size-4 text-muted-foreground" />
-                            <ToolHeader
-                              className="flex-1 pl-0"
-                              type={tp.type}
-                              state={tp.state}
-                              title={NOMES_FERRAMENTA[nome] ?? nome}
-                            />
-                          </div>
+                          <ToolHeader type={tp.type} state={tp.state} title={NOMES_FERRAMENTA[nome] ?? nome} />
                           <ToolContent>
                             <ToolInput input={tp.input} />
                             <ToolOutput
