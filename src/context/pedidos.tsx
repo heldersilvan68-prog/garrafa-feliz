@@ -27,6 +27,7 @@ type Ctx = {
   alterarStatus: (id: string, status: StatusPedido) => void;
   atualizar: (id: string, dados: Partial<Pedido>) => Promise<void>;
   cancelar: (id: string, motivo: string, observacao?: string) => Promise<void>;
+  excluir: (id: string, numero: number) => Promise<void>;
   /**
    * Baixa de fiado. Com `converterParcelas`, a venda deixa de ser fiado e passa
    * a contar como venda direta na forma recebida (usado no mesmo dia da venda).
@@ -65,7 +66,7 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
 
   const invalidar = () => {
     // Uma venda mexe em saldo do cliente, caixa e estoque: recarrega tudo.
-    for (const chave of ["pedidos", "clientes", "caixa", "produtos", "movimentos-vasilhames"]) {
+    for (const chave of ["pedidos", "clientes", "caixa", "produtos", "movimentos-vasilhames", "despesas", "acertos-parceria"]) {
       queryClient.invalidateQueries({ queryKey: [chave] });
     }
   };
@@ -291,6 +292,11 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
     if (erroInserir) throw erroInserir;
   }, "Não foi possível dar baixa no fiado");
 
+  const excluirMut = useMutacao<{ id: string; numero: number }>(async ({ id, numero }) => {
+    const { error } = await supabase.rpc("excluir_venda_definitiva", { _order_id: id, _numero: numero });
+    if (error) throw error;
+  }, "Não foi possível excluir a venda");
+
   const valor = useMemo<Ctx>(
     () => ({
       pedidos,
@@ -300,10 +306,11 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
       atualizar: (id, dados) => atualizarMut.mutateAsync({ id, dados }),
       cancelar: (id, motivo, observacao) =>
         cancelarMut.mutateAsync({ id, motivo, observacao }).then(() => undefined),
+      excluir: (id, numero) => excluirMut.mutateAsync({ id, numero }).then(() => undefined),
       darBaixa: (id, forma, converterParcelas) =>
         baixaMut.mutate({ id, forma, converterParcelas }),
     }),
-    [pedidos, isLoading, criarMut.mutateAsync, statusMut.mutate, atualizarMut.mutateAsync, cancelarMut.mutateAsync, baixaMut.mutate],
+    [pedidos, isLoading, criarMut.mutateAsync, statusMut.mutate, atualizarMut.mutateAsync, cancelarMut.mutateAsync, excluirMut.mutateAsync, baixaMut.mutate],
   );
 
   return (

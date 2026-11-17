@@ -12,11 +12,13 @@ import {
   Search,
   Truck,
   XCircle,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { PdvDrawer } from "@/components/pdv/pdv-drawer";
 import { BaixaFiadoDialog } from "@/components/pedidos/baixa-fiado-dialog";
 import { CancelarPedidoDialog } from "@/components/pedidos/cancelar-pedido-dialog";
+import { ExcluirPedidoDialog } from "@/components/pedidos/excluir-pedido-dialog";
 import { DetalhesPedidoDialog } from "@/components/pedidos/detalhes-pedido-dialog";
 import { EditarPedidoDialog } from "@/components/pedidos/editar-pedido-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -217,6 +219,11 @@ const PedidoCard = memo(function PedidoCard({ pedido, produtos }: { pedido: Pedi
                 </Button>
               </CancelarPedidoDialog>
             )}
+            <ExcluirPedidoDialog pedido={pedido}>
+              <Button size="sm" variant="ghost" className="text-destructive" aria-label={`Excluir venda #${pedido.numero}`}>
+                <Trash2 className="size-4" /> Excluir
+              </Button>
+            </ExcluirPedidoDialog>
           </div>
         </div>
       </CardContent>

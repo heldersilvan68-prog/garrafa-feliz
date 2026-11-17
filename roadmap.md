@@ -1,4 +1,5 @@
 # Performance
+- [x] Adicionar exclusão definitiva de venda com confirmação, reversão atômica e testes sem apagar vendas reais
 - [x] Liberar texto literal no cupom e tags atômicas sem estrutura automática
 - [x] Compartilhar estilos inline entre prévia e impressão e adicionar guia
 - [x] Testar substituições, preservação de espaços e HTML de impressão com pedido real; saída física depende da impressora

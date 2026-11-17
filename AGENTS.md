@@ -21,3 +21,4 @@
 - ABC client and product views classify the existing performance revenue rankings through the pure calculator in `src/lib/curva-abc.ts`; keep period and tab selection URL-backed and never persist derived classes.
 - Receipt preview and printing share `TextoCupom` and the pure allowlisted parser in `src/lib/cupom-template.ts`; parse styling from templates only, render substituted data as escaped text, and preserve literal whitespace and tag-free/empty templates.
 - The AI assistant (`/api/assistente`) answers through read-only tools that query with the caller's bearer token (RLS-scoped) and reuse the pure Desempenho calculator via `src/lib/assistente.ts`, so its numbers match the screens; threads/messages persist per user in `ai_threads`/`ai_messages`.
+- Permanent sale deletion uses a single owner-scoped database transaction to reverse balances and remove linked records; closed cash sessions and paid settlements block it to preserve reconciled finances.

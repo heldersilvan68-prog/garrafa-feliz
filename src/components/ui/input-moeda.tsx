@@ -46,7 +46,8 @@ export function InputMoeda({ valor, onValor, className, ...rest }: Props) {
           setEditando(true);
           setTexto(formatar(valor));
           // Seleciona tudo para facilitar a edição rápida.
-          requestAnimationFrame(() => e.currentTarget.select());
+          const input = e.currentTarget;
+          requestAnimationFrame(() => { if (input.isConnected) input.select(); });
           rest.onFocus?.(e);
         }}
         onChange={(e) => {

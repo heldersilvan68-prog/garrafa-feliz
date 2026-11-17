@@ -1383,6 +1383,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      excluir_venda_definitiva: {
+        Args: { _numero: number; _order_id: string }
+        Returns: undefined
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
