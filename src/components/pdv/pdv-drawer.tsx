@@ -762,6 +762,14 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                             aria-label={`Preço de ${p.nome}`}
                             valor={precoVenda(p.id)}
                             onValor={(n) => setPrecos((s) => ({ ...s, [p.id]: String(n) }))}
+                            onKeyDown={(e) => {
+                              if (e.key !== "Enter") return;
+                              e.preventDefault();
+                              e.stopPropagation();
+                              const q = document.getElementById(`qtd-${p.id}`) as HTMLInputElement | null;
+                              q?.focus();
+                              requestAnimationFrame(() => q?.select());
+                            }}
                           />
                           <span className="shrink-0 text-xs font-normal text-muted-foreground">
                             {emFardo ? ` /${medida.rotulo.singular}` : " /un."}
@@ -848,6 +856,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                             step={1}
                             inputMode="numeric"
                             className="h-9 w-16 shrink-0 text-center tabular-nums"
+                            id={`qtd-${p.id}`}
                             aria-label={`Quantidade de ${p.nome}`}
                             placeholder="0"
                             value={qtds[p.id] ?? ""}
@@ -857,6 +866,7 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
                             onKeyDown={(e) => {
                               if (e.key === "Enter") {
                                 e.preventDefault();
+                                e.stopPropagation();
                                 adicionarLinha(p.id);
                               }
                             }}
