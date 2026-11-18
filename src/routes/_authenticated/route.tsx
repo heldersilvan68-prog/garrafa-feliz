@@ -1,6 +1,7 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { MigracaoLocalStorage } from "@/components/migracao-localstorage";
+import { useEnterConfirma } from "@/hooks/use-enter-confirma";
 import { AlertaFechamentoCaixa } from "@/components/caixa/alerta-fechamento";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -14,6 +15,7 @@ export const Route = createFileRoute("/_authenticated")({
 });
 
 function AreaProtegida() {
+  useEnterConfirma();
   return (
     <>
       <MigracaoLocalStorage />
