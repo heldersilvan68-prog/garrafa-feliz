@@ -846,18 +846,14 @@ export const PromptInput = ({
       event.preventDefault();
 
       const form = event.currentTarget;
+      const submitButton = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+      if (!submitButton || submitButton.disabled) return;
       const text = usingProvider
         ? controller.textInput.value
         : (() => {
             const formData = new FormData(form);
             return (formData.get("message") as string) || "";
           })();
-
-      // Reset form immediately after capturing text to avoid race condition
-      // where user input during async blob conversion would be lost
-      if (!usingProvider) {
-        form.reset();
-      }
 
       try {
         // Convert blob URLs to data URLs asynchronously
@@ -882,8 +878,11 @@ export const PromptInput = ({
           try {
             await result;
             clear();
-            if (usingProvider) {
+            if (usingProvider && controller.textInput.value === text) {
               controller.textInput.clear();
+            } else if (!usingProvider) {
+              const input = form.querySelector<HTMLTextAreaElement>('textarea[name="message"]');
+              if (input?.value === text) input.value = "";
             }
           } catch {
             // Don't clear on error - user may want to retry
@@ -891,8 +890,11 @@ export const PromptInput = ({
         } else {
           // Sync function completed without throwing, clear inputs
           clear();
-          if (usingProvider) {
+          if (usingProvider && controller.textInput.value === text) {
             controller.textInput.clear();
+          } else if (!usingProvider) {
+            const input = form.querySelector<HTMLTextAreaElement>('textarea[name="message"]');
+            if (input?.value === text) input.value = "";
           }
         }
       } catch {
@@ -988,11 +990,11 @@ export const PromptInputTextarea = ({
         const submitButton = form?.querySelector(
           'button[type="submit"]'
         ) as HTMLButtonElement | null;
-        if (submitButton?.disabled) {
+        if (!submitButton || submitButton.disabled || e.repeat) {
           return;
         }
 
-        form?.requestSubmit();
+        form?.requestSubmit(submitButton);
       }
 
       // Remove last attachment when Backspace is pressed and textarea is empty

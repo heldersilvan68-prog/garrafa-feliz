@@ -23,3 +23,4 @@
 - The AI assistant (`/api/assistente`) answers through read-only tools that query with the caller's bearer token (RLS-scoped) and reuse the pure Desempenho calculator via `src/lib/assistente.ts`, so its numbers match the screens; threads/messages persist per user in `ai_threads`/`ai_messages`.
 - Permanent sale deletion uses a single owner-scoped database transaction to reverse balances and remove linked records; closed cash sessions and paid settlements block it to preserve reconciled finances.
 - The Sub-Loja module reads the historical `order_items.sub_loja` and `order_items.cmv` snapshots, allocates mixed-order revenue and payments by item share, and keeps its expenses and daily closings separate from the main cash register.
+- Enter selects the primary dialog action before checking availability and never falls back to secondary/dismissive actions; a capture guard blocks focused dismiss controls to prevent losing drafts.

@@ -73,10 +73,10 @@ export function ChatAssistente({ threadId, iniciais }: { threadId: string; inici
     if (!ocupado) textareaRef.current?.focus();
   }, [ocupado, threadId]);
 
-  const enviar = (texto: string) => {
+  const enviar = async (texto: string) => {
     const t = texto.trim();
-    if (!t || ocupado) return;
-    void sendMessage({ text: t });
+    if (!t || ocupado) throw new Error("Envio indisponível.");
+    await sendMessage({ text: t });
     setTimeout(() => queryClient.invalidateQueries({ queryKey: ["ai-threads"] }), 1500);
   };
 

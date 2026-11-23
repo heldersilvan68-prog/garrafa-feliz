@@ -4,6 +4,12 @@
 - [x] Criar caixa diário, histórico de fechamentos, despesas e DRE por período
 - [x] Testar rateio de vendas mistas, custos, cancelamentos e a tela com dados reais
 
+# Segurança do Enter
+- [x] Auditar atalhos, formulários e janelas em todo o sistema
+- [x] Impedir fallback quando confirmação está bloqueada e impedir fechamento por Enter em botões de cancelar/fechar
+- [x] Remover confirmação duplicada em cadastro rápido e preservar texto do assistente quando envio indisponível
+- [x] Validar testes e fluxo de venda incompleta na tela
+
 # Performance
 - [x] Adicionar exclusão definitiva de venda com confirmação, reversão atômica e testes sem apagar vendas reais
 - [x] Liberar texto literal no cupom e tags atômicas sem estrutura automática

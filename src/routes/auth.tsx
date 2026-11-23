@@ -59,6 +59,7 @@ function AuthPage() {
   }, [session, navigate]);
 
   const submeter = async (modo: "login" | "cadastro") => {
+    if (enviando || carregando) return;
     const schema = modo === "login" ? loginSchema : cadastroSchema;
     const parsed = schema.safeParse({ email, senha, nome });
     if (!parsed.success) {
@@ -146,7 +147,11 @@ function AuthPage() {
                     autoComplete="current-password"
                     value={senha}
                     onChange={(e) => setSenha(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && submeter("login")}
+                    onKeyDown={(e) => {
+                      if (e.key !== "Enter" || e.nativeEvent.isComposing || e.repeat) return;
+                      e.preventDefault();
+                      void submeter("login");
+                    }}
                   />
                 </div>
                 <Button

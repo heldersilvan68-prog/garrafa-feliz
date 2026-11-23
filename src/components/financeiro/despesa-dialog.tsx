@@ -64,6 +64,7 @@ export function DespesaDialog({ open, onOpenChange, despesa }: Props) {
   );
 
   const confirmarCategoria = async () => {
+    if (salvandoCategoria) return;
     const nome = novaCategoria.trim();
     if (!nome) {
       toast.error("Informe o nome da nova categoria.");
@@ -207,8 +208,10 @@ export function DespesaDialog({ open, onOpenChange, despesa }: Props) {
                     value={novaCategoria}
                     onChange={(e) => setNovaCategoria(e.target.value)}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter") {
+                      if (e.key === "Enter" && !e.nativeEvent.isComposing) {
                         e.preventDefault();
+                        e.stopPropagation();
+                        if (e.repeat) return;
                         void confirmarCategoria();
                       }
                     }}

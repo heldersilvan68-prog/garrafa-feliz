@@ -47,6 +47,7 @@ export function SelectComCadastro({
   ).filter(Boolean);
 
   const salvar = async () => {
+    if (salvando || !nome.trim()) return;
     setSalvando(true);
     try {
       const criado = await criar(tipo, nome);
@@ -101,9 +102,6 @@ export function SelectComCadastro({
               value={nome}
               onChange={(e) => setNome(e.target.value)}
               placeholder="Digite o nome"
-              onKeyDown={(e) => {
-                if (e.key === "Enter") void salvar();
-              }}
             />
           </div>
           <DialogFooter>
