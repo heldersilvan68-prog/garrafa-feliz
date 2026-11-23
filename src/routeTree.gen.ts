@@ -23,6 +23,7 @@ import { Route as AuthenticatedFinanceiroRouteImport } from './routes/_authentic
 import { Route as AuthenticatedPedidosRouteImport } from './routes/_authenticated/pedidos'
 import { Route as AuthenticatedProdutosRouteImport } from './routes/_authenticated/produtos'
 import { Route as AuthenticatedRelatoriosRouteImport } from './routes/_authenticated/relatorios'
+import { Route as AuthenticatedSubLojaRouteImport } from './routes/_authenticated/sub-loja'
 import { Route as AuthenticatedVasilhamesRouteImport } from './routes/_authenticated/vasilhames'
 import { Route as ApiAssistenteRouteImport } from './routes/api/assistente'
 import { Route as AuthenticatedAssistenteIndexRouteImport } from './routes/_authenticated/assistente.index'
@@ -99,6 +100,11 @@ const AuthenticatedRelatoriosRoute = AuthenticatedRelatoriosRouteImport.update({
   path: '/relatorios',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedSubLojaRoute = AuthenticatedSubLojaRouteImport.update({
+  id: '/sub-loja',
+  path: '/sub-loja',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedVasilhamesRoute = AuthenticatedVasilhamesRouteImport.update({
   id: '/vasilhames',
   path: '/vasilhames',
@@ -136,6 +142,7 @@ export interface FileRoutesByFullPath {
   '/pedidos': typeof AuthenticatedPedidosRoute
   '/produtos': typeof AuthenticatedProdutosRoute
   '/relatorios': typeof AuthenticatedRelatoriosRoute
+  '/sub-loja': typeof AuthenticatedSubLojaRoute
   '/vasilhames': typeof AuthenticatedVasilhamesRoute
   '/api/assistente': typeof ApiAssistenteRoute
   '/assistente/$threadId': typeof AuthenticatedAssistenteThreadIdRoute
@@ -154,6 +161,7 @@ export interface FileRoutesByTo {
   '/pedidos': typeof AuthenticatedPedidosRoute
   '/produtos': typeof AuthenticatedProdutosRoute
   '/relatorios': typeof AuthenticatedRelatoriosRoute
+  '/sub-loja': typeof AuthenticatedSubLojaRoute
   '/vasilhames': typeof AuthenticatedVasilhamesRoute
   '/api/assistente': typeof ApiAssistenteRoute
   '/': typeof AuthenticatedIndexRoute
@@ -175,6 +183,7 @@ export interface FileRoutesById {
   '/_authenticated/pedidos': typeof AuthenticatedPedidosRoute
   '/_authenticated/produtos': typeof AuthenticatedProdutosRoute
   '/_authenticated/relatorios': typeof AuthenticatedRelatoriosRoute
+  '/_authenticated/sub-loja': typeof AuthenticatedSubLojaRoute
   '/_authenticated/vasilhames': typeof AuthenticatedVasilhamesRoute
   '/api/assistente': typeof ApiAssistenteRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
@@ -197,6 +206,7 @@ export interface FileRouteTypes {
     | '/pedidos'
     | '/produtos'
     | '/relatorios'
+    | '/sub-loja'
     | '/vasilhames'
     | '/api/assistente'
     | '/assistente/$threadId'
@@ -215,6 +225,7 @@ export interface FileRouteTypes {
     | '/pedidos'
     | '/produtos'
     | '/relatorios'
+    | '/sub-loja'
     | '/vasilhames'
     | '/api/assistente'
     | '/'
@@ -235,6 +246,7 @@ export interface FileRouteTypes {
     | '/_authenticated/pedidos'
     | '/_authenticated/produtos'
     | '/_authenticated/relatorios'
+    | '/_authenticated/sub-loja'
     | '/_authenticated/vasilhames'
     | '/api/assistente'
     | '/_authenticated/'
@@ -348,6 +360,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRelatoriosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/sub-loja': {
+      id: '/_authenticated/sub-loja'
+      path: '/sub-loja'
+      fullPath: '/sub-loja'
+      preLoaderRoute: typeof AuthenticatedSubLojaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/vasilhames': {
       id: '/_authenticated/vasilhames'
       path: '/vasilhames'
@@ -391,6 +410,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPedidosRoute: typeof AuthenticatedPedidosRoute
   AuthenticatedProdutosRoute: typeof AuthenticatedProdutosRoute
   AuthenticatedRelatoriosRoute: typeof AuthenticatedRelatoriosRoute
+  AuthenticatedSubLojaRoute: typeof AuthenticatedSubLojaRoute
   AuthenticatedVasilhamesRoute: typeof AuthenticatedVasilhamesRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedAssistenteThreadIdRoute: typeof AuthenticatedAssistenteThreadIdRoute
@@ -409,6 +429,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPedidosRoute: AuthenticatedPedidosRoute,
   AuthenticatedProdutosRoute: AuthenticatedProdutosRoute,
   AuthenticatedRelatoriosRoute: AuthenticatedRelatoriosRoute,
+  AuthenticatedSubLojaRoute: AuthenticatedSubLojaRoute,
   AuthenticatedVasilhamesRoute: AuthenticatedVasilhamesRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedAssistenteThreadIdRoute: AuthenticatedAssistenteThreadIdRoute,

@@ -37,6 +37,7 @@ import { useEntregadores } from "@/context/entregadores";
 import { useConfiguracoes } from "@/context/configuracoes";
 import { useDespesas } from "@/context/despesas";
 import { CATEGORIA_TAXA_CARTAO } from "@/lib/despesas";
+import { calcularCmvItem } from "@/lib/sub-loja";
 
 import { bairroDe, filtrarClientes, hojeISO, ordenarPorCodigo, rotuloCliente } from "@/lib/clientes";
 import {
@@ -280,36 +281,41 @@ export function PdvDrawer({ children }: { children: ReactNode }) {
   }, [busca, clientes]);
 
   // Cada linha vira um item independente do pedido (produto + modo + embalagem).
-  const itensFisicos: ItemPedido[] = linhas.map((l) => ({
-    produtoId: l.produtoId,
-    nome: l.nome,
-    qtd: l.qtd,
-    // Preço negociado apenas nesta venda — não altera o cadastro do produto.
-    // O rateio abaixo existe somente para compatibilidade com módulos antigos;
-    // o total oficial do fardo usa quantidadeEmbalagens × precoEmbalagem.
-    precoUnit: l.qtd > 0 ? totalLinha(l) / l.qtd : 0,
-    embalagem: l.embalagem,
-    quantidadeEmbalagens:
-      l.embalagem === "fardo"
-        ? Math.max(
-            1,
-            Math.round(
-              l.qtd /
-                unidPorFardo(produtos.find((p) => p.id === l.produtoId) ?? ({} as never)),
-            ),
-          )
-        : undefined,
-    precoEmbalagem: l.embalagem === "fardo" ? l.preco : undefined,
-    rotuloEmbalagem:
-      l.embalagem === "fardo"
-        ? rotuloEmbalagem(
-            produtos.find((p) => p.id === l.produtoId)?.unidade,
-          ).singular.replace(/^./, (c) => c.toUpperCase())
-        : undefined,
-    retornavel: l.retornavel,
-    modo: l.modo,
-    composicao: l.composicao,
-  }));
+  const itensFisicos: ItemPedido[] = linhas.map((l) => {
+    const produto = produtos.find((p) => p.id === l.produtoId);
+    const item: ItemPedido = {
+      produtoId: l.produtoId,
+      nome: l.nome,
+      qtd: l.qtd,
+      // Preço negociado apenas nesta venda — não altera o cadastro do produto.
+      // O rateio abaixo existe somente para compatibilidade com módulos antigos;
+      // o total oficial do fardo usa quantidadeEmbalagens × precoEmbalagem.
+      precoUnit: l.qtd > 0 ? totalLinha(l) / l.qtd : 0,
+      embalagem: l.embalagem,
+      quantidadeEmbalagens:
+        l.embalagem === "fardo"
+          ? Math.max(
+              1,
+              Math.round(
+                l.qtd /
+                  unidPorFardo(produtos.find((p) => p.id === l.produtoId) ?? ({} as never)),
+              ),
+            )
+          : undefined,
+      precoEmbalagem: l.embalagem === "fardo" ? l.preco : undefined,
+      rotuloEmbalagem:
+        l.embalagem === "fardo"
+          ? rotuloEmbalagem(
+              produtos.find((p) => p.id === l.produtoId)?.unidade,
+            ).singular.replace(/^./, (c) => c.toUpperCase())
+          : undefined,
+      retornavel: l.retornavel,
+      modo: l.modo,
+      composicao: l.composicao,
+      subLoja: produto?.subLoja ?? false,
+    };
+    return { ...item, cmv: calcularCmvItem(item, produtos) };
+  });
 
 
   const valesVendidos = Math.max(0, Math.floor(Number(pacoteQtd) || 0));

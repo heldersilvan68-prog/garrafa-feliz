@@ -126,6 +126,8 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
             retornavel: i.retornavel,
             modo: i.modo,
             composicao: i.composicao ?? null,
+            sub_loja: i.subLoja ?? false,
+            cmv: i.cmv ?? null,
           })),
         );
         if (erroItens) throw erroItens;

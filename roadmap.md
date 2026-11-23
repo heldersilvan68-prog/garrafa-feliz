@@ -1,3 +1,9 @@
+# Sub-Loja / Módulo Interno
+- [x] Criar vínculo histórico dos itens, despesas exclusivas e fechamentos diários isolados no banco
+- [x] Marcar produtos e preservar vínculo e CMV na criação/edição de vendas
+- [x] Criar caixa diário, histórico de fechamentos, despesas e DRE por período
+- [x] Testar rateio de vendas mistas, custos, cancelamentos e a tela com dados reais
+
 # Performance
 - [x] Adicionar exclusão definitiva de venda com confirmação, reversão atômica e testes sem apagar vendas reais
 - [x] Liberar texto literal no cupom e tags atômicas sem estrutura automática

@@ -47,6 +47,7 @@ export const paraProduto = (r: ProdutoRow): Produto => ({
   promoPreco: num(r.promo_preco),
   patrimonioCascos: r.patrimonio_cascos ?? 0,
   ocultarPdv: !!r.ocultar_pdv,
+  subLoja: !!r.sub_loja,
   modalidades: paraModalidades(r.modalidades),
 });
 
@@ -166,6 +167,8 @@ export const paraItemPedido = (r: ItemPedidoRow): ItemPedido => ({
   retornavel: r.retornavel,
   modo: (r.modo as ModoVenda | null) ?? "refil",
   composicao: paraComposicao(r.composicao),
+  subLoja: r.sub_loja,
+  cmv: r.cmv === null ? undefined : num(r.cmv),
 });
 
 export const paraPedido = (

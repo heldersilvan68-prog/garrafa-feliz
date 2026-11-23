@@ -41,6 +41,7 @@ import { useClientes } from "@/context/clientes";
 import { saldoVasilhamesPedido } from "@/lib/vasilhames";
 import { expandirComposicao } from "@/lib/erp";
 import { ajustarPagamentosVale, quantidadeValesResgatados } from "@/lib/vales";
+import { calcularCmvItem } from "@/lib/sub-loja";
 
 type Parcela = { forma: FormaPagamento; valor: string };
 
@@ -121,8 +122,10 @@ export function EditarPedidoDialog({
         retornavel: deModalidade ? original!.retornavel : p.retornavel,
         modo: original?.modo ?? "refil",
         composicao: original?.composicao,
+        subLoja: original?.subLoja ?? p.subLoja ?? false,
       } satisfies ItemPedido;
-    });
+    })
+    .map((item) => ({ ...item, cmv: calcularCmvItem(item, produtos) }));
 
 
   const bruto = itens.reduce((s, i) => s + totalItemPedido(i), 0);

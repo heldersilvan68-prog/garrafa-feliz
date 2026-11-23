@@ -660,6 +660,7 @@ export type Database = {
       }
       order_items: {
         Row: {
+          cmv: number | null
           composicao: Json | null
           created_at: string
           embalagem: string | null
@@ -674,9 +675,11 @@ export type Database = {
           quantidade_embalagens: number | null
           retornavel: boolean
           rotulo_embalagem: string | null
+          sub_loja: boolean
           user_id: string
         }
         Insert: {
+          cmv?: number | null
           composicao?: Json | null
           created_at?: string
           embalagem?: string | null
@@ -691,9 +694,11 @@ export type Database = {
           quantidade_embalagens?: number | null
           retornavel?: boolean
           rotulo_embalagem?: string | null
+          sub_loja?: boolean
           user_id: string
         }
         Update: {
+          cmv?: number | null
           composicao?: Json | null
           created_at?: string
           embalagem?: string | null
@@ -708,6 +713,7 @@ export type Database = {
           quantidade_embalagens?: number | null
           retornavel?: boolean
           rotulo_embalagem?: string | null
+          sub_loja?: boolean
           user_id?: string
         }
         Relationships: [
@@ -1122,6 +1128,7 @@ export type Database = {
           promo_preco: number
           promo_qtd: number
           retornavel: boolean
+          sub_loja: boolean
           unidade: string | null
           unidades_por_fardo: number
           updated_at: string
@@ -1153,6 +1160,7 @@ export type Database = {
           promo_preco?: number
           promo_qtd?: number
           retornavel?: boolean
+          sub_loja?: boolean
           unidade?: string | null
           unidades_por_fardo?: number
           updated_at?: string
@@ -1184,6 +1192,7 @@ export type Database = {
           promo_preco?: number
           promo_qtd?: number
           retornavel?: boolean
+          sub_loja?: boolean
           unidade?: string | null
           unidades_por_fardo?: number
           updated_at?: string
@@ -1312,6 +1321,102 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      sub_loja_closings: {
+        Row: {
+          cmv: number
+          created_at: string
+          credito: number
+          debito: number
+          despesas: number
+          dia: string
+          dinheiro: number
+          faturamento: number
+          fechado_em: string
+          fiado: number
+          id: string
+          lucro_bruto: number
+          lucro_liquido: number
+          pedidos: number
+          pix: number
+          quantidade_itens: number
+          user_id: string
+          vale: number
+        }
+        Insert: {
+          cmv?: number
+          created_at?: string
+          credito?: number
+          debito?: number
+          despesas?: number
+          dia: string
+          dinheiro?: number
+          faturamento?: number
+          fechado_em?: string
+          fiado?: number
+          id?: string
+          lucro_bruto?: number
+          lucro_liquido?: number
+          pedidos?: number
+          pix?: number
+          quantidade_itens?: number
+          user_id: string
+          vale?: number
+        }
+        Update: {
+          cmv?: number
+          created_at?: string
+          credito?: number
+          debito?: number
+          despesas?: number
+          dia?: string
+          dinheiro?: number
+          faturamento?: number
+          fechado_em?: string
+          fiado?: number
+          id?: string
+          lucro_bruto?: number
+          lucro_liquido?: number
+          pedidos?: number
+          pix?: number
+          quantidade_itens?: number
+          user_id?: string
+          vale?: number
+        }
+        Relationships: []
+      }
+      sub_loja_expenses: {
+        Row: {
+          categoria: string
+          created_at: string
+          data: string
+          descricao: string
+          id: string
+          updated_at: string
+          user_id: string
+          valor: number
+        }
+        Insert: {
+          categoria: string
+          created_at?: string
+          data: string
+          descricao: string
+          id?: string
+          updated_at?: string
+          user_id: string
+          valor: number
+        }
+        Update: {
+          categoria?: string
+          created_at?: string
+          data?: string
+          descricao?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+          valor?: number
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {

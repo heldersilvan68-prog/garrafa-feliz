@@ -18,6 +18,7 @@ import {
   RefreshCcw,
   Settings,
   ShoppingCart,
+  Store,
   Users,
   Wallet,
   
@@ -63,6 +64,7 @@ const grupos = [
       { titulo: "Despesas", url: "/despesas", icon: Receipt },
       { titulo: "Comissões", url: "/comissoes", icon: HandCoins },
       { titulo: "Relatórios", url: "/relatorios", icon: FileBarChart },
+      { titulo: "Sub-Loja / Módulo Interno", url: "/sub-loja", icon: Store },
     ],
   },
   {

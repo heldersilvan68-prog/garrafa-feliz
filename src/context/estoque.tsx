@@ -301,6 +301,7 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
       promo_qtd: Math.max(0, Math.floor(p.promoQtd || 0)),
       promo_preco: p.promoPreco || 0,
       ocultar_pdv: !!p.ocultarPdv,
+      sub_loja: !!p.subLoja,
       modalidades: p.modalidades ?? [],
     };
 

@@ -18,6 +18,8 @@ const MAPA: Record<string, string[]> = {
   cash_registers: ["caixa"],
   cash_movements: ["caixa"],
   products: ["produtos"],
+  sub_loja_expenses: ["sub-loja-despesas"],
+  sub_loja_closings: ["sub-loja-fechamentos"],
   returnable_movements: ["movimentos-vasilhames", "produtos"],
 };
 

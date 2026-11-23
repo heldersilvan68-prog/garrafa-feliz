@@ -53,6 +53,8 @@ export type Produto = {
   patrimonioCascos: number;
   /** Quando true, o produto não aparece como card na tela de vendas (PDV). */
   ocultarPdv?: boolean;
+  /** Receita e resultado deste produto pertencem à Sub-Loja / setor interno. */
+  subLoja?: boolean;
   /** Modalidades de venda com baixa composta no estoque. */
   modalidades?: ModalidadeProduto[];
 };

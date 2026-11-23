@@ -75,6 +75,7 @@ const vazio: Produto = {
   promoQtd: 0,
   promoPreco: 0,
   patrimonioCascos: 0,
+  subLoja: false,
 };
 
 
@@ -417,6 +418,20 @@ export function ProdutoDialog({
               </p>
             </div>
             <Switch checked={!!form.ocultarPdv} onCheckedChange={(v) => set("ocultarPdv", v)} />
+          </div>
+
+          <div className="flex items-center justify-between rounded-xl border border-primary/30 bg-primary/5 p-4">
+            <div className="min-w-0 pr-4">
+              <p className="text-sm font-medium">Pertence à Sub-Loja / Setor Secundário</p>
+              <p className="text-xs text-muted-foreground">
+                As vendas deste item alimentam o caixa, as despesas e o DRE próprios da Sub-Loja.
+              </p>
+            </div>
+            <Switch
+              aria-label="Pertence à Sub-Loja / Setor Secundário"
+              checked={!!form.subLoja}
+              onCheckedChange={(v) => set("subLoja", v)}
+            />
           </div>
 
           <div className="rounded-xl border border-border p-4">

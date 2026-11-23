@@ -154,6 +154,9 @@ function Produtos() {
                     />
                     <div className="flex min-w-0 flex-1 flex-col gap-1.5">
                       <span className="line-clamp-2 font-semibold leading-snug">{p.nome}</span>
+                      {p.subLoja ? (
+                        <Badge variant="default" className="w-fit">Sub-Loja</Badge>
+                      ) : null}
                       {p.retornavel ? (
                         <Badge variant="secondary" className="w-fit">
                           Retornável
@@ -276,6 +279,7 @@ function Produtos() {
                       <TableCell>
                         <div className="flex min-w-0 flex-col gap-1">
                           <span className="font-medium">{p.nome}</span>
+                          {p.subLoja ? <Badge className="w-fit">Sub-Loja</Badge> : null}
                           {p.retornavel ? (
                             <Badge variant="secondary" className="w-fit">
                               Retornável

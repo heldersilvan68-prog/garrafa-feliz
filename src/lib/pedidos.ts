@@ -44,6 +44,10 @@ export type ItemPedido = {
   modo: ModoVenda;
   /** Composição de estoque da modalidade vendida (baixa individual por produto). */
   composicao?: ItemComposicao[];
+  /** Vínculo histórico com a Sub-Loja no momento da venda. */
+  subLoja?: boolean;
+  /** CMV total do item no momento da venda, incluindo componentes da modalidade. */
+  cmv?: number;
 };
 
 /** Total registrado da linha, sem ratear o preço do fardo em unidades avulsas. */

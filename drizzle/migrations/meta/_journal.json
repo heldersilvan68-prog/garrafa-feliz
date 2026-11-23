@@ -50,6 +50,13 @@
       "when": 1794875134369,
       "tag": "0006_exclusao_definitiva_venda",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1795477281191,
+      "tag": "0007_criar_modulo_sub_loja",
+      "breakpoints": true
     }
   ]
 }

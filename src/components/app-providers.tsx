@@ -8,6 +8,7 @@ import { ClientesProvider } from "@/context/clientes";
 import { PedidosProvider } from "@/context/pedidos";
 import { CaixaProvider } from "@/context/caixa";
 import { DespesasProvider } from "@/context/despesas";
+import { SubLojaProvider } from "@/context/sub-loja";
 import { EntregadoresProvider } from "@/context/entregadores";
 import { SincronizacaoRealtime } from "@/hooks/use-realtime-sync";
 import { LimpezaCancelados } from "@/components/limpeza-cancelados";
@@ -28,12 +29,14 @@ export function AppProviders({ children }: { children: ReactNode }) {
           <PedidosProvider>
             <CaixaProvider>
               <DespesasProvider>
-                <EntregadoresProvider>
-                  <SincronizacaoRealtime />
-                  <LimpezaCancelados />
-                  <LimpezaVasilhamesModalidades />
-                  {children}
-                </EntregadoresProvider>
+                <SubLojaProvider>
+                  <EntregadoresProvider>
+                    <SincronizacaoRealtime />
+                    <LimpezaCancelados />
+                    <LimpezaVasilhamesModalidades />
+                    {children}
+                  </EntregadoresProvider>
+                </SubLojaProvider>
               </DespesasProvider>
             </CaixaProvider>
           </PedidosProvider>
